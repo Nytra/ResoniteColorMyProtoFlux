@@ -1,11 +1,11 @@
-﻿using BaseX;
-using FrooxEngine.LogiX;
-using NeosModLoader;
+﻿using Elements.Core;
+using FrooxEngine.ProtoFlux;
+using ResoniteModLoader;
 using System;
 
-namespace ColorMyLogixNodes
+namespace ColorMyProtoFlux
 {
-	public partial class ColorMyLogixNodes : NeosMod
+	public partial class ColorMyProtoFlux : ResoniteMod
 	{
 		private static float GetStaticColorChannelValue(int index, ColorModelEnum model, Random rand)
 		{
@@ -48,7 +48,7 @@ namespace ColorMyLogixNodes
 					}
 					break;
 				case ColorModelEnum.RGB:
-					color colorRGB = new color(Config.GetValue(NODE_COLOR));
+					colorX colorRGB = Config.GetValue(NODE_COLOR);
 					switch (index)
 					{
 						case 0:
@@ -132,7 +132,7 @@ namespace ColorMyLogixNodes
 			return val;
 		}
 
-		private static BaseX.color GetColorFromUlong(ulong val, ulong divisor, Random rand)
+		private static colorX GetColorFromUlong(ulong val, ulong divisor, Random rand)
 		{
 			float hue = 0f;
 			float sat = 0f;
@@ -204,18 +204,18 @@ namespace ColorMyLogixNodes
 				alpha = Config.GetValue(NODE_COLOR).a;
 			}
 
-			BaseX.color c = Config.GetValue(NODE_COLOR);
+			colorX c = Config.GetValue(NODE_COLOR);
 			switch (Config.GetValue(COLOR_MODEL))
 			{
 				case ColorModelEnum.HSV:
-					c = new ColorHSV(hue, sat, val_lightness, alpha).ToRGB();
+					c = new ColorHSV(hue, sat, val_lightness, alpha).ToRGB(ColorProfile.sRGB);
 					break;
 				case ColorModelEnum.HSL:
-					c = new ColorHSL(hue, sat, val_lightness, alpha).ToRGB();
+					c = new ColorHSL(hue, sat, val_lightness, alpha).ToRGB(ColorProfile.sRGB);
 					break;
 				case ColorModelEnum.RGB:
 					// hue = r, sat = g, val_lightness = b
-					c = new color(hue, sat, val_lightness, alpha);
+					c = new colorX(hue, sat, val_lightness, alpha);
 					break;
 				default:
 					break;
@@ -223,7 +223,7 @@ namespace ColorMyLogixNodes
 			return c;
 		}
 
-		private static color GetColorWithRNG(Random rand)
+		private static colorX GetColorWithRNG(Random rand)
 		{
 			// RNG seeded by any constant node factor will always give the same color
 			float hue;
@@ -247,17 +247,17 @@ namespace ColorMyLogixNodes
 			switch (Config.GetValue(COLOR_MODEL))
 			{
 				case ColorModelEnum.HSV:
-					return new ColorHSV(hue, sat, val_lightness, alpha).ToRGB();
-				case ColorModelEnum.HSL:
-					return new ColorHSL(hue, sat, val_lightness, alpha).ToRGB();
-				case ColorModelEnum.RGB:
-					return new color(hue, sat, val_lightness, alpha);
+					return new ColorHSV(hue, sat, val_lightness, alpha).ToRGB(ColorProfile.sRGB);
+                case ColorModelEnum.HSL:
+					return new ColorHSL(hue, sat, val_lightness, alpha).ToRGB(ColorProfile.sRGB);
+                case ColorModelEnum.RGB:
+					return new colorX(hue, sat, val_lightness, alpha);
 				default:
 					return Config.GetValue(NODE_COLOR);
 			}
 		}
 
-		private static float GetLuminance(color c)
+		private static float GetLuminance(colorX c)
 		{
 			float sR = (float)Math.Pow(c.r, 2.2f);
 			float sG = (float)Math.Pow(c.g, 2.2f);
@@ -275,16 +275,16 @@ namespace ColorMyLogixNodes
 			return (float)Math.Pow(luminance, Config.GetValue(PERCEPTUAL_LIGHTNESS_EXPONENT));
 		}
 
-		private static color GetTextColor(color bg)
+		private static colorX GetTextColor(colorX bg)
 		{
-			color c;
+			colorX c;
 			if (Config.GetValue(USE_STATIC_TEXT_COLOR))
 			{
 				c = Config.GetValue(STATIC_TEXT_COLOR);
 			}
 			else
 			{
-				c = GetPerceptualLightness(GetLuminance(bg)) >= 0.5f ? color.Black : color.White;
+				c = GetPerceptualLightness(GetLuminance(bg)) >= 0.5f ? colorX.Black : colorX.White;
 			}
 			if (!Config.GetValue(ALLOW_NEGATIVE_AND_EMISSIVE_COLORS))
 			{
@@ -293,7 +293,7 @@ namespace ColorMyLogixNodes
 			return c;
 		}
 
-		private static void ClampColor(ref color c)
+		private static void ClampColor(ref colorX c)
 		{
 			// clamp color to min 0 and max 1 (no negative or emissive colors allowed)
 			// Clamp without branching
@@ -303,43 +303,43 @@ namespace ColorMyLogixNodes
 			c = c.SetA(Math.Min(Math.Max(c.a, 0f), 1f));
 		}
 
-		private static color ComputeColorForLogixNode(LogixNode node)
+		private static colorX ComputeColorForProtoFluxNode(ProtoFluxNode node)
 		{
-			BaseX.color colorToSet = Config.GetValue(NODE_COLOR);
+			colorX colorToSet = Config.GetValue(NODE_COLOR);
 			rng = null;
 
-			if (!Config.GetValue(COLOR_RELAY_NODES) && (node.Name.StartsWith("RelayNode") || node.Name.StartsWith("ImpulseRelay")))
-			{
-				if (node.Name.StartsWith("ImpulseRelay"))
-				{
-					return color.Gray;
-				}
-				else
-				{
-					color cRGB = GetNodeDefaultColor(node);
-					ColorHSV colorHSV = new ColorHSV(in cRGB);
-					colorHSV.v = ((colorHSV.v > 0.5f) ? (colorHSV.v * 0.5f) : (colorHSV.v * 2f));
-					return colorHSV.ToRGB();
-				}
-			}
+			//if (!Config.GetValue(COLOR_RELAY_NODES) && (node.Name.StartsWith("RelayNode") || node.Name.StartsWith("ImpulseRelay")))
+			//{
+			//	// Might need to change this
+			//	if (node.Name.StartsWith("ImpulseRelay"))
+			//	{
+			//		return colorX.Gray;
+			//	}
+			//	else
+			//	{
+			//		colorX cRGB = GetNodeDefaultColor(node);
+			//		ColorHSV colorHSV = new ColorHSV(in cRGB);
+			//		colorHSV.v = ((colorHSV.v > 0.5f) ? (colorHSV.v * 0.5f) : (colorHSV.v * 2f));
+			//		return new colorX(colorHSV.ToRGB());
+			//	}
+			//}
 
-			if (Config.GetValue(USE_DISPLAY_COLOR_OVERRIDE) && (node.Name.StartsWith("Display_") || node.Name == "DisplayImpulse"))
-			{
-				colorToSet = Config.GetValue(DISPLAY_COLOR_OVERRIDE);
-			}
-			else if (Config.GetValue(USE_INPUT_COLOR_OVERRIDE) && ShouldColorInputNode(node))
-			{
-				colorToSet = Config.GetValue(INPUT_COLOR_OVERRIDE);
-			}
-			else
-			{
-				if (!Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))
+			//if (Config.GetValue(USE_DISPLAY_COLOR_OVERRIDE) && (node.Name.StartsWith("Display_") || node.Name == "DisplayImpulse"))
+			//{
+			//	colorToSet = Config.GetValue(DISPLAY_COLOR_OVERRIDE);
+			//}
+			//else if (Config.GetValue(USE_INPUT_COLOR_OVERRIDE) && ShouldColorInputNode(node))
+			//{
+			//	colorToSet = Config.GetValue(INPUT_COLOR_OVERRIDE);
+			//}
+				//if (!Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))
+				if(true)
 				{
 					string nodeCategoryString;
 					switch (Config.GetValue(NODE_COLOR_MODE))
 					{
 						case NodeColorModeEnum.NodeName:
-							rng = new System.Random(LogixHelper.GetNodeName(node.GetType()).GetHashCode() + Config.GetValue(RANDOM_SEED));
+							rng = new System.Random(node.GetType().GetNiceName().BeautifyName().GetHashCode() + Config.GetValue(RANDOM_SEED));
 							break;
 						case NodeColorModeEnum.NodeCategory:
 							nodeCategoryString = GetNodeCategoryString(node.GetType());
@@ -396,7 +396,6 @@ namespace ColorMyLogixNodes
 						colorToSet = GetColorWithRNG(rng);
 					}
 				}
-			}
 
 			if (Config.GetValue(MULTIPLY_OUTPUT_BY_RGB))
 			{
