@@ -310,7 +310,7 @@ namespace ColorMyProtoFlux
 
 			Config.OnThisConfigurationChanged += (configChangedEvent) =>
 			{
-				Msg("Configuration changed!");
+				//Msg("Configuration changed!");
 				bool modEnabled = Config.GetValue(MOD_ENABLED);
 				bool modEnabled_KeyChanged = configChangedEvent.Key == MOD_ENABLED;
 
@@ -405,15 +405,15 @@ namespace ColorMyProtoFlux
 							Debug("nodeInfo.node is null!");
 						}
 
-						Msg("Refreshing node color in config changed.");
-
-						RefreshNodeColor(nodeInfo);
+						//Msg("Refreshing node color in config changed.");
 
 						nodeInfo.node.RunSynchronously(() =>
 						{
 							GetNodeVisual(nodeInfo.node).UpdateNodeStatus();
 						});
-					}
+
+                        RefreshNodeColor(nodeInfo);
+                    }
 				}
 			};
 		}
@@ -518,6 +518,49 @@ namespace ColorMyProtoFlux
 		//	}
 		//}
 
+		//[HarmonyPatch(typeof(ProtoFluxNodeVisual))]
+		//[HarmonyPatch("UpdateNodeStatus")]
+		//class Patch_ProtoFluxNodeVisual_UpdateNodeStatus
+		//{
+		//	static bool Prefix(ProtoFluxNodeVisual __instance, SyncRef<Image> ____bgImage, FieldDrive<colorX> ____overviewBg)
+		//	{
+		//		if (!Config.GetValue(MOD_ENABLED)) return true;
+
+		//		if (Config.GetValue(COLOR_HEADER_ONLY)) return true;
+
+		//		if (__instance.ReferenceID.User != __instance.LocalUser.AllocationID) return true;
+
+		//		if (____bgImage.Target != null)
+		//		{
+		//			//colorX a = RadiantUI_Constants.BG_COLOR;
+		//			colorX a = ComputeColorForProtoFluxNode(__instance.Node);
+		//			if (__instance.IsSelected.Value)
+		//			{
+		//				colorX b = colorX.Cyan;
+		//				a = MathX.LerpUnclamped(in a, in b, 0.5f);
+		//			}
+		//			if (__instance.IsHighlighted.Value)
+		//			{
+		//				colorX b = colorX.Yellow;
+		//				a = MathX.LerpUnclamped(in a, in b, 0.1f);
+		//			}
+		//			if (!__instance.IsNodeValid)
+		//			{
+		//				//colorX b = colorX.Red;
+		//				colorX b = Config.GetValue(NODE_ERROR_COLOR);
+		//				a = MathX.LerpUnclamped(in a, in b, 0.5f);
+		//				RefreshNodeColor(GetNodeInfoFromVisual(__instance));
+		//			}
+		//			____bgImage.Target.Tint.Value = a;
+		//			if (____overviewBg.IsLinkValid)
+		//			{
+		//				____overviewBg.Target.Value = a;
+		//			}
+		//		}
+		//		return false;
+		//	}
+		//}
+
 		[HarmonyPatch(typeof(ProtoFluxNodeVisual))]
 		[HarmonyPatch("UpdateNodeStatus")]
 		class Patch_ProtoFluxNodeVisual_UpdateNodeStatus
@@ -530,33 +573,39 @@ namespace ColorMyProtoFlux
 
 				if (__instance.ReferenceID.User != __instance.LocalUser.AllocationID) return true;
 
-				if (____bgImage.Target != null)
+				__instance.RunInUpdates(3, () => 
 				{
-					//colorX a = RadiantUI_Constants.BG_COLOR;
-					colorX a = ComputeColorForProtoFluxNode(__instance.Node);
-					if (__instance.IsSelected.Value)
+					if (____bgImage.Target != null)
 					{
-						colorX b = colorX.Cyan;
-						a = MathX.LerpUnclamped(in a, in b, 0.5f);
+						//colorX a = RadiantUI_Constants.BG_COLOR;
+						colorX a = ComputeColorForProtoFluxNode(__instance.Node);
+						if (__instance.IsSelected.Value)
+						{
+							colorX b = colorX.Cyan;
+							a = MathX.LerpUnclamped(in a, in b, 0.5f);
+						}
+						if (__instance.IsHighlighted.Value)
+						{
+							//colorX b = colorX.Yellow;
+							//colorX b = MathX.LerpUnclamped(a, GetTextColor(a), 0.5f);
+							colorX b = GetTextColor(a);
+							a = MathX.LerpUnclamped(in a, in b, 0.25f);
+						}
+						if (!__instance.IsNodeValid)
+						{
+							//colorX b = colorX.Red;
+							colorX b = Config.GetValue(NODE_ERROR_COLOR);
+							a = MathX.LerpUnclamped(in a, in b, 0.5f);
+							RefreshNodeColor(GetNodeInfoFromVisual(__instance));
+						}
+						____bgImage.Target.Tint.Value = a;
+						if (____overviewBg.IsLinkValid)
+						{
+							____overviewBg.Target.Value = a;
+						}
 					}
-					if (__instance.IsHighlighted.Value)
-					{
-						colorX b = colorX.Yellow;
-						a = MathX.LerpUnclamped(in a, in b, 0.1f);
-					}
-					if (!__instance.IsNodeValid)
-					{
-						//colorX b = colorX.Red;
-						colorX b = Config.GetValue(NODE_ERROR_COLOR);
-						a = MathX.LerpUnclamped(in a, in b, 0.5f);
-						RefreshNodeColor(GetNodeInfoFromVisual(__instance));
-					}
-					____bgImage.Target.Tint.Value = a;
-					if (____overviewBg.IsLinkValid)
-					{
-						____overviewBg.Target.Value = a;
-					}
-				}
+				});
+
 				return false;
 			}
 		}
@@ -567,7 +616,7 @@ namespace ColorMyProtoFlux
 		class Patch_ProtoFluxNodeVisual_BuildUI
 		{
 			//[HarmonyAfter(new string[] { "Banane9.LogixVisualCustomizer", "Banane9, Fro Zen.LogixVisualCustomizer" })]
-			static void Postfix(ProtoFluxNodeVisual __instance, ProtoFluxNode node, SyncRef<Image> ____bgImage, FieldDrive<colorX> ____overviewBg)
+			static void Postfix(ProtoFluxNodeVisual __instance, ProtoFluxNode node, SyncRef<Image> ____bgImage, FieldDrive<colorX> ____overviewBg, SyncRef<Slot> ____inputsRoot, SyncRef<Slot> ____outputsRoot)
 			{
 				Slot root = __instance.Slot;
 				// only run if the logix node visual slot is allocated to the local user
@@ -594,16 +643,16 @@ namespace ColorMyProtoFlux
 								nodeInfo.visual = __instance;
 							}
 
-                            colorX colorToSet = ComputeColorForProtoFluxNode(node);
+							colorX colorToSet = ComputeColorForProtoFluxNode(node);
 
-                            //bool? overviewEnabled = GetOverviewVisualEnabled(node);
-                            //if (overviewEnabled != null)
-                            //{
-                            //	FieldDrive<bool> fieldDrive = (FieldDrive<bool>)AccessTools.Field(typeof(ProtoFluxNodeVisual), "_overviewVisual").GetValue(__instance);
-                            //	fieldDrive.Target.Changed += (iChangeable) => RefreshNodeColor(GetNodeInfoForNode(node));
-                            //}
-                            //var headerImage = GetAppropriateImageForNode(node, overviewEnabled);
-                            var headerImage = GetHeaderImageForNode(node);
+							//bool? overviewEnabled = GetOverviewVisualEnabled(node);
+							//if (overviewEnabled != null)
+							//{
+							//	FieldDrive<bool> fieldDrive = (FieldDrive<bool>)AccessTools.Field(typeof(ProtoFluxNodeVisual), "_overviewVisual").GetValue(__instance);
+							//	fieldDrive.Target.Changed += (iChangeable) => RefreshNodeColor(GetNodeInfoForNode(node));
+							//}
+							//var headerImage = GetAppropriateImageForNode(node, overviewEnabled);
+							var headerImage = GetHeaderImageForNode(node);
 							if (headerImage != null)
 							{
 								if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))// || Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))
@@ -611,170 +660,156 @@ namespace ColorMyProtoFlux
 									nodeInfo.headerImageTintField = headerImage.TryGetField<colorX>("Tint");
 								}
 
-                                
-                                if (!__instance.IsNodeValid)
+								if (!__instance.IsNodeValid)
 								{
 									TrySetImageTint(headerImage, Config.GetValue(NODE_ERROR_COLOR));
 								}
 								else
 								{
-                                    TrySetImageTint(headerImage, colorToSet);
-                                }
-                                
-                                
-
-                                //else
-                                //{
-                                //colorX colorToSet;
-
-
-
-                                //if (Config.GetValue(MAKE_CONNECT_POINTS_FULL_ALPHA))
-                                //{
-                                //	// Make the connect points on nodes have full alpha to make it easier to read type information
-                                //	//foreach (Image img in backgroundImage.Slot.GetComponentsInChildren<Image>())
-                                //	//{
-                                //	//	if (img != backgroundImage)
-                                //	//	{
-                                //	//		// nullable types are supposed to have 50% alpha (usually 0.4)
-                                //	//		if (img.Tint.Value.a == 0.8f)
-                                //	//		{
-                                //	//			TrySetImageTint(img, img.Tint.Value.SetA(1f));
-                                //	//		}
-                                //	//		else if (img.Tint.Value.a == 0.4f)
-                                //	//		{
-                                //	//			TrySetImageTint(img, img.Tint.Value.SetA(0.5f));
-                                //	//		}
-                                //	//	}
-                                //	//}
-
-                                //	foreach (Image img in __instance.Slot.FindChild((Slot s) => s.Name == "Overlapping Layout").GetComponentsInChildren<Image>())
-                                //	{
-                                //		TrySetImageTint(img, img.Tint.Value.SetA(1f));
-                                //	}
-                                //}
-
-
-
-
-
-                            }
-                            else
+									TrySetImageTint(headerImage, colorToSet);
+								}
+							}
+							else
 							{
 								Debug("Header image is null");
 								// Node doesn't have a header, need to handle this
 							}
-							if (true)
+							if (Config.GetValue(MAKE_CONNECT_POINTS_FULL_ALPHA))
 							{
-								// set node's text color, there could be multiple text components that need to be colored
-								if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))// || Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))
-								{
-									nodeInfo.otherTextColorFields = new();
-								}
-
-								//if (lvcHasPatches == null)
+								// Make the connect points on nodes have full alpha to make it easier to read type information
+								//foreach (Image img in backgroundImage.Slot.GetComponentsInChildren<Image>())
 								//{
-								//	if (Harmony.HasAnyPatches("Banane9.LogixVisualCustomizer") || Harmony.HasAnyPatches("Banane9, Fro Zen.LogixVisualCustomizer"))
+								//	if (img != backgroundImage)
 								//	{
-								//		lvcHasPatches = true;
-								//		Debug("logixvisualcustomizer found");
-								//	}
-								//	else
-								//	{
-								//		lvcHasPatches = false;
-								//		Debug("logixvisualcustomizer not found");
+								//		// nullable types are supposed to have 50% alpha (usually 0.4)
+								//		if (img.Tint.Value.a == 0.8f)
+								//		{
+								//			TrySetImageTint(img, img.Tint.Value.SetA(1f));
+								//		}
+								//		else if (img.Tint.Value.a == 0.4f)
+								//		{
+								//			TrySetImageTint(img, img.Tint.Value.SetA(0.5f));
+								//		}
 								//	}
 								//}
 
-								__instance.RunSynchronously(() =>
+								foreach (Image img in ____inputsRoot.Target?.GetComponentsInChildren<Image>().Concat(____outputsRoot.Target?.GetComponentsInChildren<Image>()))
 								{
-									//foreach (Text text in GetTextForNode(node))
-									//{
-									colorX textColor = GetTextColor(colorToSet);
-
-									foreach (Text text in GetOtherTextListForNode(node))
+									// nullable types should have 0.5 alpha
+									if (img.Tint.Value.a == 0.5f)
 									{
-										if (text != null)
-										{
-											if (Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
-											{
-                                                if (!Config.GetValue(COLOR_HEADER_ONLY))
-                                                {
-                                                    TrySetTextColor(text, textColor);
-                                                }
-                                            }
-
-											if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))// || Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))
-											{
-												if (nodeInfo != null)
-												{
-													nodeInfo.otherTextColorFields.Add(text.TryGetField<colorX>("Color"));
-												}
-												else
-												{
-													NodeInfoRemove(nodeInfo);
-												}
-											}
-										}
-									}
-									var categoryText = GetCategoryTextForNode(node);
-									if (categoryText != null)
+                                        
+                                        TrySetImageTint(img, (img.Tint.Value / 1.5f).SetA(0.5f));
+                                    }
+									else
 									{
-										if (Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
-										{
-                                            if (!Config.GetValue(COLOR_HEADER_ONLY))
-                                            {
-                                                TrySetTextColor(categoryText, ComputeCategoryTextColor(textColor));
-                                            }
-                                        }
-
-										if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))// || Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))
-										{
-											if (nodeInfo != null)
-											{
-												//nodeInfo.textFields.Add(text.TryGetField<colorX>("Color"));
-												nodeInfo.categoryTextColorField = categoryText.TryGetField<colorX>("Color");
-											}
-											else
-											{
-												NodeInfoRemove(nodeInfo);
-											}
-										}
-									}
-									var nodeNameText = GetNodeNameTextForNode(node);
-									if (nodeNameText != null)
-									{
-										if (Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
-										{
-                                            TrySetTextColor(nodeNameText, textColor);
-                                        }
-
-										if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))// || Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))
-										{
-											if (nodeInfo != null)
-											{
-												//nodeInfo.textFields.Add(text.TryGetField<colorX>("Color"));
-												nodeInfo.nodeNameTextColorField = nodeNameText.TryGetField<colorX>("Color");
-											}
-											else
-											{
-												NodeInfoRemove(nodeInfo);
-											}
-										}
-									}
-								});
+                                        TrySetImageTint(img, (img.Tint.Value / 1.5f).SetA(1f));
+                                    }
+								}
+							}
+							// set node's text color, there could be multiple text components that need to be colored
+							if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))// || Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))
+							{
+								nodeInfo.otherTextColorFields = new();
 							}
 
-                            TrySetSlotTag(root, COLOR_SET_TAG);
+							//if (lvcHasPatches == null)
+							//{
+							//	if (Harmony.HasAnyPatches("Banane9.LogixVisualCustomizer") || Harmony.HasAnyPatches("Banane9, Fro Zen.LogixVisualCustomizer"))
+							//	{
+							//		lvcHasPatches = true;
+							//		Debug("logixvisualcustomizer found");
+							//	}
+							//	else
+							//	{
+							//		lvcHasPatches = false;
+							//		Debug("logixvisualcustomizer not found");
+							//	}
+							//}
 
-                            if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))// || Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))
-                            {
-                                nodeInfoSet.Add(nodeInfo);
-                                Debug("NodeInfo added. New size of nodeInfoSet: " + nodeInfoSet.Count.ToString());
-                            }
+							__instance.RunSynchronously(() =>
+							{
+
+								foreach (Text text in GetOtherTextListForNode(node))
+								{
+									if (text != null)
+									{
+										if (Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
+										{
+                                            TrySetTextColor(text, GetTextColor(GetBackgroundColorOfText(text)));
+                                        }
+
+										if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))// || Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))
+										{
+											if (nodeInfo != null)
+											{
+												nodeInfo.otherTextColorFields.Add(text.TryGetField<colorX>("Color"));
+											}
+											else
+											{
+												NodeInfoRemove(nodeInfo);
+											}
+										}
+									}
+								}
+
+                                colorX textColor = GetTextColor(colorToSet);
+
+                                var categoryText = GetCategoryTextForNode(node);
+								if (categoryText != null)
+								{
+									if (Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
+									{
+                                        TrySetTextColor(categoryText, ComputeCategoryTextColor(textColor));
+                                    }
+
+									if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))// || Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))
+									{
+										if (nodeInfo != null)
+										{
+											//nodeInfo.textFields.Add(text.TryGetField<colorX>("Color"));
+											nodeInfo.categoryTextColorField = categoryText.TryGetField<colorX>("Color");
+										}
+										else
+										{
+											NodeInfoRemove(nodeInfo);
+										}
+									}
+								}
+
+								var nodeNameText = GetNodeNameTextForNode(node);
+								if (nodeNameText != null)
+								{
+									if (Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
+									{
+										TrySetTextColor(nodeNameText, textColor);
+									}
+
+									if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))// || Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))
+									{
+										if (nodeInfo != null)
+										{
+											//nodeInfo.textFields.Add(text.TryGetField<colorX>("Color"));
+											nodeInfo.nodeNameTextColorField = nodeNameText.TryGetField<colorX>("Color");
+										}
+										else
+										{
+											NodeInfoRemove(nodeInfo);
+										}
+									}
+								}
+							});
+
+							TrySetSlotTag(root, COLOR_SET_TAG);
+
+							if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))// || Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))
+							{
+								nodeInfoSet.Add(nodeInfo);
+								Debug("NodeInfo added. New size of nodeInfoSet: " + nodeInfoSet.Count.ToString());
+							}
 
 							//RefreshNodeColor(nodeInfo); // should be able to refresh without nodeInfo maybe, and be able to pass in a color so it doesn't need to compute it twice
-                        });
+						});
 					}
 				}
 			}

@@ -6,6 +6,7 @@ using Elements.Core;
 using System;
 using System.Linq;
 using ProtoFlux.Core;
+using FrooxEngine.UIX;
 
 namespace ColorMyProtoFlux
 {
@@ -70,7 +71,7 @@ namespace ColorMyProtoFlux
 		private static bool ShouldColorCategoryTextOrOtherText()
 		{
 			if (Config.GetValue(MOD_ENABLED) == true &&
-				Config.GetValue(COLOR_HEADER_ONLY) == false &&
+				//Config.GetValue(COLOR_HEADER_ONLY) == false &&
 				(Config.GetValue(ENABLE_TEXT_CONTRAST) == true || Config.GetValue(USE_STATIC_TEXT_COLOR) == true)) return true;
 			return false;
 		}
@@ -85,7 +86,7 @@ namespace ColorMyProtoFlux
 		private static colorX ComputeCategoryTextColor(colorX regularTextColor)
 		{
 			// 0.25f lerp here maybe???
-			return MathX.LerpUnclamped(regularTextColor, regularTextColor == colorX.Black ? colorX.White : colorX.Black, 0.25f);
+			return MathX.LerpUnclamped(regularTextColor, regularTextColor == colorX.Black ? colorX.White : colorX.Black, 0.5f);
         }
 
 		// might need to add handling here for if headerOnly mode is enabled
@@ -109,7 +110,9 @@ namespace ColorMyProtoFlux
                         {
 							if (ShouldColorCategoryTextOrOtherText())
 							{
-                                if (field.Value != c) field.Value = c;
+								//TrySetTextColor(text, GetTextColor(GetBackgroundColorOfText(text)));
+								colorX colorToSet = GetTextColor(GetBackgroundColorOfText(field.Parent as Text));
+                                if (field.Value != colorToSet) field.Value = colorToSet;
                             }
 							else
 							{

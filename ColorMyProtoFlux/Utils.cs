@@ -142,7 +142,31 @@ namespace ColorMyProtoFlux
 			}
 		}
 
-		private static ProtoFluxNodeVisual GetNodeVisual(ProtoFluxNode node)
+        private static colorX GetBackgroundColorOfText(Text t)
+        {
+            if (t.Slot.Parent?.Name == "Image")
+            {
+                var img = t.Slot.Parent?.GetComponent<Image>();
+                return img.Tint.Value;
+            }
+            else if (t.Slot.Parent?.Parent?.Name == "Panel")
+            {
+                var visual = t.Slot.GetComponentInParents<ProtoFluxNodeVisual>();
+                if (visual != null)
+                {
+                    //SyncRef<Image> bgImage = (SyncRef<Image>)AccessTools.Field(typeof(ProtoFluxNodeVisual), "_bgImage").GetValue(visual);
+					SyncRef<Image> bgImage = (SyncRef<Image>)visual.TryGetField<Image>("_bgImage");
+                    if (bgImage != null && bgImage.Target != null)
+                    {
+                        return bgImage.Target.Tint.Value;
+                    }
+                }
+            }
+			// If you see pink text, something went wrong :P
+            return colorX.Pink;
+        }
+
+        private static ProtoFluxNodeVisual GetNodeVisual(ProtoFluxNode node)
 		{
 			return node.Slot.GetComponentInChildren<ProtoFluxNodeVisual>();
 
@@ -267,29 +291,29 @@ namespace ColorMyProtoFlux
 			return overviewVisualEnabled?.Target?.Value;
         }
 
-		private static Image GetAppropriateImageForNode(ProtoFluxNode node, bool? overviewEnabled)
-		{
-			if (overviewEnabled == true)
-			{
-				//ExtraDebug("Overview enabled. Getting background image");
-				//return GetBackgroundImageForNode(node);
-				return null;
-			}
-			else if (overviewEnabled == false)
-			{
-				ExtraDebug("Overview disabled. Getting header image");
-				return GetHeaderImageForNode(node);
-			}
-			else
-			{
-				if (GetNodeVisual(node)?.Slot.FindChild("Overview") == null)
-				{
-					ExtraDebug("Node has no overview slot. Getting header image.");
-					return GetHeaderImageForNode(node);
-				}
-				return null;
-			}
-		}
+		//private static Image GetAppropriateImageForNode(ProtoFluxNode node, bool? overviewEnabled)
+		//{
+		//	if (overviewEnabled == true)
+		//	{
+		//		//ExtraDebug("Overview enabled. Getting background image");
+		//		//return GetBackgroundImageForNode(node);
+		//		return null;
+		//	}
+		//	else if (overviewEnabled == false)
+		//	{
+		//		ExtraDebug("Overview disabled. Getting header image");
+		//		return GetHeaderImageForNode(node);
+		//	}
+		//	else
+		//	{
+		//		if (GetNodeVisual(node)?.Slot.FindChild("Overview") == null)
+		//		{
+		//			ExtraDebug("Node has no overview slot. Getting header image.");
+		//			return GetHeaderImageForNode(node);
+		//		}
+		//		return null;
+		//	}
+		//}
 
 		private static List<Text> GetOtherTextListForNode(ProtoFluxNode node)
 		{
