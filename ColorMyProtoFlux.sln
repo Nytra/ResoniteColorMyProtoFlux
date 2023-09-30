@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.4.33122.133
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorMyLogiXNodes", "ColorMyProtoFlux\ColorMyProtoFlux.csproj", "{813EE09C-5408-4382-B4B6-53427B40AC26}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorMyProtoFlux", "ColorMyProtoFlux\ColorMyProtoFlux.csproj", "{813EE09C-5408-4382-B4B6-53427B40AC26}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
