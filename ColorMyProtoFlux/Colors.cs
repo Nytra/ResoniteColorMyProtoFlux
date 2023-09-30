@@ -137,7 +137,8 @@ namespace ColorMyProtoFlux
 			float hue = 0f;
 			float sat = 0f;
 			float val_lightness = 0f;
-			float alpha = 0.8f;
+			//float alpha = 0.8f;
+			float alpha = 1.0f;
 			if (Config.GetValue(USE_NODE_ALPHA))
 			{
 				alpha = Config.GetValue(NODE_ALPHA);
@@ -229,7 +230,8 @@ namespace ColorMyProtoFlux
 			float hue;
 			float sat;
 			float val_lightness;
-			float alpha = 0.8f;
+			//float alpha = 0.8f;
+			float alpha = 1.0f;
 			if (Config.GetValue(USE_NODE_ALPHA))
 			{
 				alpha = Config.GetValue(NODE_ALPHA);
@@ -308,32 +310,35 @@ namespace ColorMyProtoFlux
 			colorX colorToSet = Config.GetValue(NODE_COLOR);
 			rng = null;
 
-			//if (!Config.GetValue(COLOR_RELAY_NODES) && (node.Name.StartsWith("RelayNode") || node.Name.StartsWith("ImpulseRelay")))
-			//{
-			//	// Might need to change this
-			//	if (node.Name.StartsWith("ImpulseRelay"))
-			//	{
-			//		return colorX.Gray;
-			//	}
-			//	else
-			//	{
-			//		colorX cRGB = GetNodeDefaultColor(node);
-			//		ColorHSV colorHSV = new ColorHSV(in cRGB);
-			//		colorHSV.v = ((colorHSV.v > 0.5f) ? (colorHSV.v * 0.5f) : (colorHSV.v * 2f));
-			//		return new colorX(colorHSV.ToRGB());
-			//	}
-			//}
+			ExtraDebug("WorkerCategoryPath: " + GetWorkerCategoryPath(node));
+            ExtraDebug("WorkerCategoryPath onlyTopmost: " + GetWorkerCategoryPath(node, onlyTopmost: true));
 
-			//if (Config.GetValue(USE_DISPLAY_COLOR_OVERRIDE) && (node.Name.StartsWith("Display_") || node.Name == "DisplayImpulse"))
-			//{
-			//	colorToSet = Config.GetValue(DISPLAY_COLOR_OVERRIDE);
-			//}
-			//else if (Config.GetValue(USE_INPUT_COLOR_OVERRIDE) && ShouldColorInputNode(node))
-			//{
-			//	colorToSet = Config.GetValue(INPUT_COLOR_OVERRIDE);
-			//}
-				//if (!Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))
-				if(true)
+            //if (!Config.GetValue(COLOR_RELAY_NODES) && (node.Name.StartsWith("RelayNode") || node.Name.StartsWith("ImpulseRelay")))
+            //{
+            //	// Might need to change this
+            //	if (node.Name.StartsWith("ImpulseRelay"))
+            //	{
+            //		return colorX.Gray;
+            //	}
+            //	else
+            //	{
+            //		colorX cRGB = GetNodeDefaultColor(node);
+            //		ColorHSV colorHSV = new ColorHSV(in cRGB);
+            //		colorHSV.v = ((colorHSV.v > 0.5f) ? (colorHSV.v * 0.5f) : (colorHSV.v * 2f));
+            //		return new colorX(colorHSV.ToRGB());
+            //	}
+            //}
+
+            //if (Config.GetValue(USE_DISPLAY_COLOR_OVERRIDE) && (node.Name.StartsWith("Display_") || node.Name == "DisplayImpulse"))
+            //{
+            //	colorToSet = Config.GetValue(DISPLAY_COLOR_OVERRIDE);
+            //}
+            //else if (Config.GetValue(USE_INPUT_COLOR_OVERRIDE) && ShouldColorInputNode(node))
+            //{
+            //	colorToSet = Config.GetValue(INPUT_COLOR_OVERRIDE);
+            //}
+            //if (!Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))
+            if (true)
 				{
 					string nodeCategoryString;
 					switch (Config.GetValue(NODE_COLOR_MODE))
@@ -342,11 +347,13 @@ namespace ColorMyProtoFlux
 							rng = new System.Random(node.GetType().GetNiceName().BeautifyName().GetHashCode() + Config.GetValue(RANDOM_SEED));
 							break;
 						case NodeColorModeEnum.NodeCategory:
-							nodeCategoryString = GetNodeCategoryString(node.GetType());
+							nodeCategoryString = GetWorkerCategoryPath(node);
+							ExtraDebug("Node category string: " + nodeCategoryString);
 							rng = new System.Random(nodeCategoryString.GetHashCode() + Config.GetValue(RANDOM_SEED));
 							break;
 						case NodeColorModeEnum.TopmostNodeCategory:
-							nodeCategoryString = GetNodeCategoryString(node.GetType(), onlyTopmost: true);
+							nodeCategoryString = GetWorkerCategoryPath(node, onlyTopmost: true);
+							ExtraDebug("Node category string: " + nodeCategoryString);
 							rng = new System.Random(nodeCategoryString.GetHashCode() + Config.GetValue(RANDOM_SEED));
 							break;
 						case NodeColorModeEnum.FullTypeName:

@@ -9,6 +9,8 @@ using ProtoFlux.Core;
 using Mono.Cecil;
 using System.Linq;
 using HarmonyLib;
+using System.Collections.Generic;
+using System.IO;
 
 namespace ColorMyProtoFlux
 {
@@ -58,7 +60,20 @@ namespace ColorMyProtoFlux
 			}
 		}
 
-		private static string GetNodeCategoryString(Type protoFluxType, bool onlyTopmost = false)
+		private static string GetWorkerCategoryPath(ProtoFluxNode node, bool onlyTopmost = false)
+		{
+			string workerCategoryPath = node.WorkerCategoryPath;
+			if (onlyTopmost && workerCategoryPath != null)
+			{
+				return Path.GetFileName(workerCategoryPath);
+			}
+			else
+			{
+				return workerCategoryPath;
+			}
+		}
+
+		private static string GetNodeCategoryCustomAttribute(Type protoFluxType, bool onlyTopmost = false)
 		{
 			Msg("Node type: " + protoFluxType.Name);
 			CategoryAttribute customAttribute = protoFluxType.GetCustomAttribute<CategoryAttribute>();
@@ -130,6 +145,18 @@ namespace ColorMyProtoFlux
 		private static ProtoFluxNodeVisual GetNodeVisual(ProtoFluxNode node)
 		{
 			return node.Slot.GetComponentInChildren<ProtoFluxNodeVisual>();
+
+			// xD
+
+            NodeInfo nodeInfo = GetNodeInfoForNode(node);
+			ProtoFluxNodeVisual visual = nodeInfo?.visual;
+			if (visual != null && !visual.IsDestroyed && !visual.IsDisposed && !visual.IsRemoved)
+			{
+				return visual;
+			}
+			visual = node.Slot.GetComponentInChildren<ProtoFluxNodeVisual>();
+			nodeInfo.visual = visual;
+            return visual;
 		}
 
 		// Probably broken
@@ -217,7 +244,7 @@ namespace ColorMyProtoFlux
 		private static Image GetHeaderImageForNode(ProtoFluxNode node)
 		{
 			ProtoFluxNodeVisual nodeVisual = GetNodeVisual(node);
-			var imageSlot = nodeVisual?.Slot.GetComponentInChildren<Text>((Text t) => t.Content == node.NodeName && t.Slot.Name == "Text" && t.Slot.Parent.Name == "Image").Slot.Parent;
+			var imageSlot = nodeVisual?.Slot.GetComponentInChildren<Text>((Text t) => t.Content == node.NodeName && t.Slot.Name == "Text" && t.Slot.Parent.Name == "Image")?.Slot.Parent;
 			if (imageSlot != null)
 			{
 				return imageSlot.GetComponent<Image>();
@@ -264,12 +291,19 @@ namespace ColorMyProtoFlux
 			}
 		}
 
-		//private static List<Text> GetTextListForNode(ProtoFluxNode node)
-		//{
-		//	return GetNodeVisual(node)?.Slot.GetComponentsInChildren<Text>((Text text) => text.Slot.Name == "Text" && (text.Slot.Parent.Name == "Vertical Layout" || text.Slot.Parent.Name == "Horizontal Layout" || text.Slot.Parent.Name == "TextPadding"));
-		//}
+		private static List<Text> GetOtherTextListForNode(ProtoFluxNode node)
+		{
+			string category = GetWorkerCategoryPath(node, onlyTopmost: true);
+            return GetNodeVisual(node)?.Slot.GetComponentsInChildren<Text>((Text text) => text.Content != category && text.Content != node.NodeName && text.Slot.Parent?.Name != "Button");
+		}
 
-		private static Text GetTextForNode(ProtoFluxNode node)
+		private static Text GetCategoryTextForNode(ProtoFluxNode node)
+		{
+            string category = GetWorkerCategoryPath(node, onlyTopmost: true);
+            return GetNodeVisual(node)?.Slot.GetComponentInChildren<Text>((Text text) => text.Content == category);
+        }
+
+		private static Text GetNodeNameTextForNode(ProtoFluxNode node)
 		{
 			var text = GetNodeVisual(node)?.Slot.GetComponentInChildren<Text>((Text t) => t.Content == node.NodeName && t.Slot.Name == "Text");
 			return text;

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using Elements.Core;
 using System;
 using System.Linq;
+using ProtoFlux.Core;
 
 namespace ColorMyProtoFlux
 {
@@ -13,9 +14,11 @@ namespace ColorMyProtoFlux
 		public class NodeInfo
 		{
 			public ProtoFluxNode node;
-			public IField<colorX> bgField;
-			//public HashSet<IField<colorX>> textFields;
-			public IField<colorX> textField;
+			public IField<colorX> headerImageTintField;
+			public HashSet<IField<colorX>> otherTextColorFields;
+			public ProtoFluxNodeVisual visual;
+			public IField<colorX> categoryTextColorField;
+			public IField<colorX> nodeNameTextColorField;
 		}
 
 		//public class RefDriverNodeInfo
@@ -44,18 +47,18 @@ namespace ColorMyProtoFlux
 		//	}
 		//}
 
-		private static void NodeInfoSetBgColor(NodeInfo nodeInfo, colorX c)
+		private static void NodeInfoSetHeaderBgColor(NodeInfo nodeInfo, colorX c)
 		{
 			NodeInfo outNodeInfo = null;
 			if (nodeInfoSet.TryGetValue(nodeInfo, out outNodeInfo))
 			{
-				if (outNodeInfo.bgField.IsRemoved)
+				if (outNodeInfo.headerImageTintField.IsRemoved)
 				{
 					NodeInfoRemove(nodeInfo);
 				}
 				else
 				{
-					if (outNodeInfo.bgField.Value != c) outNodeInfo.bgField.Value = c;
+					if (outNodeInfo.headerImageTintField.Value != c) outNodeInfo.headerImageTintField.Value = c;
 				}
 			}
 			else
@@ -64,27 +67,96 @@ namespace ColorMyProtoFlux
 			}
 		}
 
-		private static void NodeInfoSetTextColor(NodeInfo nodeInfo, colorX c)
+		private static bool ShouldColorCategoryTextOrOtherText()
+		{
+			if (Config.GetValue(MOD_ENABLED) == true &&
+				Config.GetValue(COLOR_HEADER_ONLY) == false &&
+				(Config.GetValue(ENABLE_TEXT_CONTRAST) == true || Config.GetValue(USE_STATIC_TEXT_COLOR) == true)) return true;
+			return false;
+		}
+
+		private static bool ShouldColorNodeNameText()
+		{
+            if (Config.GetValue(MOD_ENABLED) == true &&
+                (Config.GetValue(ENABLE_TEXT_CONTRAST) == true || Config.GetValue(USE_STATIC_TEXT_COLOR) == true)) return true;
+            return false;
+        }
+
+		private static colorX ComputeCategoryTextColor(colorX regularTextColor)
+		{
+			// 0.25f lerp here maybe???
+			return MathX.LerpUnclamped(regularTextColor, regularTextColor == colorX.Black ? colorX.White : colorX.Black, 0.25f);
+        }
+
+		// might need to add handling here for if headerOnly mode is enabled
+		private static void SetTextColorForNode(NodeInfo nodeInfo, colorX c)
 		{
 			NodeInfo outNodeInfo = null;
 			if (nodeInfoSet.TryGetValue(nodeInfo, out outNodeInfo))
 			{
-                //foreach (IField<colorX> field in outNodeInfo.textFields)
-                //{
+				// default text color = radiant UI constants.NEUTRALS.light
+                if (outNodeInfo.otherTextColorFields != null)
+                {
+                    foreach (IField<colorX> field in outNodeInfo.otherTextColorFields)
+                    {
 
-                //}
-				if (outNodeInfo.textField == null)
-				{
-					return;
-				}
-                if (outNodeInfo.textField.IsRemoved)
-                {
-                    NodeInfoRemove(nodeInfo);
-                    return;
+                        if (field.IsRemoved)
+                        {
+                            NodeInfoRemove(nodeInfo);
+                            return;
+                        }
+                        else
+                        {
+							if (ShouldColorCategoryTextOrOtherText())
+							{
+                                if (field.Value != c) field.Value = c;
+                            }
+							else
+							{
+								if (field.Value != RadiantUI_Constants.Neutrals.LIGHT) field.Value = RadiantUI_Constants.Neutrals.LIGHT;
+							}
+                        }
+                    }
                 }
-                else
+				// category text should be dark grey by default
+				if (outNodeInfo.categoryTextColorField != null)
+				{
+                    if (outNodeInfo.categoryTextColorField.IsRemoved)
+                    {
+                        NodeInfoRemove(nodeInfo);
+                        return;
+                    }
+                    else
+                    {
+						if (ShouldColorCategoryTextOrOtherText())
+						{
+							colorX categoryTextColor = ComputeCategoryTextColor(c);
+                            if (outNodeInfo.categoryTextColorField.Value != categoryTextColor) outNodeInfo.categoryTextColorField.Value = categoryTextColor;
+                        }
+                        else
+						{
+							if (outNodeInfo.categoryTextColorField.Value != colorX.DarkGray) outNodeInfo.categoryTextColorField.Value = colorX.DarkGray;
+						}
+                    }
+                }
+                if (outNodeInfo.nodeNameTextColorField != null)
                 {
-                    if (outNodeInfo.textField.Value != c) outNodeInfo.textField.Value = c;
+                    if (outNodeInfo.nodeNameTextColorField.IsRemoved)
+                    {
+                        NodeInfoRemove(nodeInfo);
+                        return;
+                    }
+                    else
+                    {
+						if (ShouldColorNodeNameText())
+						{
+                            if (outNodeInfo.nodeNameTextColorField.Value != c) outNodeInfo.nodeNameTextColorField.Value = c;
+                        }
+                        else
+						{
+							if (outNodeInfo.nodeNameTextColorField.Value != RadiantUI_Constants.Neutrals.LIGHT) outNodeInfo.nodeNameTextColorField.Value = RadiantUI_Constants.Neutrals.LIGHT;
+						}
+                    }
                 }
             }
 			else
@@ -138,9 +210,11 @@ namespace ColorMyProtoFlux
 			NodeInfo outNodeInfo = null;
 			nodeInfoSet.TryGetValue(nodeInfo, out outNodeInfo);
 			outNodeInfo.node = null;
-			outNodeInfo.bgField = null;
-			outNodeInfo.textField = null;
-			if (nodeInfoSet.Remove(nodeInfo))
+			outNodeInfo.headerImageTintField = null;
+			outNodeInfo.otherTextColorFields = null;
+			outNodeInfo.categoryTextColorField = null;
+            outNodeInfo.visual = null;
+            if (nodeInfoSet.Remove(nodeInfo))
 			{
 				Debug("NodeInfo removed. New size of nodeInfoSet: " + nodeInfoSet.Count.ToString());
 			}
@@ -165,6 +239,11 @@ namespace ColorMyProtoFlux
 			}
 		}
 
+		private static NodeInfo GetNodeInfoFromVisual(ProtoFluxNodeVisual visual)
+        {
+			return nodeInfoSet.FirstOrDefault(nodeInfo => nodeInfo.visual == visual) ?? nullNodeInfo;
+        }
+
 		//private static void TryTrimExcessRefDriverNodeInfo()
 		//{
 		//	try
@@ -182,8 +261,10 @@ namespace ColorMyProtoFlux
 			foreach (NodeInfo nodeInfo in nodeInfoSet)
 			{
 				nodeInfo.node = null;
-				nodeInfo.bgField = null;
-				nodeInfo.textField = null;
+				nodeInfo.headerImageTintField = null;
+				nodeInfo.otherTextColorFields = null;
+				nodeInfo.categoryTextColorField = null;
+				nodeInfo.visual = null;
 			}
 			nodeInfoSet.Clear();
 			TryTrimExcessNodeInfo();
