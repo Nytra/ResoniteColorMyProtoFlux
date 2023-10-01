@@ -60,110 +60,160 @@ namespace ColorMyProtoFlux
 			}
 		}
 
-		private static string GetWorkerCategoryPath(ProtoFluxNode node, bool onlyTopmost = false)
+		private static string GetWorkerCategoryFilePath(ProtoFluxNode node)
 		{
 			string workerCategoryPath = node.WorkerCategoryPath;
-			if (onlyTopmost && workerCategoryPath != null)
+			if (workerCategoryPath != null)
 			{
 				return Path.GetFileName(workerCategoryPath);
 			}
-			else
-			{
-				return workerCategoryPath;
-			}
+			return workerCategoryPath;
 		}
 
-		private static string GetNodeCategoryCustomAttribute(Type protoFluxType, bool onlyTopmost = false)
+		private static string GetWorkerCategoryPath(ProtoFluxNode node, bool onlyTopmost = false)
 		{
-			Msg("Node type: " + protoFluxType.Name);
-			CategoryAttribute customAttribute = protoFluxType.GetCustomAttribute<CategoryAttribute>();
-			//odeCategoryAttribute customAttribute = null;//(NodeCategoryAttribute)Attribute.GetCustomAttribute(protoFluxType, true);
-			//object[] atrributes = protoFluxType.GetCustomAttributes(true);
-			//Msg("Listing attributes...");
-			//foreach (object obj in atrributes)
-			//{
-			//	try
-			//	{
-			//		Msg(obj.GetType().Name);
-			//	}
-			//	catch
-			//	{
-			//		Msg("ERROR! Something went wrong while printing type of object.");
-			//	}
-			//}
-			if (customAttribute == null)
+			// onlyTopmost should return the first part after 'Nodes'
+			string workerCategoryPath = node.WorkerCategoryPath;
+            if (onlyTopmost && workerCategoryPath != null)
 			{
-				Msg("customAttribute is null!");
-				return "";
-			}
-			else
-			{
-				Msg("Custom attribute is not null!");
-				string categoryName = customAttribute.Paths.Length > 0 ? customAttribute.Paths[0] : "";
-				Msg("Node category name: " + categoryName);
-				if (!string.IsNullOrWhiteSpace(categoryName))
+                List<string> parts = workerCategoryPath.Split('/')?.ToList();
+                int i = parts.IndexOf("Nodes");
+				if (i != -1)
 				{
-					if (onlyTopmost)
+					if (parts.Count > i+1)
 					{
-						string[] parts = categoryName.Split('/');
-						if (parts.Length > 1)
-						{
-							if (Config.GetValue(ALTERNATE_CATEGORY_STRING))
-							{
-								return parts[1];
-							}
-							else
-							{
-								return parts[0] + "/" + parts[1];
-							}
-						}
-						else
-						{
-							return parts[0];
-						}
+						return parts[i + 1];
 					}
 					else
 					{
-						if (Config.GetValue(ALTERNATE_CATEGORY_STRING))
-						{
-							string[] parts = categoryName.Split('/');
-							return parts[parts.Length - 1];
-						}
-						else
-						{
-							return categoryName;
-						}
+						return parts[i];
 					}
 				}
-				else
-				{
-					return "";
-				}
 			}
-		}
+			else
+			{
+				if (Config.GetValue(ALTERNATE_CATEGORY_STRING))
+				{
+					return GetWorkerCategoryFilePath(node);
+                }
+			}
+            return workerCategoryPath;
+        }
+
+		//private static string GetNodeCategoryCustomAttribute(Type protoFluxType, bool onlyTopmost = false)
+		//{
+		//	Msg("Node type: " + protoFluxType.Name);
+		//	CategoryAttribute customAttribute = protoFluxType.GetCustomAttribute<CategoryAttribute>();
+		//	//odeCategoryAttribute customAttribute = null;//(NodeCategoryAttribute)Attribute.GetCustomAttribute(protoFluxType, true);
+		//	//object[] atrributes = protoFluxType.GetCustomAttributes(true);
+		//	//Msg("Listing attributes...");
+		//	//foreach (object obj in atrributes)
+		//	//{
+		//	//	try
+		//	//	{
+		//	//		Msg(obj.GetType().Name);
+		//	//	}
+		//	//	catch
+		//	//	{
+		//	//		Msg("ERROR! Something went wrong while printing type of object.");
+		//	//	}
+		//	//}
+		//	if (customAttribute == null)
+		//	{
+		//		Msg("customAttribute is null!");
+		//		return "";
+		//	}
+		//	else
+		//	{
+		//		Msg("Custom attribute is not null!");
+		//		string categoryName = customAttribute.Paths.Length > 0 ? customAttribute.Paths[0] : "";
+		//		Msg("Node category name: " + categoryName);
+		//		if (!string.IsNullOrWhiteSpace(categoryName))
+		//		{
+		//			if (onlyTopmost)
+		//			{
+		//				string[] parts = categoryName.Split('/');
+		//				if (parts.Length > 1)
+		//				{
+		//					if (Config.GetValue(ALTERNATE_CATEGORY_STRING))
+		//					{
+		//						return parts[1];
+		//					}
+		//					else
+		//					{
+		//						return parts[0] + "/" + parts[1];
+		//					}
+		//				}
+		//				else
+		//				{
+		//					return parts[0];
+		//				}
+		//			}
+		//			else
+		//			{
+		//				if (Config.GetValue(ALTERNATE_CATEGORY_STRING))
+		//				{
+		//					string[] parts = categoryName.Split('/');
+		//					return parts[parts.Length - 1];
+		//				}
+		//				else
+		//				{
+		//					return categoryName;
+		//				}
+		//			}
+		//		}
+		//		else
+		//		{
+		//			return "";
+		//		}
+		//	}
+		//}
 
         private static colorX GetBackgroundColorOfText(Text t)
         {
-            if (t.Slot.Parent?.Name == "Image")
+            if (t.Slot.Parent?.Name == "Image" || t.Slot.Parent?.Name == "Button")
             {
+				//Debug("Image or Button");
                 var img = t.Slot.Parent?.GetComponent<Image>();
+				Debug("Text background color (Connection or button): " + img.Tint.Value.ToString());
                 return img.Tint.Value;
             }
-            else if (t.Slot.Parent?.Parent?.Name == "Panel")
+            //        else if (t.Slot.Parent?.Parent?.Name == "Panel")
+            //        {
+            //Debug("Panel");
+            //            var visual = t.Slot.GetComponentInParents<ProtoFluxNodeVisual>();
+            //            if (visual != null)
+            //            {
+            //	//SyncRef<Image> bgImage = (SyncRef<Image>)AccessTools.Field(typeof(ProtoFluxNodeVisual), "_bgImage").GetValue(visual);
+            //	//SyncRef<Image> bgImage = (SyncRef<Image>)visual.TryGetField<SyncRef<Image>>("_bgImage");
+            //	colorX c = ComputeColorForProtoFluxNode(visual.Node.Target);
+            //                Debug("Text background color: " + c.ToString());
+            //	return c;
+            //            }
+            //else
+            //{
+            //	Debug("Visual null");
+            //}
+            //        }
+            var visual = t.Slot.GetComponentInParents<ProtoFluxNodeVisual>();
+            if (visual != null && visual.Node.Target != null)
             {
-                var visual = t.Slot.GetComponentInParents<ProtoFluxNodeVisual>();
-                if (visual != null)
-                {
-                    //SyncRef<Image> bgImage = (SyncRef<Image>)AccessTools.Field(typeof(ProtoFluxNodeVisual), "_bgImage").GetValue(visual);
-					SyncRef<Image> bgImage = (SyncRef<Image>)visual.TryGetField<Image>("_bgImage");
-                    if (bgImage != null && bgImage.Target != null)
-                    {
-                        return bgImage.Target.Tint.Value;
-                    }
+				//SyncRef<Image> bgImage = (SyncRef<Image>)AccessTools.Field(typeof(ProtoFluxNodeVisual), "_bgImage").GetValue(visual);
+				//SyncRef<Image> bgImage = (SyncRef<Image>)visual.TryGetField<SyncRef<Image>>("_bgImage");
+				colorX c;
+				if (Config.GetValue(COLOR_HEADER_ONLY))
+				{
+                    c = GetBackgroundImageForNode(visual.Node.Target).Tint.Value;
                 }
+                else
+				{
+                    c = ComputeColorForProtoFluxNode(visual.Node.Target);
+                }
+                Debug("Text background color: " + c.ToString());
+                return c;
             }
-			// If you see pink text, something went wrong :P
-            return colorX.Pink;
+            Debug("Failed. Visual null. Returning white.");
+            return colorX.White;
         }
 
         private static ProtoFluxNodeVisual GetNodeVisual(ProtoFluxNode node)
@@ -279,8 +329,11 @@ namespace ColorMyProtoFlux
 		private static Image GetBackgroundImageForNode(ProtoFluxNode node)
 		{
             ProtoFluxNodeVisual nodeVisual = GetNodeVisual(node);
-			SyncRef<Image> imageSyncRef = (SyncRef<Image>)AccessTools.Field(typeof(ProtoFluxNodeVisual), "_bgImage").GetValue(nodeVisual);
-            return imageSyncRef?.Target;
+			if (nodeVisual == null) return null;
+			//SyncRef<Image> imageSyncRef = (SyncRef<Image>)AccessTools.Field(typeof(ProtoFluxNodeVisual), "_bgImage").GetValue(nodeVisual);
+            //return imageSyncRef?.Target;
+
+			return nodeVisual.Slot.GetComponentInChildren<Image>();
         }
 
 		private static bool? GetOverviewVisualEnabled(ProtoFluxNode node)
@@ -291,64 +344,89 @@ namespace ColorMyProtoFlux
 			return overviewVisualEnabled?.Target?.Value;
         }
 
-		//private static Image GetAppropriateImageForNode(ProtoFluxNode node, bool? overviewEnabled)
-		//{
-		//	if (overviewEnabled == true)
-		//	{
-		//		//ExtraDebug("Overview enabled. Getting background image");
-		//		//return GetBackgroundImageForNode(node);
-		//		return null;
-		//	}
-		//	else if (overviewEnabled == false)
-		//	{
-		//		ExtraDebug("Overview disabled. Getting header image");
-		//		return GetHeaderImageForNode(node);
-		//	}
-		//	else
-		//	{
-		//		if (GetNodeVisual(node)?.Slot.FindChild("Overview") == null)
-		//		{
-		//			ExtraDebug("Node has no overview slot. Getting header image.");
-		//			return GetHeaderImageForNode(node);
-		//		}
-		//		return null;
-		//	}
-		//}
+        //private static List<Text> GetButtonTextListForNode(ProtoFluxNode node)
+        //{
+        //	return GetNodeVisual(node)?.Slot.GetComponentsInChildren<Text>((Text text) => text.IsDriven)
+        //}
+        private static bool ShouldColorNodeNameText(Text t)
+        {
+            if (Config.GetValue(COLOR_HEADER_ONLY) && t.Slot.Parent?.Name == "Overview")
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
 
-		private static List<Text> GetOtherTextListForNode(ProtoFluxNode node)
+
+        private static List<Text> GetOtherTextListForNode(ProtoFluxNode node)
 		{
-			string category = GetWorkerCategoryPath(node, onlyTopmost: true);
-            return GetNodeVisual(node)?.Slot.GetComponentsInChildren<Text>((Text text) => text.Content != category && text.Content != node.NodeName && text.Slot.Parent?.Name != "Button");
+			string category = GetWorkerCategoryFilePath(node);
+            return GetNodeVisual(node)?.Slot.GetComponentsInChildren<Text>((Text text) => text.Content != category && (text.Content != node.NodeName || text.Content.IsDriven) && text.Slot.Parent?.Name != "Button");
 		}
 
 		private static Text GetCategoryTextForNode(ProtoFluxNode node)
 		{
-            string category = GetWorkerCategoryPath(node, onlyTopmost: true);
+            string category = GetWorkerCategoryFilePath(node);
             return GetNodeVisual(node)?.Slot.GetComponentInChildren<Text>((Text text) => text.Content == category);
         }
 
-		private static Text GetNodeNameTextForNode(ProtoFluxNode node)
+		private static List<Text> GetNodeNameTextListForNode(ProtoFluxNode node)
 		{
-			var text = GetNodeVisual(node)?.Slot.GetComponentInChildren<Text>((Text t) => t.Content == node.NodeName && t.Slot.Name == "Text");
-			return text;
+			List<Text> textList = GetNodeVisual(node)?.Slot.GetComponentsInChildren<Text>((Text t) => t.Content == node.NodeName && t.Slot.Name == "Text" && !t.Content.IsDriven);
+			return textList;
 		}
 
-		//private static colorX GetNodeDefaultColor(ProtoFluxNode node)
-		//{
-		//	Type nodeType = node.GetType();
-		//	Type[] genericArgs = nodeType.GetGenericArguments();
+        //private static bool ShouldColorCategoryTextOrOtherText()
+        //{
+        //    if (Config.GetValue(MOD_ENABLED) == true &&
+        //        //Config.GetValue(COLOR_HEADER_ONLY) == false &&
+        //        (Config.GetValue(ENABLE_TEXT_CONTRAST) == true || Config.GetValue(USE_STATIC_TEXT_COLOR) == true)) return true;
+        //    return false;
+        //}
 
-		//	if (genericArgs.Length > 0)
-		//	{
-		//		return genericArgs[0].GetTypeColor();
-		//	}
-		//	else
-		//	{
-		//		return nodeType.GetTypeColor();
-		//	}
-		//}
+        private static bool ShouldColorAnyText()
+        {
+            if (Config.GetValue(MOD_ENABLED) == true &&
+                (Config.GetValue(ENABLE_TEXT_CONTRAST) == true || Config.GetValue(USE_STATIC_TEXT_COLOR) == true)) return true;
+            return false;
+        }
 
-		private static int Clamp(int value, int minValue, int maxValue)
+        private static colorX ComputeCategoryTextColor(colorX regularTextColor)
+        {
+            //return MathX.LerpUnclamped(colorX.Gray, regularTextColor, 0.5f);
+			if (Config.GetValue(COLOR_HEADER_ONLY))
+			{
+				return colorX.DarkGray;
+			}
+			if (regularTextColor == NODE_TEXT_LIGHT_COLOR)
+			{
+				return new colorX(0.75f);
+			}
+			else
+			{
+				return new colorX(0.25f);
+			}
+        }
+
+        //private static colorX GetNodeDefaultColor(ProtoFluxNode node)
+        //{
+        //	Type nodeType = node.GetType();
+        //	Type[] genericArgs = nodeType.GetGenericArguments();
+
+        //	if (genericArgs.Length > 0)
+        //	{
+        //		return genericArgs[0].GetTypeColor();
+        //	}
+        //	else
+        //	{
+        //		return nodeType.GetTypeColor();
+        //	}
+        //}
+
+        private static int Clamp(int value, int minValue, int maxValue)
 		{
 			return Math.Min(Math.Max(value, minValue), maxValue);
 		}

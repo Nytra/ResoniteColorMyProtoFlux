@@ -19,7 +19,9 @@ namespace ColorMyProtoFlux
 			public HashSet<IField<colorX>> otherTextColorFields;
 			public ProtoFluxNodeVisual visual;
 			public IField<colorX> categoryTextColorField;
-			public IField<colorX> nodeNameTextColorField;
+			public HashSet<IField<colorX>> nodeNameTextColorFields;
+			//public HashSet<Button> nodeButtons;
+			// dont need to store node background image because the UpdateNodeStatus patch handles coloring of that part
 		}
 
 		//public class RefDriverNodeInfo
@@ -68,27 +70,6 @@ namespace ColorMyProtoFlux
 			}
 		}
 
-		private static bool ShouldColorCategoryTextOrOtherText()
-		{
-			if (Config.GetValue(MOD_ENABLED) == true &&
-				//Config.GetValue(COLOR_HEADER_ONLY) == false &&
-				(Config.GetValue(ENABLE_TEXT_CONTRAST) == true || Config.GetValue(USE_STATIC_TEXT_COLOR) == true)) return true;
-			return false;
-		}
-
-		private static bool ShouldColorNodeNameText()
-		{
-            if (Config.GetValue(MOD_ENABLED) == true &&
-                (Config.GetValue(ENABLE_TEXT_CONTRAST) == true || Config.GetValue(USE_STATIC_TEXT_COLOR) == true)) return true;
-            return false;
-        }
-
-		private static colorX ComputeCategoryTextColor(colorX regularTextColor)
-		{
-			// 0.25f lerp here maybe???
-			return MathX.LerpUnclamped(regularTextColor, regularTextColor == colorX.Black ? colorX.White : colorX.Black, 0.5f);
-        }
-
 		// might need to add handling here for if headerOnly mode is enabled
 		private static void SetTextColorForNode(NodeInfo nodeInfo, colorX c)
 		{
@@ -108,14 +89,27 @@ namespace ColorMyProtoFlux
                         }
                         else
                         {
-							if (ShouldColorCategoryTextOrOtherText())
+							if (ShouldColorAnyText())
 							{
 								//TrySetTextColor(text, GetTextColor(GetBackgroundColorOfText(text)));
-								colorX colorToSet = GetTextColor(GetBackgroundColorOfText(field.Parent as Text));
-                                if (field.Value != colorToSet) field.Value = colorToSet;
+								Text text = field.Parent as Text;
+								if (text != null)
+								{
+                                    colorX colorToSet = GetTextColor(GetBackgroundColorOfText(text));
+                                    Button b = text.Slot.GetComponent<Button>();
+                                    if (b != null)
+                                    {
+                                        b.SetColors(colorToSet);
+                                    }
+                                    else
+                                    {
+                                        if (field.Value != colorToSet) field.Value = colorToSet;
+                                    }
+                                }
                             }
 							else
 							{
+								// Neutrals.Light is Resonite default
 								if (field.Value != RadiantUI_Constants.Neutrals.LIGHT) field.Value = RadiantUI_Constants.Neutrals.LIGHT;
 							}
                         }
@@ -131,34 +125,40 @@ namespace ColorMyProtoFlux
                     }
                     else
                     {
-						if (ShouldColorCategoryTextOrOtherText())
+						if (ShouldColorAnyText())
 						{
 							colorX categoryTextColor = ComputeCategoryTextColor(c);
                             if (outNodeInfo.categoryTextColorField.Value != categoryTextColor) outNodeInfo.categoryTextColorField.Value = categoryTextColor;
                         }
                         else
 						{
+							// Resonite default
 							if (outNodeInfo.categoryTextColorField.Value != colorX.DarkGray) outNodeInfo.categoryTextColorField.Value = colorX.DarkGray;
 						}
                     }
                 }
-                if (outNodeInfo.nodeNameTextColorField != null)
+                if (outNodeInfo.nodeNameTextColorFields != null)
                 {
-                    if (outNodeInfo.nodeNameTextColorField.IsRemoved)
-                    {
-                        NodeInfoRemove(nodeInfo);
-                        return;
-                    }
-                    else
-                    {
-						if (ShouldColorNodeNameText())
-						{
-                            if (outNodeInfo.nodeNameTextColorField.Value != c) outNodeInfo.nodeNameTextColorField.Value = c;
+					foreach (IField<colorX> field in outNodeInfo.nodeNameTextColorFields)
+					{
+                        if (field.IsRemoved)
+                        {
+                            NodeInfoRemove(nodeInfo);
+                            return;
                         }
                         else
-						{
-							if (outNodeInfo.nodeNameTextColorField.Value != RadiantUI_Constants.Neutrals.LIGHT) outNodeInfo.nodeNameTextColorField.Value = RadiantUI_Constants.Neutrals.LIGHT;
-						}
+                        {
+                            if (ShouldColorAnyText() && ShouldColorNodeNameText(field.Parent as Text))
+                            {
+                                if (field.Value != c) field.Value = c;
+                                //TrySetNodeNameTextColor(field.Parent as Text, c);
+                            }
+                            else
+                            {
+								// Resonite default
+                                if (field.Value != RadiantUI_Constants.Neutrals.LIGHT) field.Value = RadiantUI_Constants.Neutrals.LIGHT;
+                            }
+                        }
                     }
                 }
             }
