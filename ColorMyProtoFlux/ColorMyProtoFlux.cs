@@ -11,6 +11,7 @@ using System.Threading;
 using System.Linq;
 using System;
 using static ColorMyProtoFlux.ColorMyProtoFlux;
+using System.ComponentModel.Design;
 
 #if DEBUG
 
@@ -135,9 +136,9 @@ namespace ColorMyProtoFlux
 		private static ModConfigurationKey<bool> UPDATE_NODES_ON_CONFIG_CHANGED = new ModConfigurationKey<bool>("UPDATE_NODES_ON_CONFIG_CHANGED", "Automatically update the color of standard nodes when your mod config changes:", () => false);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_5_1_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_5_1_1", $"<color={DETAIL_TEXT_COLOR}><i>Uses some extra memory and CPU for every standard node</i></color>", () => new dummy());
-        [AutoRegisterConfigKey]
-        private static ModConfigurationKey<dummy> DUMMY_SEP_5_1_2 = new ModConfigurationKey<dummy>("DUMMY_SEP_5_1_2", $"<color={DETAIL_TEXT_COLOR}><i>Only applies to nodes created after this option was enabled</i></color>", () => new dummy());
-        [AutoRegisterConfigKey]
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<dummy> DUMMY_SEP_5_1_2 = new ModConfigurationKey<dummy>("DUMMY_SEP_5_1_2", $"<color={DETAIL_TEXT_COLOR}><i>Only applies to nodes created after this option was enabled</i></color>", () => new dummy());
+		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_5_2 = new ModConfigurationKey<dummy>("DUMMY_SEP_5_2", SEP_STRING, () => new dummy());
 		//[AutoRegisterConfigKey]
 		//private static ModConfigurationKey<bool> AUTO_UPDATE_REF_AND_DRIVER_NODES = new ModConfigurationKey<bool>("AUTO_UPDATE_REF_AND_DRIVER_NODES", "Automatically update the color of reference and driver nodes when their targets change:", () => true);
@@ -412,13 +413,16 @@ namespace ColorMyProtoFlux
 
 						//Msg("Refreshing node color in config changed.");
 
+						
+
 						nodeInfo.node.RunSynchronously(() =>
 						{
+							visualSlot.GetComponent((ValueField<bool> b) => b.UpdateOrder == 1).Value.Value = Config.GetValue(COLOR_HEADER_ONLY);
 							GetNodeVisual(nodeInfo.node).UpdateNodeStatus();
 						});
 
-                        RefreshNodeColor(nodeInfo);
-                    }
+						RefreshNodeColor(nodeInfo);
+					}
 				}
 			};
 		}
@@ -566,56 +570,125 @@ namespace ColorMyProtoFlux
 		//	}
 		//}
 
+		private static void UndriveNodeVisuals(SyncRef<Image> bgImageSyncRef, FieldDrive<colorX> overviewBgFieldDrive)
+		{
+			bgImageSyncRef.Target = null;
+			overviewBgFieldDrive.Target = null;
+		}
+
+		private static void DriveNodeVisuals(SyncRef<Image> bgImageSyncRef, FieldDrive<colorX> overviewBgFieldDrive, Image bgImage, IField<colorX> overviewBg)
+		{
+			bgImageSyncRef.Target = bgImage;
+			overviewBgFieldDrive.Target = overviewBg;
+		}
+
 		[HarmonyPatch(typeof(ProtoFluxNodeVisual))]
 		[HarmonyPatch("UpdateNodeStatus")]
 		class Patch_ProtoFluxNodeVisual_UpdateNodeStatus
 		{
-			static bool Prefix(ProtoFluxNodeVisual __instance, SyncRef<Image> ____bgImage, FieldDrive<colorX> ____overviewBg)
+			static void Postfix(ProtoFluxNodeVisual __instance, SyncRef<Image> ____bgImage, FieldDrive<colorX> ____overviewBg, FieldDrive<bool> ____overviewVisual)
 			{
 
-				if (!Config.GetValue(MOD_ENABLED)) return true;
+				// if this node visual does not belong to LocalUser, skip this patch
+				if (__instance.ReferenceID.User != __instance.LocalUser.AllocationID) return;
 
-				if (Config.GetValue(COLOR_HEADER_ONLY)) return true;
+				// so maybe in the case that the mod doesn't run this patch, it should put the drives back and then let the original code run instead
 
-				if (__instance.ReferenceID.User != __instance.LocalUser.AllocationID) return true;
+				//bool resetRefs = false;
+
+				if (!Config.GetValue(MOD_ENABLED)) return;
+
+				//if (Config.GetValue(COLOR_HEADER_ONLY)) return;
+
+				// can skip resetting refs now
 
 				//if (__instance.World != Engine.Current.WorldManager.FocusedWorld) return true; // just in case
 
-				Image bgImage = GetBackgroundImageForNode(__instance.Node);
+				// This patch probably needs to be rewritten
 
-				if (bgImage == null && !____overviewBg.IsLinkValid) return true;
-
-                //colorX a = RadiantUI_Constants.BG_COLOR;
-                colorX a = ComputeColorForProtoFluxNode(__instance.Node.Target);
-                if (__instance.IsSelected.Value)
-                {
-                    colorX b = colorX.Cyan;
-                    a = MathX.LerpUnclamped(in a, in b, 0.5f);
-                }
-                if (__instance.IsHighlighted.Value)
-                {
-                    //colorX b = colorX.Yellow;
-                    //colorX b = MathX.LerpUnclamped(a, GetTextColor(a), 0.5f);
-                    colorX b = GetTextColor(a);
-                    a = MathX.LerpUnclamped(in a, in b, 0.25f);
-                }
-                if (!__instance.IsNodeValid)
-                {
-                    //colorX b = colorX.Red;
-                    colorX b = Config.GetValue(NODE_ERROR_COLOR);
-                    a = MathX.LerpUnclamped(in a, in b, 0.5f);
-                    RefreshNodeColor(GetNodeInfoFromVisual(__instance));
-                }
-				if (bgImage != null)
+				if (____bgImage.Target != null && (____overviewVisual.Target == null && ____overviewBg.Target != null))
 				{
-                    bgImage.Tint.Value = a;
-                }
-                if (____overviewBg.IsLinkValid)
-                {
-                    ____overviewBg.Target.Value = a;
-                }
+					return;
+				}
 
-                return false;
+				Image bgImage = GetBackgroundImageForNode(__instance.Node.Target);
+				Slot overviewSlot = (Slot)____overviewVisual.Target?.Parent;
+				Image overviewBg = overviewSlot?.GetComponent<Image>();
+
+				if (overviewSlot != null)
+				{
+					ExtraDebug("Slot: " + overviewSlot.ToString());
+				}
+
+				if (overviewSlot == null && ____overviewBg.IsLinked)
+				{
+					//Debug(____overviewBg.ActiveLink.Parent?.Name);
+					var booleanReferenceDriver = (BooleanReferenceDriver<IField<colorX>>)____overviewBg.ActiveLink.Parent;
+					overviewBg = (Image)booleanReferenceDriver.TrueTarget.Target?.Parent;
+					overviewSlot = overviewBg?.Slot;
+				}
+
+				if (bgImage == null && (overviewSlot == null || overviewBg == null)) return;
+
+				// For nodes like IF
+				if (____bgImage.Target != null && ____overviewBg.Target != null) return;
+
+				// For nodes like Input<Uri>
+				if (____bgImage != null && ____overviewVisual.Target == null && ____overviewBg.Target == null) return;
+
+				if (true)
+				{
+					//UndriveNodeVisuals(____bgImage, ____overviewBg);
+					//colorX a = RadiantUI_Constants.BG_COLOR;
+					colorX a = ComputeColorForProtoFluxNode(__instance.Node.Target);
+					colorX b;
+					if (__instance.IsSelected.Value)
+					{
+						b = colorX.Cyan;
+						a = MathX.LerpUnclamped(in a, in b, 0.5f);
+					}
+					if (__instance.IsHighlighted.Value)
+					{
+						//colorX b = colorX.Yellow;
+						//colorX b = MathX.LerpUnclamped(a, GetTextColor(a), 0.5f);
+						b = GetTextColor(a);
+						a = MathX.LerpUnclamped(in a, in b, 0.25f);
+					}
+					b = Config.GetValue(NODE_ERROR_COLOR);
+					colorX lerpedNodeErrorColor = MathX.LerpUnclamped(in a, in b, 0.5f);
+					if (!__instance.IsNodeValid)
+					{
+						a = lerpedNodeErrorColor;
+						RefreshNodeColor(GetNodeInfoFromVisual(__instance));
+					}
+					else
+					{
+						if ((bgImage != null && bgImage.Tint.Value == lerpedNodeErrorColor) || (overviewBg != null && overviewBg.Tint.Value == lerpedNodeErrorColor))
+						{
+							// does this work? it is supposed to reset the header color when the node becomes valid after being invalid
+							RefreshNodeColor(GetNodeInfoFromVisual(__instance));
+						}
+					}
+					if (bgImage != null)
+					{
+						bgImage.Tint.Value = a;
+					}
+					if (overviewBg != null)
+					{
+						overviewBg.Tint.Value = a;
+					}
+				}
+				//else
+				//{
+				//	// Drive the node visuals again
+				//	DriveNodeVisuals(____bgImage, ____overviewBg, bgImage, overviewBg?.Tint);
+				//	__instance.UpdateNodeStatus();
+				//	RefreshNodeColor(GetNodeInfoFromVisual(__instance));
+				//	//return true;
+				//}
+				
+
+				//return false;
 			}
 		}
 
@@ -650,39 +723,40 @@ namespace ColorMyProtoFlux
 			return origColor / 1.5f;
 		}
 
-		private static List<Button> GetNodeButtons(ProtoFluxNode node)
-		{
-			return GetNodeVisual(node)?.Slot.GetComponentsInChildren<Button>();
-		}
+		// Unused
+		//private static List<Button> GetNodeButtons(ProtoFluxNode node)
+		//{
+		//	return GetNodeVisual(node)?.Slot.GetComponentsInChildren<Button>();
+		//}
 
-		private static void HandleButtons(ProtoFluxNode node, colorX computedNodeColor)
-		{
-			foreach (Button b in GetNodeButtons(node))
-			{
-				colorX newColor = GetTextColor(computedNodeColor);
-				b.SetColors(newColor);
-				foreach (Text text in b.Slot.GetComponentsInChildren<Text>((Text t) => t.Slot != b.Slot))
-				{
-					if (text.Color.IsDriven)
-					{
-						text.Color.ReleaseLink(text.Color.ActiveLink);
-					}
-					text.Color.Value = newColor == NODE_TEXT_LIGHT_COLOR ? NODE_TEXT_DARK_COLOR : NODE_TEXT_LIGHT_COLOR;
-				}
-				TextEditor editor = b.Slot.GetComponent<TextEditor>();
-				if (editor != null)
-				{
-					foreach (InteractionElement.ColorDriver driver in b.ColorDrivers)
-					{
-						//driver.TintColorMode.Value = InteractionElement.ColorMode.Direct;
-					}
-				}
-			}
-		}
+		//private static void HandleButtons(ProtoFluxNode node, colorX computedNodeColor)
+		//{
+		//	foreach (Button b in GetNodeButtons(node))
+		//	{
+		//		colorX newColor = GetTextColor(computedNodeColor);
+		//		b.SetColors(newColor);
+		//		foreach (Text text in b.Slot.GetComponentsInChildren<Text>((Text t) => t.Slot != b.Slot))
+		//		{
+		//			if (text.Color.IsDriven)
+		//			{
+		//				text.Color.ReleaseLink(text.Color.ActiveLink);
+		//			}
+		//			text.Color.Value = newColor == NODE_TEXT_LIGHT_COLOR ? NODE_TEXT_DARK_COLOR : NODE_TEXT_LIGHT_COLOR;
+		//		}
+		//		TextEditor editor = b.Slot.GetComponent<TextEditor>();
+		//		if (editor != null)
+		//		{
+		//			foreach (InteractionElement.ColorDriver driver in b.ColorDrivers)
+		//			{
+		//				//driver.TintColorMode.Value = InteractionElement.ColorMode.Direct;
+		//			}
+		//		}
+		//	}
+		//}
 
 		//private static void TrySetNodeNameTextColor(Text t, colorX textColor)
 		//{
-            
+			
   //      }
 
 		// maybe this method should not set color itself, but only collect the fields first and then call refresh node color after?
@@ -704,6 +778,18 @@ namespace ColorMyProtoFlux
 
 					if (root.Tag != COLOR_SET_TAG)
 					{
+						// Check if multiple visuals have accidentally been generated for this node (It's a bug that I've seen happen sometimes)
+						if (__instance.Slot.Parent.Children.Count() > 1)
+						{
+							foreach (Slot childSlot in __instance.Slot.Parent.Children)
+							{
+								if (childSlot != root && childSlot.Name == root.Name && childSlot.GetComponent<ProtoFluxNodeVisual>() != null)
+								{
+									return;
+								}
+							}
+						}
+
 						__instance.RunInUpdates(3, () =>
 						{
 
@@ -761,12 +847,12 @@ namespace ColorMyProtoFlux
 									// nullable types should have 0.5 alpha
 									if (img.Tint.Value.a == 0.5f)
 									{
-                                        TrySetImageTint(img, FixTypeColor(img.Tint.Value).SetA(0.5f));
-                                    }
+										TrySetImageTint(img, FixTypeColor(img.Tint.Value).SetA(0.5f));
+									}
 									else
 									{
-                                        TrySetImageTint(img, FixTypeColor(img.Tint.Value).SetA(1f));
-                                    }
+										TrySetImageTint(img, FixTypeColor(img.Tint.Value).SetA(1f));
+									}
 								}
 							}
 							// set node's text color, there could be multiple text components that need to be colored
@@ -790,31 +876,59 @@ namespace ColorMyProtoFlux
 							//	}
 							//}
 
-							__instance.RunSynchronously(() =>
+							if ((Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR)) || Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
 							{
-
-								foreach (Text text in GetOtherTextListForNode(node))
+								// it only needs to do this if the text color should be changed or it should update the node color on config changed
+								__instance.RunSynchronously(() =>
 								{
-									if (text != null)
+
+									foreach (Text text in GetOtherTextListForNode(node))
+									{
+										if (text != null)
+										{
+											if (Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
+											{
+												Button b = text.Slot.GetComponent<Button>();
+												if (b != null)
+												{
+													b.SetColors(GetTextColor(GetBackgroundColorOfText(text)));
+												}
+												else
+												{
+													TrySetTextColor(text, GetTextColor(GetBackgroundColorOfText(text)));
+												}
+											}
+
+											if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))// || Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))
+											{
+												if (nodeInfo != null)
+												{
+													nodeInfo.otherTextColorFields.Add(text.TryGetField<colorX>("Color"));
+												}
+												else
+												{
+													NodeInfoRemove(nodeInfo);
+												}
+											}
+										}
+									}
+
+									colorX textColor = GetTextColor(colorToSet);
+
+									var categoryText = GetCategoryTextForNode(node);
+									if (categoryText != null)
 									{
 										if (Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
 										{
-											Button b = text.Slot.GetComponent<Button>();
-											if (b != null)
-											{
-												b.SetColors(GetTextColor(GetBackgroundColorOfText(text)));
-											}
-											else
-											{
-                                                TrySetTextColor(text, GetTextColor(GetBackgroundColorOfText(text)));
-                                            }
-                                        }
+											TrySetTextColor(categoryText, ComputeCategoryTextColor(textColor));
+										}
 
 										if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))// || Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))
 										{
 											if (nodeInfo != null)
 											{
-												nodeInfo.otherTextColorFields.Add(text.TryGetField<colorX>("Color"));
+												//nodeInfo.textFields.Add(text.TryGetField<colorX>("Color"));
+												nodeInfo.categoryTextColorField = categoryText.TryGetField<colorX>("Color");
 											}
 											else
 											{
@@ -822,65 +936,41 @@ namespace ColorMyProtoFlux
 											}
 										}
 									}
-								}
 
-                                colorX textColor = GetTextColor(colorToSet);
-
-                                var categoryText = GetCategoryTextForNode(node);
-								if (categoryText != null)
-								{
-									if (Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
+									var nodeNameTextList = GetNodeNameTextListForNode(node);
+									if (nodeNameTextList != null)
 									{
-                                        TrySetTextColor(categoryText, ComputeCategoryTextColor(textColor));
-                                    }
+										foreach (Text t in nodeNameTextList)
+										{
+											if (Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
+											{
+												if (ShouldColorNodeNameText(t))
+												{
+													TrySetTextColor(t, textColor);
+												}
+												//else
+												//{
+												//TrySetTextColor(t, NODE_TEXT_LIGHT_COLOR);
+												//}
+											}
 
-									if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))// || Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))
-									{
-										if (nodeInfo != null)
-										{
-											//nodeInfo.textFields.Add(text.TryGetField<colorX>("Color"));
-											nodeInfo.categoryTextColorField = categoryText.TryGetField<colorX>("Color");
-										}
-										else
-										{
-											NodeInfoRemove(nodeInfo);
+											if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))// || Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))
+											{
+												if (nodeInfo != null)
+												{
+													//nodeInfo.textFields.Add(text.TryGetField<colorX>("Color"));
+													//nodeInfo.nodeNameTextColorField = nodeNameText.TryGetField<colorX>("Color");
+													nodeInfo.nodeNameTextColorFields.Add(t.TryGetField<colorX>("Color"));
+												}
+												else
+												{
+													NodeInfoRemove(nodeInfo);
+												}
+											}
 										}
 									}
-								}
-
-								var nodeNameTextList = GetNodeNameTextListForNode(node);
-								if (nodeNameTextList != null)
-								{
-									foreach (Text t in nodeNameTextList)
-									{
-                                        if (Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
-                                        {
-                                            if (ShouldColorNodeNameText(t))
-                                            {
-                                                TrySetTextColor(t, textColor);
-                                            }
-                                            //else
-                                            //{
-                                                //TrySetTextColor(t, NODE_TEXT_LIGHT_COLOR);
-                                            //}
-                                        }
-
-                                        if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))// || Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))
-                                        {
-                                            if (nodeInfo != null)
-                                            {
-                                                //nodeInfo.textFields.Add(text.TryGetField<colorX>("Color"));
-                                                //nodeInfo.nodeNameTextColorField = nodeNameText.TryGetField<colorX>("Color");
-                                                nodeInfo.nodeNameTextColorFields.Add(t.TryGetField<colorX>("Color"));
-                                            }
-                                            else
-                                            {
-                                                NodeInfoRemove(nodeInfo);
-                                            }
-                                        }
-                                    }
-								}
-							});
+								});
+							}
 
 							// Fix buttons generating behind the type-colored images
 							if (node.Name == "ImpulseDemultiplexer" && ____outputsRoot.Target != null)
@@ -892,13 +982,91 @@ namespace ColorMyProtoFlux
 							//	____outputsRoot.Target.OrderOffset = -1;
 							//}
 
-							____bgImage.Target = null;
+							// might need to change this condition more
+							// if header only and not config, skip this
+							// if config
+							if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) || !Config.GetValue(COLOR_HEADER_ONLY))
+							{
+								// Nulling the node visuals stops other users from running UpdateNodeStatus on this node, which prevents the custom colors from being reset
+								//UndriveNodeVisuals(____bgImage, ____overviewBg);
 
-                            // Add config option to toggle handling buttons
-                            //HandleButtons(node, colorToSet);
+								Slot targetSlot = root;
 
-       //                     IField<colorX> field = ____overviewBg.Target;
-       //                     if (field != null)
+								var referenceField = targetSlot.AttachComponent<ReferenceField<User>>();
+								referenceField.Reference.Target = __instance.LocalUser;
+
+								//var valueMultiDriver = targetSlot.AttachComponent<ValueMultiDriver<bool>>();
+
+								var referenceEqualityDriver = targetSlot.AttachComponent<ReferenceEqualityDriver<User>>();
+								referenceEqualityDriver.TargetReference.Target = referenceField.Reference;
+								referenceEqualityDriver.Reference.Target = null;
+								//referenceEqualityDriver.Target.Target = valueMultiDriver.Value;
+
+								var booleanReferenceDriver1 = targetSlot.AttachComponent<BooleanReferenceDriver<Image>>();
+								//valueMultiDriver.Drives.Add().Target = booleanReferenceDriver1.State;
+								booleanReferenceDriver1.TrueTarget.Target = ____bgImage.Target;
+								booleanReferenceDriver1.FalseTarget.Target = null;
+								booleanReferenceDriver1.TargetReference.Target = ____bgImage;
+
+								MultiBoolConditionDriver multiBoolConditionDriver = null;
+
+								if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
+								{
+									var valueField1 = targetSlot.AttachComponent<ValueField<bool>>();
+									referenceEqualityDriver.Target.Target = valueField1.Value;
+
+									// second valueField could be a bool in the NodeInfo instead? although not really because it needs to affect the drive
+									var valueField2 = targetSlot.AttachComponent<ValueField<bool>>();
+									valueField2.UpdateOrder = 1; // set this to 1 so we can find it later
+									valueField2.Value.Value = Config.GetValue(COLOR_HEADER_ONLY);
+
+									multiBoolConditionDriver = targetSlot.AttachComponent<MultiBoolConditionDriver>();
+									multiBoolConditionDriver.Mode.Value = MultiBoolConditionDriver.ConditionMode.Any;
+									multiBoolConditionDriver.Conditions.Add().Field.Target = valueField1.Value;
+									multiBoolConditionDriver.Conditions.Add().Field.Target = valueField2.Value;
+									//multiBoolConditionDriver.Target.Target = 
+								}
+
+								if (____overviewBg.Target != null)
+								{
+									var valueMultiDriver = targetSlot.AttachComponent<ValueMultiDriver<bool>>();
+									//referenceEqualityDriver.Target.Target = valueMultiDriver.Value;
+									
+									valueMultiDriver.Drives.Add().Target = booleanReferenceDriver1.State;
+
+									var booleanReferenceDriver2 = targetSlot.AttachComponent<BooleanReferenceDriver<IField<colorX>>>();
+									valueMultiDriver.Drives.Add().Target = booleanReferenceDriver2.State;
+									booleanReferenceDriver2.TrueTarget.Target = ____overviewBg.Target;
+									booleanReferenceDriver2.FalseTarget.Target = null;
+									booleanReferenceDriver2.TargetReference.Target = ____overviewBg;
+
+									if (multiBoolConditionDriver != null)
+									{
+										multiBoolConditionDriver.Target.Target = valueMultiDriver.Value;
+									}
+									else
+									{
+										referenceEqualityDriver.Target.Target = valueMultiDriver.Value;
+									}
+								}
+								else
+								{
+									if (multiBoolConditionDriver != null)
+									{
+										multiBoolConditionDriver.Target.Target = booleanReferenceDriver1.State;
+									}
+									else
+									{
+										referenceEqualityDriver.Target.Target = booleanReferenceDriver1.State;
+									}
+								}
+							}
+
+							// Add config option to toggle handling buttons
+							//HandleButtons(node, colorToSet);
+
+							//                     IField<colorX> field = ____overviewBg.Target;
+							//                     if (field != null)
 							//{
 							//	if (field.IsDriven)
 							//	{
