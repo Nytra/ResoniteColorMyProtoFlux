@@ -375,7 +375,7 @@ namespace ColorMyProtoFlux
 
 		private static List<Text> GetNodeNameTextListForNode(ProtoFluxNode node)
 		{
-			List<Text> textList = GetNodeVisual(node)?.Slot.GetComponentsInChildren<Text>((Text t) => t.Content == node.NodeName && t.Slot.Name == "Text" && !t.Content.IsDriven);
+			List<Text> textList = GetNodeVisual(node)?.Slot.GetComponentsInChildren<Text>((Text t) => t.Content == node.NodeName && t.Slot.Name == "Text" && !t.Content.IsDriven && t.Slot.Parent?.Name != "Button");
 			return textList;
 		}
 
@@ -397,18 +397,31 @@ namespace ColorMyProtoFlux
         private static colorX ComputeCategoryTextColor(colorX regularTextColor)
         {
             //return MathX.LerpUnclamped(colorX.Gray, regularTextColor, 0.5f);
-			if (Config.GetValue(COLOR_HEADER_ONLY))
+
+			// return the static text color somewhere here
+			//if (Config.GetValue(COLOR_HEADER_ONLY))
+			//{
+				
+			//}
+			if (Config.GetValue(USE_STATIC_TEXT_COLOR))
 			{
-				return colorX.DarkGray;
-			}
-			if (regularTextColor == NODE_TEXT_LIGHT_COLOR)
+                return Config.GetValue(STATIC_TEXT_COLOR);
+            }
+			else if (Config.GetValue(ENABLE_TEXT_CONTRAST))
 			{
-				return new colorX(0.75f);
-			}
+                if (regularTextColor == NODE_TEXT_LIGHT_COLOR)
+                {
+                    return new colorX(0.75f);
+                }
+                else
+                {
+                    return new colorX(0.25f);
+                }
+            }
 			else
 			{
-				return new colorX(0.25f);
-			}
+                return colorX.DarkGray;
+            }
         }
 
         //private static colorX GetNodeDefaultColor(ProtoFluxNode node)

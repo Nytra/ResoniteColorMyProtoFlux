@@ -417,11 +417,19 @@ namespace ColorMyProtoFlux
 
 						nodeInfo.node.RunSynchronously(() =>
 						{
-							visualSlot.GetComponent((ValueField<bool> b) => b.UpdateOrder == 1).Value.Value = Config.GetValue(COLOR_HEADER_ONLY);
-							GetNodeVisual(nodeInfo.node).UpdateNodeStatus();
+							// There are two ValueField<bool> components added to the node, the one which has UpdateOrder = 1 is the one which should store the COLOR_HEADER_ONLY config value
+							ValueField<bool> colorHeaderOnlyField = visualSlot.GetComponent((ValueField<bool> b) => b.UpdateOrder == 1);
+							if (colorHeaderOnlyField != null)
+							{
+                                colorHeaderOnlyField.Value.Value = Config.GetValue(COLOR_HEADER_ONLY);
+                            }
+							// need to wait for the drives on the node visual to update
+							nodeInfo.node.RunInUpdates(0, () => 
+							{
+                                GetNodeVisual(nodeInfo.node).UpdateNodeStatus();
+                                RefreshNodeColor(nodeInfo);
+                            });
 						});
-
-						RefreshNodeColor(nodeInfo);
 					}
 				}
 			};
@@ -634,7 +642,7 @@ namespace ColorMyProtoFlux
 				if (____bgImage.Target != null && ____overviewBg.Target != null) return;
 
 				// For nodes like Input<Uri>
-				if (____bgImage != null && ____overviewVisual.Target == null && ____overviewBg.Target == null) return;
+				if (____bgImage.Target != null && ____overviewVisual.Target == null && ____overviewBg.Target == null) return;
 
 				if (true)
 				{
@@ -645,7 +653,9 @@ namespace ColorMyProtoFlux
 					if (__instance.IsSelected.Value)
 					{
 						b = colorX.Cyan;
-						a = MathX.LerpUnclamped(in a, in b, 0.5f);
+						//a = MathX.LerpUnclamped(in a, in b, 0.5f);
+						// maybe make the selection color a value you can set in the mod config?
+						a = colorX.Cyan;
 					}
 					if (__instance.IsHighlighted.Value)
 					{
@@ -655,15 +665,16 @@ namespace ColorMyProtoFlux
 						a = MathX.LerpUnclamped(in a, in b, 0.25f);
 					}
 					b = Config.GetValue(NODE_ERROR_COLOR);
-					colorX lerpedNodeErrorColor = MathX.LerpUnclamped(in a, in b, 0.5f);
+                    //colorX errorColorToSet = MathX.LerpUnclamped(in a, in b, 0.5f);
+                    colorX errorColorToSet = b;
 					if (!__instance.IsNodeValid)
 					{
-						a = lerpedNodeErrorColor;
+						a = errorColorToSet;
 						RefreshNodeColor(GetNodeInfoFromVisual(__instance));
 					}
 					else
 					{
-						if ((bgImage != null && bgImage.Tint.Value == lerpedNodeErrorColor) || (overviewBg != null && overviewBg.Tint.Value == lerpedNodeErrorColor))
+						if ((bgImage != null && bgImage.Tint.Value == errorColorToSet) || (overviewBg != null && overviewBg.Tint.Value == errorColorToSet))
 						{
 							// does this work? it is supposed to reset the header color when the node becomes valid after being invalid
 							RefreshNodeColor(GetNodeInfoFromVisual(__instance));
@@ -881,7 +892,6 @@ namespace ColorMyProtoFlux
 								// it only needs to do this if the text color should be changed or it should update the node color on config changed
 								__instance.RunSynchronously(() =>
 								{
-
 									foreach (Text text in GetOtherTextListForNode(node))
 									{
 										if (text != null)
