@@ -24,32 +24,6 @@ namespace ColorMyProtoFlux
 			// dont need to store node background image because the UpdateNodeStatus patch handles coloring of that part
 		}
 
-		//public class RefDriverNodeInfo
-		//{
-		//	public ProtoFluxNode node;
-		//	public ISyncRef syncRef;
-		//	public IWorldElement prevSyncRefTarget = null;
-
-		//	public void UpdateColor(IChangeable iChangeable)
-		//	{
-		//		if (node == null || syncRef == null)
-		//		{
-		//			Warn("Tried to update reference node or driver node color but the node or syncref is null.");
-		//			return;
-		//		}
-		//		ExtraDebug($"UpdateColor called for {node.Name} {node.ReferenceID}.");
-		//		node.RunSynchronously(() =>
-		//		{
-		//			if (syncRef.Target != prevSyncRefTarget || syncRef.Target.IsRemoved)
-		//			{
-		//				Debug("SyncRef Target actually changed or was removed");
-		//				UpdateRefOrDriverNodeColor(node, syncRef);
-		//				prevSyncRefTarget = syncRef.Target;
-		//			}
-		//		});
-		//	}
-		//}
-
 		private static void NodeInfoSetHeaderBgColor(NodeInfo nodeInfo, colorX c)
 		{
 			NodeInfo outNodeInfo = null;
@@ -81,7 +55,6 @@ namespace ColorMyProtoFlux
                 {
                     foreach (IField<colorX> field in outNodeInfo.otherTextColorFields)
                     {
-
                         if (field.IsRemoved)
                         {
                             NodeInfoRemove(nodeInfo);
@@ -97,7 +70,10 @@ namespace ColorMyProtoFlux
 								{
                                     colorX colorToSet = GetTextColor(GetBackgroundColorOfText(text));
                                     Button b = text.Slot.GetComponent<Button>();
-                                    if (b != null)
+                                    Component proxy = text.Slot.GetComponent((Component c) => c.Name.Contains("Proxy"));
+                                    Debug($"button is null: {b == null}");
+                                    Debug($"proxy: {proxy?.Name}");
+                                    if (b != null && proxy == null)
                                     {
                                         b.SetColors(colorToSet);
                                     }

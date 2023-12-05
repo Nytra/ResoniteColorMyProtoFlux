@@ -10,8 +10,6 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Linq;
 using System;
-using static ColorMyProtoFlux.ColorMyProtoFlux;
-using System.ComponentModel.Design;
 
 #if DEBUG
 
@@ -483,58 +481,6 @@ namespace ColorMyProtoFlux
 			}
 		}
 
-		//[HarmonyPatch(typeof(ProtoFluxNode))]
-		//[HarmonyPatch("GenerateVisual")]
-		//class Patch_LogixNode_GenerateVisual
-		//{
-		//	[HarmonyAfter(new string[] { "Banane9.LogixVisualCustomizer", "Banane9, Fro Zen.LogixVisualCustomizer" })]
-		//	static void Postfix(LogixNode __instance)
-		//	{
-		//		if (Config.GetValue(MOD_ENABLED) == true && __instance.ActiveVisual != null && __instance.ActiveVisual.ReferenceID.User == __instance.LocalUser.AllocationID)
-		//		{
-		//			string targetField = null;
-		//			if (Config.GetValue(COLOR_NULL_REFERENCE_NODES) == true && __instance.Name.StartsWith("ReferenceNode"))
-		//			{
-		//				targetField = "RefTarget";
-		//			}
-		//			else if (Config.GetValue(COLOR_NULL_DRIVER_NODES) == true && __instance.Name.StartsWith("DriverNode"))
-		//			{
-		//				targetField = "DriveTarget";
-		//			}
-		//			if (targetField != null)
-		//			{
-		//				ISyncRef syncRef = __instance.TryGetField(targetField) as ISyncRef;
-		//				if (Config.GetValue(AUTO_UPDATE_REF_AND_DRIVER_NODES) && !RefDriverNodeInfoSetContainsSyncRef(syncRef) && !RefDriverNodeInfoSetContainsNode(__instance))
-		//				{
-		//					__instance.RunInUpdates(0, () =>
-		//					{
-		//						//if (refDriverNodeInfoSet.Any(refDriverNodeInfo => refDriverNodeInfo.syncRef == syncRef)) return;
-		//						if (RefDriverNodeInfoSetContainsSyncRef(syncRef) || RefDriverNodeInfoSetContainsNode(__instance)) return;
-
-		//						Debug("=== Subscribing to a node ===");
-
-		//						RefDriverNodeInfo refDriverNodeInfo = new();
-		//						refDriverNodeInfo.node = __instance;
-		//						refDriverNodeInfo.syncRef = syncRef;
-		//						refDriverNodeInfo.syncRef.Changed += refDriverNodeInfo.UpdateColor;
-		//						refDriverNodeInfo.prevSyncRefTarget = refDriverNodeInfo.syncRef.Target;
-		//						refDriverNodeInfoSet.Add(refDriverNodeInfo);
-
-		//						UpdateRefOrDriverNodeColor(__instance, syncRef);
-
-		//						Debug("New refDriverNodeInfoSet size: " + refDriverNodeInfoSet.Count.ToString());
-		//					});
-		//				}
-		//				else
-		//				{
-		//					Debug("Node already subscribed. Updating color...");
-		//					UpdateRefOrDriverNodeColor(__instance, syncRef);
-		//				}
-		//			}
-		//		}
-		//	}
-		//}
-
 		//[HarmonyPatch(typeof(ProtoFluxNodeVisual))]
 		//[HarmonyPatch("UpdateNodeStatus")]
 		//class Patch_ProtoFluxNodeVisual_UpdateNodeStatus
@@ -688,6 +634,7 @@ namespace ColorMyProtoFlux
 					{
 						overviewBg.Tint.Value = a;
 					}
+					Debug("In updatenodestatus patch");
 				}
 				//else
 				//{
@@ -801,7 +748,8 @@ namespace ColorMyProtoFlux
 							}
 						}
 
-						__instance.RunInUpdates(3, () =>
+						// Does this need to be 3?
+						__instance.RunInUpdates(2, () =>
 						{
 
 							if (__instance == null) return;
@@ -899,7 +847,10 @@ namespace ColorMyProtoFlux
 											if (Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
 											{
 												Button b = text.Slot.GetComponent<Button>();
-												if (b != null)
+												Component proxy = text.Slot.GetComponent((Component c) => c.Name.Contains("Proxy"));
+												Debug($"button is null: {b == null}");
+                                                Debug($"proxy: {proxy?.Name}");
+                                                if (b != null && proxy == null)
 												{
 													b.SetColors(GetTextColor(GetBackgroundColorOfText(text)));
 												}
@@ -1070,6 +1021,7 @@ namespace ColorMyProtoFlux
 										referenceEqualityDriver.Target.Target = booleanReferenceDriver1.State;
 									}
 								}
+								__instance.UpdateNodeStatus();
 							}
 
 							// Add config option to toggle handling buttons
