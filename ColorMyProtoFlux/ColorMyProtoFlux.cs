@@ -20,7 +20,7 @@ namespace ColorMyProtoFlux
 	public partial class ColorMyProtoFlux : ResoniteMod
 	{
 		public override string Name => "ColorMyProtoFlux";
-		public override string Author => "Nytra / Sharkmare";
+		public override string Author => "Nytra";
 		public override string Version => "1.0.0";
 		public override string Link => "https://github.com/Nytra/ResoniteColorMyProtoFlux";
 
@@ -252,19 +252,6 @@ namespace ColorMyProtoFlux
 			SystemTime
 		}
 
-		//private enum InputNodeOverrideEnum
-		//{
-		//	Primitives,
-		//	PrimitivesAndEnums,
-		//	Everything
-		//}
-
-		//private enum ChannelShiftWaveformEnum
-		//{
-		//	Sawtooth,
-		//	Sine
-		//}
-
 		private static NodeInfo nullNodeInfo = new();
 		private static HashSet<NodeInfo> nodeInfoSet = new();
 		//private static HashSet<RefDriverNodeInfo> refDriverNodeInfoSet = new();
@@ -286,14 +273,10 @@ namespace ColorMyProtoFlux
 
 		private static long lastColorChangeTime = DateTime.UtcNow.Ticks;
 
-		// have any logix visual customizer patches been found?
-		//private static bool? lvcHasPatches = null;
-
 		public override void OnEngineInit()
 		{
-			// Maybe hardcode this because Harmony ids with spaces are jank
 			//Harmony harmony = new Harmony($"owo.{Author}.{Name}");
-			Harmony harmony = new Harmony($"owo.Nytra.ColorMyLogiX");
+			Harmony harmony = new Harmony($"owo.Nytra.ColorMyProtoFlux");
 
 			Config = GetConfiguration()!;
 			//Config.Unset(USE_AUTO_RANDOM_COLOR_CHANGE);
@@ -421,8 +404,9 @@ namespace ColorMyProtoFlux
 							{
                                 colorHeaderOnlyField.Value.Value = Config.GetValue(COLOR_HEADER_ONLY);
                             }
+
 							// need to wait for the drives on the node visual to update
-							nodeInfo.node.RunInUpdates(0, () => 
+							nodeInfo.node.RunInUpdates(1, () => 
 							{
                                 GetNodeVisual(nodeInfo.node).UpdateNodeStatus();
                                 RefreshNodeColor(nodeInfo);
@@ -524,37 +508,19 @@ namespace ColorMyProtoFlux
 		//	}
 		//}
 
-		private static void UndriveNodeVisuals(SyncRef<Image> bgImageSyncRef, FieldDrive<colorX> overviewBgFieldDrive)
-		{
-			bgImageSyncRef.Target = null;
-			overviewBgFieldDrive.Target = null;
-		}
-
-		private static void DriveNodeVisuals(SyncRef<Image> bgImageSyncRef, FieldDrive<colorX> overviewBgFieldDrive, Image bgImage, IField<colorX> overviewBg)
-		{
-			bgImageSyncRef.Target = bgImage;
-			overviewBgFieldDrive.Target = overviewBg;
-		}
-
 		[HarmonyPatch(typeof(ProtoFluxNodeVisual))]
 		[HarmonyPatch("UpdateNodeStatus")]
 		class Patch_ProtoFluxNodeVisual_UpdateNodeStatus
 		{
 			static void Postfix(ProtoFluxNodeVisual __instance, SyncRef<Image> ____bgImage, FieldDrive<colorX> ____overviewBg, FieldDrive<bool> ____overviewVisual)
 			{
-
 				// if this node visual does not belong to LocalUser, skip this patch
 				if (__instance.ReferenceID.User != __instance.LocalUser.AllocationID) return;
 
-				// so maybe in the case that the mod doesn't run this patch, it should put the drives back and then let the original code run instead
-
-				//bool resetRefs = false;
-
 				if (!Config.GetValue(MOD_ENABLED)) return;
 
-				//if (Config.GetValue(COLOR_HEADER_ONLY)) return;
-
-				// can skip resetting refs now
+				// basically, if I want to color nodes without a header in header only mode, i need to remove this line and do something else
+				if (Config.GetValue(COLOR_HEADER_ONLY)) return;
 
 				//if (__instance.World != Engine.Current.WorldManager.FocusedWorld) return true; // just in case
 
@@ -590,7 +556,9 @@ namespace ColorMyProtoFlux
 				// For nodes like Input<Uri>
 				if (____bgImage.Target != null && ____overviewVisual.Target == null && ____overviewBg.Target == null) return;
 
-				if (true)
+                Debug("UpdateNodeStatus Patch - Colors will change.");
+
+                if (true)
 				{
 					//UndriveNodeVisuals(____bgImage, ____overviewBg);
 					//colorX a = RadiantUI_Constants.BG_COLOR;
@@ -634,20 +602,21 @@ namespace ColorMyProtoFlux
 					{
 						overviewBg.Tint.Value = a;
 					}
-					Debug("In updatenodestatus patch");
 				}
-				//else
-				//{
-				//	// Drive the node visuals again
-				//	DriveNodeVisuals(____bgImage, ____overviewBg, bgImage, overviewBg?.Tint);
-				//	__instance.UpdateNodeStatus();
-				//	RefreshNodeColor(GetNodeInfoFromVisual(__instance));
-				//	//return true;
-				//}
-				
 
-				//return false;
-			}
+                //Debug("Finished UpdateNodeStatus. Nodes were colored.");
+                //else
+                //{
+                //	// Drive the node visuals again
+                //	DriveNodeVisuals(____bgImage, ____overviewBg, bgImage, overviewBg?.Tint);
+                //	__instance.UpdateNodeStatus();
+                //	RefreshNodeColor(GetNodeInfoFromVisual(__instance));
+                //	//return true;
+                //}
+
+
+                //return false;
+            }
 		}
 
 		//private static colorX GetNodeVisualStatusColor(ProtoFluxNodeVisual visual)
@@ -725,6 +694,8 @@ namespace ColorMyProtoFlux
 			//[HarmonyAfter(new string[] { "Banane9.LogixVisualCustomizer", "Banane9, Fro Zen.LogixVisualCustomizer" })]
 			static void Postfix(ProtoFluxNodeVisual __instance, ProtoFluxNode node, SyncRef<Image> ____bgImage, FieldDrive<colorX> ____overviewBg, SyncRef<Slot> ____inputsRoot, SyncRef<Slot> ____outputsRoot)
 			{
+				Debug("Entered BuildUI Postfix");
+
 				Slot root = __instance.Slot;
 				// only run if the logix node visual slot is allocated to the local user
 				if (Config.GetValue(MOD_ENABLED) == true && root != null && root.ReferenceID.User == root.LocalUser.AllocationID)
@@ -756,7 +727,7 @@ namespace ColorMyProtoFlux
 
 							NodeInfo nodeInfo = null;
 
-							if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))// || Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))
+							if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
 							{
 								nodeInfo = new();
 								nodeInfo.node = node;
@@ -765,17 +736,10 @@ namespace ColorMyProtoFlux
 
 							colorX colorToSet = ComputeColorForProtoFluxNode(node);
 
-							//bool? overviewEnabled = GetOverviewVisualEnabled(node);
-							//if (overviewEnabled != null)
-							//{
-							//	FieldDrive<bool> fieldDrive = (FieldDrive<bool>)AccessTools.Field(typeof(ProtoFluxNodeVisual), "_overviewVisual").GetValue(__instance);
-							//	fieldDrive.Target.Changed += (iChangeable) => RefreshNodeColor(GetNodeInfoForNode(node));
-							//}
-							//var headerImage = GetAppropriateImageForNode(node, overviewEnabled);
 							var headerImage = GetHeaderImageForNode(node);
 							if (headerImage != null)
 							{
-								if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))// || Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))
+								if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
 								{
 									nodeInfo.headerImageTintField = headerImage.TryGetField<colorX>("Tint");
 								}
@@ -791,7 +755,7 @@ namespace ColorMyProtoFlux
 							}
 							else
 							{
-								Debug("Header image is null");
+								Debug("Header image is null.");
 							}
 							if (Config.GetValue(MAKE_CONNECT_POINTS_FULL_ALPHA))
 							{
@@ -814,26 +778,13 @@ namespace ColorMyProtoFlux
 									}
 								}
 							}
+
 							// set node's text color, there could be multiple text components that need to be colored
-							if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))// || Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))
+							if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
 							{
 								nodeInfo.otherTextColorFields = new();
 								nodeInfo.nodeNameTextColorFields = new();
 							}
-
-							//if (lvcHasPatches == null)
-							//{
-							//	if (Harmony.HasAnyPatches("Banane9.LogixVisualCustomizer") || Harmony.HasAnyPatches("Banane9, Fro Zen.LogixVisualCustomizer"))
-							//	{
-							//		lvcHasPatches = true;
-							//		Debug("logixvisualcustomizer found");
-							//	}
-							//	else
-							//	{
-							//		lvcHasPatches = false;
-							//		Debug("logixvisualcustomizer not found");
-							//	}
-							//}
 
 							if ((Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR)) || Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
 							{
@@ -848,9 +799,9 @@ namespace ColorMyProtoFlux
 											{
 												Button b = text.Slot.GetComponent<Button>();
 												Component proxy = text.Slot.GetComponent((Component c) => c.Name.Contains("Proxy"));
-												Debug($"button is null: {b == null}");
-                                                Debug($"proxy: {proxy?.Name}");
-                                                if (b != null && proxy == null)
+												//Debug($"button is null: {b == null}");
+                                                //Debug($"proxy: {proxy?.Name}");
+                                                if ((b != null && proxy == null) || (proxy != null && proxy.Slot.Parent.Name == "Content"))
 												{
 													b.SetColors(GetTextColor(GetBackgroundColorOfText(text)));
 												}
@@ -860,7 +811,7 @@ namespace ColorMyProtoFlux
 												}
 											}
 
-											if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))// || Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))
+											if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
 											{
 												if (nodeInfo != null)
 												{
@@ -884,7 +835,7 @@ namespace ColorMyProtoFlux
 											TrySetTextColor(categoryText, ComputeCategoryTextColor(textColor));
 										}
 
-										if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))// || Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))
+										if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
 										{
 											if (nodeInfo != null)
 											{
@@ -915,7 +866,7 @@ namespace ColorMyProtoFlux
 												//}
 											}
 
-											if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))// || Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))
+											if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
 											{
 												if (nodeInfo != null)
 												{
@@ -1021,7 +972,7 @@ namespace ColorMyProtoFlux
 										referenceEqualityDriver.Target.Target = booleanReferenceDriver1.State;
 									}
 								}
-								__instance.UpdateNodeStatus();
+								//__instance.UpdateNodeStatus();
 							}
 
 							// Add config option to toggle handling buttons

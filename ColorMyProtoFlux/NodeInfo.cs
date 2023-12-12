@@ -71,9 +71,9 @@ namespace ColorMyProtoFlux
                                     colorX colorToSet = GetTextColor(GetBackgroundColorOfText(text));
                                     Button b = text.Slot.GetComponent<Button>();
                                     Component proxy = text.Slot.GetComponent((Component c) => c.Name.Contains("Proxy"));
-                                    Debug($"button is null: {b == null}");
-                                    Debug($"proxy: {proxy?.Name}");
-                                    if (b != null && proxy == null)
+                                    //Debug($"button is null: {b == null}");
+                                    //Debug($"proxy: {proxy?.Name ?? "null"}");
+                                    if ((b != null && proxy == null) || (proxy != null && proxy.Slot.Parent.Name == "Content"))
                                     {
                                         b.SetColors(colorToSet);
                                     }
