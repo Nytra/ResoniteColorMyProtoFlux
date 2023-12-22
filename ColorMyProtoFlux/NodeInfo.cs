@@ -20,6 +20,7 @@ namespace ColorMyProtoFlux
 			public ProtoFluxNodeVisual visual;
 			public IField<colorX> categoryTextColorField;
 			public HashSet<IField<colorX>> nodeNameTextColorFields;
+			public colorX modComputedCustomColor;
 			//public HashSet<Button> nodeButtons;
 			// dont need to store node background image because the UpdateNodeStatus patch handles coloring of that part
 		}
@@ -103,7 +104,7 @@ namespace ColorMyProtoFlux
                     {
 						if (ShouldColorAnyText())
 						{
-							colorX categoryTextColor = ComputeCategoryTextColor(c);
+							colorX categoryTextColor = ComputeCategoryTextColor(nodeInfo.node, nodeInfo.modComputedCustomColor);
                             if (outNodeInfo.categoryTextColorField.Value != categoryTextColor) outNodeInfo.categoryTextColorField.Value = categoryTextColor;
                         }
                         else
@@ -124,7 +125,7 @@ namespace ColorMyProtoFlux
                         }
                         else
                         {
-                            if (ShouldColorAnyText() && ShouldColorNodeNameText(field.Parent as Text))
+                            if (ShouldColorAnyText())// && ShouldColorNodeNameText(field.Parent as Text)) // wha?
                             {
                                 if (field.Value != c) field.Value = c;
                                 //TrySetNodeNameTextColor(field.Parent as Text, c);

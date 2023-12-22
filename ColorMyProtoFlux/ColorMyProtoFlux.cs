@@ -402,15 +402,15 @@ namespace ColorMyProtoFlux
 							ValueField<bool> colorHeaderOnlyField = visualSlot.GetComponent((ValueField<bool> b) => b.UpdateOrder == 1);
 							if (colorHeaderOnlyField != null)
 							{
-                                colorHeaderOnlyField.Value.Value = Config.GetValue(COLOR_HEADER_ONLY);
-                            }
+								colorHeaderOnlyField.Value.Value = Config.GetValue(COLOR_HEADER_ONLY);
+							}
 
 							// need to wait for the drives on the node visual to update
 							nodeInfo.node.RunInUpdates(1, () => 
 							{
-                                GetNodeVisual(nodeInfo.node).UpdateNodeStatus();
-                                RefreshNodeColor(nodeInfo);
-                            });
+								GetNodeVisual(nodeInfo.node).UpdateNodeStatus();
+								RefreshNodeColor(nodeInfo);
+							});
 						});
 					}
 				}
@@ -420,6 +420,8 @@ namespace ColorMyProtoFlux
 		private static void RefreshNodeColor(NodeInfo nodeInfo)
 		{
 			colorX c = ComputeColorForProtoFluxNode(nodeInfo.node);
+
+			nodeInfo.modComputedCustomColor = c;
 
 			if (nodeInfo.headerImageTintField != null)
 			{
@@ -458,7 +460,17 @@ namespace ColorMyProtoFlux
 						// if it didn't already get removed in another thread before this coroutine
 						if (nodeInfoSet.Contains(nodeInfo))
 						{
-							SetTextColorForNode(nodeInfo, GetTextColor(c));
+							colorX textColor;
+							if (nodeInfo.headerImageTintField == null && Config.GetValue(COLOR_HEADER_ONLY))
+							{
+								colorX idealColor = GetIdealBackgroundColorForNode(nodeInfo.node, nodeInfo.modComputedCustomColor);
+								textColor = GetTextColor(idealColor);
+							}
+							else
+							{
+								textColor = GetTextColor(c);
+							}
+							SetTextColorForNode(nodeInfo, textColor);
 						}
 					}
 				});
@@ -556,9 +568,9 @@ namespace ColorMyProtoFlux
 				// For nodes like Input<Uri>
 				if (____bgImage.Target != null && ____overviewVisual.Target == null && ____overviewBg.Target == null) return;
 
-                Debug("UpdateNodeStatus Patch - Colors will change.");
+				ExtraDebug("UpdateNodeStatus Patch - Colors will change.");
 
-                if (true)
+				if (true)
 				{
 					//UndriveNodeVisuals(____bgImage, ____overviewBg);
 					//colorX a = RadiantUI_Constants.BG_COLOR;
@@ -579,8 +591,8 @@ namespace ColorMyProtoFlux
 						a = MathX.LerpUnclamped(in a, in b, 0.25f);
 					}
 					b = Config.GetValue(NODE_ERROR_COLOR);
-                    //colorX errorColorToSet = MathX.LerpUnclamped(in a, in b, 0.5f);
-                    colorX errorColorToSet = b;
+					//colorX errorColorToSet = MathX.LerpUnclamped(in a, in b, 0.5f);
+					colorX errorColorToSet = b;
 					if (!__instance.IsNodeValid)
 					{
 						a = errorColorToSet;
@@ -604,19 +616,19 @@ namespace ColorMyProtoFlux
 					}
 				}
 
-                //Debug("Finished UpdateNodeStatus. Nodes were colored.");
-                //else
-                //{
-                //	// Drive the node visuals again
-                //	DriveNodeVisuals(____bgImage, ____overviewBg, bgImage, overviewBg?.Tint);
-                //	__instance.UpdateNodeStatus();
-                //	RefreshNodeColor(GetNodeInfoFromVisual(__instance));
-                //	//return true;
-                //}
+				//Debug("Finished UpdateNodeStatus. Nodes were colored.");
+				//else
+				//{
+				//	// Drive the node visuals again
+				//	DriveNodeVisuals(____bgImage, ____overviewBg, bgImage, overviewBg?.Tint);
+				//	__instance.UpdateNodeStatus();
+				//	RefreshNodeColor(GetNodeInfoFromVisual(__instance));
+				//	//return true;
+				//}
 
 
-                //return false;
-            }
+				//return false;
+			}
 		}
 
 		//private static colorX GetNodeVisualStatusColor(ProtoFluxNodeVisual visual)
@@ -694,10 +706,10 @@ namespace ColorMyProtoFlux
 			//[HarmonyAfter(new string[] { "Banane9.LogixVisualCustomizer", "Banane9, Fro Zen.LogixVisualCustomizer" })]
 			static void Postfix(ProtoFluxNodeVisual __instance, ProtoFluxNode node, SyncRef<Image> ____bgImage, FieldDrive<colorX> ____overviewBg, SyncRef<Slot> ____inputsRoot, SyncRef<Slot> ____outputsRoot)
 			{
-				Debug("Entered BuildUI Postfix");
+				//Debug("Entered BuildUI Postfix");
 
 				Slot root = __instance.Slot;
-				// only run if the logix node visual slot is allocated to the local user
+				// only run if the protoflux node visual slot is allocated to the local user
 				if (Config.GetValue(MOD_ENABLED) == true && root != null && root.ReferenceID.User == root.LocalUser.AllocationID)
 				{
 					// don't apply custom color to cast nodes, because it makes it confusing to read the data types
@@ -725,6 +737,8 @@ namespace ColorMyProtoFlux
 
 							if (__instance == null) return;
 
+							colorX colorToSet = ComputeColorForProtoFluxNode(node);
+
 							NodeInfo nodeInfo = null;
 
 							if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
@@ -732,9 +746,9 @@ namespace ColorMyProtoFlux
 								nodeInfo = new();
 								nodeInfo.node = node;
 								nodeInfo.visual = __instance;
+								nodeInfo.headerImageTintField = null;
+								nodeInfo.modComputedCustomColor = colorToSet;
 							}
-
-							colorX colorToSet = ComputeColorForProtoFluxNode(node);
 
 							var headerImage = GetHeaderImageForNode(node);
 							if (headerImage != null)
@@ -800,8 +814,8 @@ namespace ColorMyProtoFlux
 												Button b = text.Slot.GetComponent<Button>();
 												Component proxy = text.Slot.GetComponent((Component c) => c.Name.Contains("Proxy"));
 												//Debug($"button is null: {b == null}");
-                                                //Debug($"proxy: {proxy?.Name}");
-                                                if ((b != null && proxy == null) || (proxy != null && proxy.Slot.Parent.Name == "Content"))
+												//Debug($"proxy: {proxy?.Name}");
+												if ((b != null && proxy == null) || (proxy != null && proxy.Slot.Parent.Name == "Content"))
 												{
 													b.SetColors(GetTextColor(GetBackgroundColorOfText(text)));
 												}
@@ -825,14 +839,24 @@ namespace ColorMyProtoFlux
 										}
 									}
 
-									colorX textColor = GetTextColor(colorToSet);
+									//colorX textColor = GetTextColor(colorToSet);
+									colorX nodeNameTextColor;
+									if (headerImage == null && Config.GetValue(COLOR_HEADER_ONLY))
+									{
+										nodeNameTextColor = GetTextColor(GetIdealBackgroundColorForNode(node, colorToSet));
+									}
+									else
+									{
+										nodeNameTextColor = GetTextColor(colorToSet);
+									}
+									//if (headerImage == null && )
 
 									var categoryText = GetCategoryTextForNode(node);
 									if (categoryText != null)
 									{
 										if (Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
 										{
-											TrySetTextColor(categoryText, ComputeCategoryTextColor(textColor));
+											TrySetTextColor(categoryText, ComputeCategoryTextColor(node, colorToSet));
 										}
 
 										if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
@@ -856,9 +880,9 @@ namespace ColorMyProtoFlux
 										{
 											if (Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
 											{
-												if (ShouldColorNodeNameText(t))
+												if (true)//ShouldColorNodeNameText(t)) // wha?
 												{
-													TrySetTextColor(t, textColor);
+													TrySetTextColor(t, nodeNameTextColor);
 												}
 												//else
 												//{

@@ -141,8 +141,8 @@ namespace ColorMyProtoFlux
 				else
 				{
 					c = ComputeColorForProtoFluxNode(visual.Node.Target);
-                    Debug("NOT color header only in text thing");
-                }
+					Debug("NOT color header only in text thing");
+				}
 				Debug("Text background color: " + c.ToString());
 				return c;
 			}
@@ -260,7 +260,21 @@ namespace ColorMyProtoFlux
 			return false;
 		}
 
-		private static colorX ComputeCategoryTextColor(colorX regularTextColor)
+		private static colorX GetIdealBackgroundColorForNode(ProtoFluxNode node, colorX modComputedCustomColor)
+		{
+			if (Config.GetValue(COLOR_HEADER_ONLY))// && GetHeaderImageForNode(node) == null) // wha?
+			{
+				return RadiantUI_Constants.BG_COLOR;
+			}
+			else
+			{
+				// return the mod computed custom color
+				return modComputedCustomColor;
+
+			}
+		}
+
+		private static colorX ComputeCategoryTextColor(ProtoFluxNode node, colorX modComputedCustomColor)
 		{
 			//return MathX.LerpUnclamped(colorX.Gray, regularTextColor, 0.5f);
 
@@ -275,7 +289,11 @@ namespace ColorMyProtoFlux
 			}
 			else if (Config.GetValue(ENABLE_TEXT_CONTRAST))
 			{
-				if (regularTextColor == NODE_TEXT_LIGHT_COLOR)
+				// instead of getting the actual background image color here (which is succeptible to changing due to being highlighted or selected),
+				// just get the color that it *should* ideally be
+				colorX idealColor = GetIdealBackgroundColorForNode(node, modComputedCustomColor);
+				colorX textColor = GetTextColor(idealColor);
+				if (textColor == NODE_TEXT_LIGHT_COLOR)
 				{
 					return new colorX(0.75f);
 				}
