@@ -28,27 +28,27 @@ namespace ColorMyProtoFlux
 		private static void UpdateConnectPointImageColor(ProtoFluxNode node, ProtoFluxNodeVisual visual, Image img)
 		{
 			colorX defaultColor = GetWireColorOfConnectionPointImage(img);
-            colorX colorToSet = defaultColor;
+			colorX colorToSet = defaultColor;
 			if (img.Slot.Name != "Connector")
 			{
 				colorToSet = colorToSet.SetA(0.3f);
 			}
-            if (Config.GetValue(FIX_TYPE_COLORS))
+			if (Config.GetValue(FIX_TYPE_COLORS))
 			{
 				float origAlpha = img.Tint.Value.a;
 				colorToSet = FixTypeColor(colorToSet).SetA(origAlpha);
-            }
+			}
 			if (Config.GetValue(MAKE_CONNECT_POINTS_FULL_ALPHA))
 			{
-                // nullable types should have 0.5 alpha
-                Type connectionType = GetTypeOfConnectionPointImage(img);
-                if (connectionType.GetTypeColor().a == 0.5f)
+				// nullable types should have 0.5 alpha
+				Type connectionType = GetTypeOfConnectionPointImage(img);
+				if (connectionType.GetTypeColor().a == 0.5f)
 				{
 					colorToSet = colorToSet.SetA(0.5f);
 				}
 				else
 				{
-                    colorToSet = colorToSet.SetA(1f);
+					colorToSet = colorToSet.SetA(1f);
 				}
 			}
 			TrySetImageTint(img, colorToSet);

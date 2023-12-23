@@ -50,47 +50,47 @@ namespace ColorMyProtoFlux
 		// might need to add handling here for if headerOnly mode is enabled
 		private static void RefreshTextColorsForNode(NodeInfo nodeInfo)
 		{
-            // default text color = radiant UI constants.NEUTRALS.light
-            if (nodeInfo.otherTextColorFields != null)
-            {
-                foreach (IField<colorX> field in nodeInfo.otherTextColorFields)
-                {
-                    if (field == null || field.IsRemoved)
-                    {
-                        NodeInfoRemove(nodeInfo);
-                        return;
-                    }
-                    else
-                    {
+			// default text color = radiant UI constants.NEUTRALS.light
+			if (nodeInfo.otherTextColorFields != null)
+			{
+				foreach (IField<colorX> field in nodeInfo.otherTextColorFields)
+				{
+					if (field == null || field.IsRemoved)
+					{
+						NodeInfoRemove(nodeInfo);
+						return;
+					}
+					else
+					{
 						UpdateOtherTextColor(nodeInfo.node, nodeInfo.visual, field.FindNearestParent<Text>());
-                    }
-                }
-            }
-            if (nodeInfo.categoryTextColorField == null || nodeInfo.categoryTextColorField.IsRemoved)
-            {
-                NodeInfoRemove(nodeInfo);
-                return;
-            }
-            else
-            {
-                UpdateCategoryTextColor(nodeInfo.node, nodeInfo.visual, nodeInfo.categoryTextColorField.FindNearestParent<Text>(), nodeInfo.modComputedCustomColor);
-            }
-            if (nodeInfo.nodeNameTextColorFields != null)
-            {
-                foreach (IField<colorX> field in nodeInfo.nodeNameTextColorFields)
-                {
-                    if (field.IsRemoved)
-                    {
-                        NodeInfoRemove(nodeInfo);
-                        return;
-                    }
-                    else
-                    {
+					}
+				}
+			}
+			if (nodeInfo.categoryTextColorField == null || nodeInfo.categoryTextColorField.IsRemoved)
+			{
+				NodeInfoRemove(nodeInfo);
+				return;
+			}
+			else
+			{
+				UpdateCategoryTextColor(nodeInfo.node, nodeInfo.visual, nodeInfo.categoryTextColorField.FindNearestParent<Text>(), nodeInfo.modComputedCustomColor);
+			}
+			if (nodeInfo.nodeNameTextColorFields != null)
+			{
+				foreach (IField<colorX> field in nodeInfo.nodeNameTextColorFields)
+				{
+					if (field.IsRemoved)
+					{
+						NodeInfoRemove(nodeInfo);
+						return;
+					}
+					else
+					{
 						UpdateNodeNameTextColor(nodeInfo.node, nodeInfo.visual, field.FindNearestParent<Text>(), nodeInfo.headerImageTintField.FindNearestParent<Image>(), nodeInfo.modComputedCustomColor);
-                    }
-                }
-            }
-        }
+					}
+				}
+			}
+		}
 
 		private static bool NodeInfoSetContainsNode(ProtoFluxNode node)
 		{
@@ -140,8 +140,8 @@ namespace ColorMyProtoFlux
 			//outNodeInfo.headerImageTintField = null;
 			//outNodeInfo.otherTextColorFields = null;
 			//outNodeInfo.categoryTextColorField = null;
-            //outNodeInfo.visual = null;
-            if (nodeInfoSet.Remove(nodeInfo))
+			//outNodeInfo.visual = null;
+			if (nodeInfoSet.Remove(nodeInfo))
 			{
 				Debug("NodeInfo removed. New size of nodeInfoSet: " + nodeInfoSet.Count.ToString());
 			}
@@ -166,9 +166,9 @@ namespace ColorMyProtoFlux
 		}
 
 		private static NodeInfo GetNodeInfoFromVisual(ProtoFluxNodeVisual visual)
-        {
+		{
 			return nodeInfoSet.FirstOrDefault(nodeInfo => nodeInfo.visual == visual) ?? nullNodeInfo;
-        }
+		}
 
 		//private static void TryTrimExcessRefDriverNodeInfo()
 		//{

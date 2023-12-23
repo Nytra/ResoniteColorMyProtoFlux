@@ -103,7 +103,7 @@ namespace ColorMyProtoFlux
 		private static ProtoFluxElementProxy GetElementProxyFromConnectionPointImage(Image img)
 		{
 			return img.Slot.Parent?.GetComponentInChildren<ProtoFluxElementProxy>();
-        }
+		}
 
 		private static Type GetTypeOfConnectionPointImage(Image img)
 		{
@@ -115,9 +115,9 @@ namespace ColorMyProtoFlux
 			ProtoFluxElementProxy proxy = GetElementProxyFromConnectionPointImage(img);
 			if (proxy != null)
 			{
-                return GetElementProxyFromConnectionPointImage(img).WireColor;
-            }
-            else
+				return GetElementProxyFromConnectionPointImage(img).WireColor;
+			}
+			else
 			{
 				Debug("Could not find ProtoFluxElementProxy from connection point image! Returning clear color.");
 				return colorX.Clear;

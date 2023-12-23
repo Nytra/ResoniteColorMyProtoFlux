@@ -122,7 +122,7 @@ namespace ColorMyProtoFlux
 					//	manualResetEvent.WaitOne(Clamp(Config.GetValue(AUTO_RANDOM_COLOR_CHANGE_THREAD_SLEEP_TIME), 2500, 30000));
 					//}
 					Thread.Sleep(10000);
-                }
+				}
 				catch (Exception e)
 				{
 					Warn($"Standard node thread error! This is probably fine.{Environment.NewLine}{e}");
