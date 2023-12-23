@@ -10,6 +10,8 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Linq;
 using System;
+using ProtoFlux.Core;
+using static ColorMyProtoFlux.ColorMyProtoFlux;
 
 #if DEBUG
 
@@ -261,6 +263,8 @@ namespace ColorMyProtoFlux
 		private static System.Random rng;
 		private static System.Random rngTimeSeeded = new System.Random();
 
+		//private static bool 
+
 		private const string COLOR_SET_TAG = "ColorMyProtoFlux.ColorSet";
 
 		//private static Dictionary<ISyncRef, IWorldElement> syncRefTargetMap = new();
@@ -285,21 +289,6 @@ namespace ColorMyProtoFlux
 			Config.Save(true);
 			harmony.PatchAll();
 
-			Debug("Checking null node info");
-			if (nullNodeInfo.node == null)
-			{
-				Debug("Null node info node is null!");
-			}
-			else
-			{
-				Debug("Null node info node is NOT null!");
-			}
-			//nullNodeInfo.node = null;
-			//nullNodeInfo.headerImageTintField = null;
-			//nullNodeInfo.otherTextColorFields = null;
-			//nullNodeInfo.categoryTextColorField = null;
-			//nullNodeInfo.visual = null;
-
 			//Thread thread1 = new(new ThreadStart(RefDriverNodeThread));
 			//thread1.Start();
 
@@ -323,6 +312,9 @@ namespace ColorMyProtoFlux
 
                 bool fixTypeColors = Config.GetValue(FIX_TYPE_COLORS);
                 bool fixTypeColors_KeyChanged = configChangedEvent.Key == FIX_TYPE_COLORS;
+
+                bool colorHeaderOnly = Config.GetValue(COLOR_HEADER_ONLY);
+                bool colorHeaderOnly_KeyChanged = configChangedEvent.Key == COLOR_HEADER_ONLY;
 
                 //bool useAutoRandomColorChange = Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE);
                 //bool useAutoRandomColorChange_KeyChanged = configChangedEvent.Key == USE_AUTO_RANDOM_COLOR_CHANGE;
@@ -415,17 +407,30 @@ namespace ColorMyProtoFlux
 
 						nodeInfo.node.RunSynchronously(() =>
 						{
-							// There are two ValueField<bool> components added to the node, the one which has UpdateOrder = 1 is the one which should store the COLOR_HEADER_ONLY config value
-							ValueField<bool> colorHeaderOnlyField = visualSlot.GetComponent((ValueField<bool> b) => b.UpdateOrder == 1);
-							if (colorHeaderOnlyField != null)
+							if (colorHeaderOnly_KeyChanged)
 							{
-								colorHeaderOnlyField.Value.Value = Config.GetValue(COLOR_HEADER_ONLY);
-							}
+                                // There are two ValueField<bool> components added to the node, the one which has UpdateOrder = 1 is the one which should store the COLOR_HEADER_ONLY config value
+                                ValueField<bool> colorHeaderOnlyField = visualSlot.GetComponent((ValueField<bool> b) => b.UpdateOrder == 1);
+                                if (colorHeaderOnlyField != null)
+                                {
+                                    colorHeaderOnlyField.Value.Value = Config.GetValue(COLOR_HEADER_ONLY);
+                                }
+                            }
 
-							//if (fixTypeColors_KeyChanged || makeConnectPointsFullAlpha_KeyChanged)
-							//{
-								//UpdateConnectPointImageColor()
-							//}
+							if (fixTypeColors_KeyChanged || makeConnectPointsFullAlpha_KeyChanged)
+							{
+								foreach(IField<colorX> field in nodeInfo.connectionPointColorFieldDefaultColors.Keys.ToList())
+								{
+									if (field == null || field.IsRemoved)
+									{
+										nodeInfo.connectionPointColorFieldDefaultColors.Remove(field);
+									}
+									else
+									{
+                                        UpdateConnectPointImageColor(nodeInfo.node, nodeInfo.visual, field.FindNearestParent<Image>());
+                                    }
+                                }
+							}
 
 							// need to wait for the drives on the node visual to update
 							nodeInfo.node.RunInUpdates(1, () => 
@@ -484,7 +489,7 @@ namespace ColorMyProtoFlux
 						// if it didn't already get removed in another thread before this coroutine
 						if (nodeInfoSet.Contains(nodeInfo))
 						{
-							SetTextColorForNode(nodeInfo);
+                            RefreshTextColorsForNode(nodeInfo);
 						}
 					}
 				});
@@ -558,8 +563,10 @@ namespace ColorMyProtoFlux
 				}
 
 				Image bgImage = GetBackgroundImageForNode(__instance.Node.Target);
+				//Image bgImage = ____bgImage.Target;
 				Slot overviewSlot = (Slot)____overviewVisual.Target?.Parent;
 				Image overviewBg = overviewSlot?.GetComponent<Image>();
+				//Image overviewBg = ____overviewBg.Target?.FindNearestParent<Image>();
 
 				if (overviewSlot != null)
 				{
@@ -588,8 +595,19 @@ namespace ColorMyProtoFlux
 				{
 					//UndriveNodeVisuals(____bgImage, ____overviewBg);
 					//colorX a = RadiantUI_Constants.BG_COLOR;
-					colorX a = ComputeColorForProtoFluxNode(__instance.Node.Target);
-					colorX b;
+					//NodeInfo nodeInfo = GetNodeInfoFromVisual(__instance);
+					colorX a;
+					//if (nodeInfo != null && nodeInfo != nullNodeInfo)
+					//{
+					//	a = nodeInfo.modComputedCustomColor;
+					//}
+					//else
+					//{
+     //                   a = ComputeColorForProtoFluxNode(__instance.Node.Target);
+     //               }
+                    a = ComputeColorForProtoFluxNode(__instance.Node.Target);
+
+                    colorX b;
 					if (__instance.IsSelected.Value)
 					{
 						b = colorX.Cyan;
@@ -682,8 +700,86 @@ namespace ColorMyProtoFlux
 		//	}
 		//}
 
-		// maybe this method should not set color itself, but only collect the fields first and then call refresh node color after?
-		[HarmonyPatch(typeof(ProtoFluxNodeVisual))]
+		[HarmonyPatch(typeof(ProtoFluxDynamicElementManager))]
+		[HarmonyPatch("OnChanges")]
+		class Patch_ProtoFluxDynamicElementManager_OnChanges
+		{
+			// This patch handles nodes which have dynamic lists such as ImpulseMultiplexer
+			// Basically any node which has those plus or minus buttons to add or remove inputs/outputs
+			// What this is doing is anytime the list changes it will set the color of the new element
+			static void Postfix(ProtoFluxDynamicElementManager __instance)
+			{
+				ProtoFluxNodeVisual visual = __instance.Visual.Target;
+				NodeInfo nodeInfo = GetNodeInfoFromVisual(visual);
+				//ISyncList list = __instance.List.Target;
+				//Type listElementType = null;
+				//if (list != null && list.Count > 0)
+				//{
+    //                //type = list.Elements.GetType().GetGenericArguments()[0];
+    //                listElementType = list.GetElement(0).GetType().;
+    //            }
+				//else if (list != null)
+				//{
+    //                //type = .GetGenericArguments()[0];
+				//	Type elementsType = list.Elements.GetType();
+    //                if (elementsType.GetGenericArguments().Count() > 0)
+    //                {
+    //                    listElementType = elementsType.GetGenericArguments()[0];
+    //                }
+    //            }
+				//if (listElementType != null)
+				//{
+    //                Debug("List element type: " + listElementType.ToString());
+    //            }
+				//colorX c = type?.GetTypeColor().MulRGB(1.5f) ?? colorX.Clear;
+                if (Config.GetValue(MAKE_CONNECT_POINTS_FULL_ALPHA) || Config.GetValue(FIX_TYPE_COLORS) || Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
+                {
+					SyncRef<Slot> inputsRoot = (SyncRef<Slot>)visual.TryGetField("_inputsRoot");
+					SyncRef<Slot> outputsRoot = (SyncRef<Slot>)visual.TryGetField("_outputsRoot");
+                    foreach (Image img in GetNodeConnectionPointImageList(visual.Node.Target, inputsRoot?.Target, outputsRoot?.Target))
+                    {
+                        if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) && nodeInfo != null && nodeInfo != nullNodeInfo)
+                        {
+                            //nodeInfo.connectionPointColorFieldDefaultColors.Add(img.TryGetField<colorX>("Tint"), img.Tint.Value);
+							if (!nodeInfo.connectionPointColorFieldDefaultColors.ContainsKey(img.Tint))
+							{
+                                nodeInfo.connectionPointColorFieldDefaultColors.Add(img.Tint, img.Tint.Value);
+                                UpdateConnectPointImageColor(visual.Node.Target, visual, img);
+                            }
+                        }
+						else
+						{
+							UpdateConnectPointImageColor(visual.Node.Target, visual, img);
+							//if (true)
+							//{
+							//	//colorX defaultColor = listElementType.GetTypeColor().MulRGB(1.5f);
+							//	Type elementType = GetTypeOfConnectionPointImage(img);
+							//	if (elementType != null)
+							//	{
+       //                             Debug("Element content type: " + elementType.ToString());
+       //                             //colorX defaultColor = elementType.GetTypeColor().MulRGB(1.5f);
+       //                             colorX defaultColor = GetWireColorOfConnectionPointImage(img);
+       //                             Debug("Element default wire color: " + defaultColor.ToString());
+       //                             if (img.Tint.Value == defaultColor)
+       //                             {
+       //                                 Debug("doop");
+       //                                 UpdateConnectPointImageColor(visual.Node.Target, visual, img);
+       //                             }
+       //                             else if (img.Tint.Value == defaultColor.SetA(0.3f))
+       //                             {
+       //                                 Debug("Doop2");
+       //                                 UpdateConnectPointImageColor(visual.Node.Target, visual, img);
+       //                             }
+       //                         }
+       //                     }
+                        }
+                    }
+                }
+            }
+		}
+
+        // maybe this method should not set color itself, but only collect the fields first and then call refresh node color after?
+        [HarmonyPatch(typeof(ProtoFluxNodeVisual))]
 		[HarmonyPatch("BuildUI")]
 		class Patch_ProtoFluxNodeVisual_BuildUI
 		{
@@ -734,28 +830,31 @@ namespace ColorMyProtoFlux
 							{
 								if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
 								{
-									nodeInfo.headerImageTintField = headerImage.TryGetField<colorX>("Tint");
+									nodeInfo.headerImageTintField = headerImage.Tint;
 								}
 								UpdateHeaderImageColor(node, __instance, headerImage, colorToSet);
                                 Debug("Set header image color");
                             }
-
-							if (Config.GetValue(MAKE_CONNECT_POINTS_FULL_ALPHA))
+                            
+							if (Config.GetValue(MAKE_CONNECT_POINTS_FULL_ALPHA) || Config.GetValue(FIX_TYPE_COLORS) || Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
 							{
-								if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
-								{
-									nodeInfo.connectionPointImageTintFields = new();
-								}
-								foreach (Image img in GetNodeConnectionPointImageList(node, ____inputsRoot.Target, ____outputsRoot.Target))
-								{
-                                    UpdateConnectPointImageColor(node, __instance, img);
+                                if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
+                                {
+                                    //nodeInfo.connectionPointImageTintFields = new();
+                                    nodeInfo.connectionPointColorFieldDefaultColors = new();
+                                }
+                                foreach (Image img in GetNodeConnectionPointImageList(node, ____inputsRoot.Target, ____outputsRoot.Target))
+                                {
                                     if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
                                     {
-										nodeInfo.connectionPointImageTintFields.Add(img.TryGetField<colorX>("Tint"));
+                                        //nodeInfo.connectionPointColorFieldDefaultColors.Add(img.TryGetField<colorX>("Tint"), img.Tint.Value);
+                                        nodeInfo.connectionPointColorFieldDefaultColors.Add(img.Tint, img.Tint.Value);
                                     }
-								}
-                                Debug("Connect point colors done");
+                                    UpdateConnectPointImageColor(node, __instance, img);
+                                }
                             }
+                            
+                            Debug("Connect point colors done");
 
 							// set node's text color, there could be multiple text components that need to be colored
 							if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
@@ -777,7 +876,7 @@ namespace ColorMyProtoFlux
 										{
 											if (nodeInfo != null)
 											{
-												nodeInfo.otherTextColorFields.Add(text.TryGetField<colorX>("Color"));
+												nodeInfo.otherTextColorFields.Add(text.Color);
 											}
 											else
 											{
@@ -797,7 +896,7 @@ namespace ColorMyProtoFlux
 										{
 											if (nodeInfo != null)
 											{
-												nodeInfo.categoryTextColorField = categoryText.TryGetField<colorX>("Color");
+												nodeInfo.categoryTextColorField = categoryText.Color;
 											}
 											else
 											{
@@ -817,7 +916,7 @@ namespace ColorMyProtoFlux
 										{
 											if (nodeInfo != null)
 											{
-												nodeInfo.nodeNameTextColorFields.Add(t.TryGetField<colorX>("Color"));
+												nodeInfo.nodeNameTextColorFields.Add(t.Color);
 											}
 											else
 											{

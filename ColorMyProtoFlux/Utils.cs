@@ -100,6 +100,30 @@ namespace ColorMyProtoFlux
 			return workerCategoryPath;
 		}
 
+		private static ProtoFluxElementProxy GetElementProxyFromConnectionPointImage(Image img)
+		{
+			return img.Slot.Parent?.GetComponentInChildren<ProtoFluxElementProxy>();
+        }
+
+		private static Type GetTypeOfConnectionPointImage(Image img)
+		{
+			return GetElementProxyFromConnectionPointImage(img)?.ElementContentType;
+		}
+
+		private static colorX GetWireColorOfConnectionPointImage(Image img)
+		{
+			ProtoFluxElementProxy proxy = GetElementProxyFromConnectionPointImage(img);
+			if (proxy != null)
+			{
+                return GetElementProxyFromConnectionPointImage(img).WireColor;
+            }
+            else
+			{
+				Debug("Could not find ProtoFluxElementProxy from connection point image! Returning clear color.");
+				return colorX.Clear;
+			}
+		}
+
 		private static colorX GetBackgroundColorOfText(Text t)
 		{
 			ExtraDebug("Text refid: " + t.ReferenceID.ToString());
@@ -136,17 +160,8 @@ namespace ColorMyProtoFlux
 			{
 				//SyncRef<Image> bgImage = (SyncRef<Image>)AccessTools.Field(typeof(ProtoFluxNodeVisual), "_bgImage").GetValue(visual);
 				//SyncRef<Image> bgImage = (SyncRef<Image>)visual.TryGetField<SyncRef<Image>>("_bgImage");
-				colorX c;
-				if (Config.GetValue(COLOR_HEADER_ONLY))
-				{
-					c = GetBackgroundImageForNode(visual.Node.Target).Tint.Value;
-					ExtraDebug("color header only in text thing");
-				}
-				else
-				{
-					c = ComputeColorForProtoFluxNode(visual.Node.Target);
-					ExtraDebug("NOT color header only in text thing");
-				}
+				colorX computedColorForNode = ComputeColorForProtoFluxNode(visual.Node.Target);
+				colorX c = GetIntendedBackgroundColorForNode(visual.Node.Target, computedColorForNode); ;
 				ExtraDebug("Text background color: " + c.ToString());
 				return c;
 			}
@@ -265,6 +280,8 @@ namespace ColorMyProtoFlux
 
 		private static colorX GetIntendedBackgroundColorForNode(ProtoFluxNode node, colorX modComputedCustomColor)
 		{
+			// basically, I don't want to get the actual node background color because it is succeptible to being changed by highlighting or selection with the tool
+			// so we get the color that it *should* be in normal conditions
 			if (Config.GetValue(COLOR_HEADER_ONLY))// && GetHeaderImageForNode(node) == null) // wha?
 			{
 				return RadiantUI_Constants.BG_COLOR;
@@ -273,7 +290,6 @@ namespace ColorMyProtoFlux
 			{
 				// return the mod computed custom color
 				return modComputedCustomColor;
-
 			}
 		}
 
@@ -296,17 +312,12 @@ namespace ColorMyProtoFlux
 		private static colorX ComputeCategoryTextColor(ProtoFluxNode node, colorX modComputedCustomColor)
 		{
 			//return MathX.LerpUnclamped(colorX.Gray, regularTextColor, 0.5f);
-
-			// return the static text color somewhere here
-			//if (Config.GetValue(COLOR_HEADER_ONLY))
-			//{
-				
-			//}
+			
 			if (Config.GetValue(USE_STATIC_TEXT_COLOR))
 			{
 				return Config.GetValue(STATIC_TEXT_COLOR);
 			}
-			else if (Config.GetValue(ENABLE_TEXT_CONTRAST))
+			else if (Config.GetValue(ENABLE_TEXT_CONTRAST) && !Config.GetValue(COLOR_HEADER_ONLY))
 			{
 				// instead of getting the actual background image color here (which is succeptible to changing due to being highlighted or selected),
 				// just get the color that it *should* ideally be
@@ -323,6 +334,7 @@ namespace ColorMyProtoFlux
 			}
 			else
 			{
+				// default color
 				return colorX.DarkGray;
 			}
 		}

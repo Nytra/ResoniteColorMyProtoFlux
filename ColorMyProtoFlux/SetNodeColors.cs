@@ -27,30 +27,31 @@ namespace ColorMyProtoFlux
 
 		private static void UpdateConnectPointImageColor(ProtoFluxNode node, ProtoFluxNodeVisual visual, Image img)
 		{
-			bool changedAnything = false;
-			if (Config.GetValue(FIX_TYPE_COLORS))
+			colorX defaultColor = GetWireColorOfConnectionPointImage(img);
+            colorX colorToSet = defaultColor;
+			if (img.Slot.Name != "Connector")
+			{
+				colorToSet = colorToSet.SetA(0.3f);
+			}
+            if (Config.GetValue(FIX_TYPE_COLORS))
 			{
 				float origAlpha = img.Tint.Value.a;
-				TrySetImageTint(img, FixTypeColor(img.Tint.Value).SetA(origAlpha));
-				changedAnything = true;
-			}
+				colorToSet = FixTypeColor(colorToSet).SetA(origAlpha);
+            }
 			if (Config.GetValue(MAKE_CONNECT_POINTS_FULL_ALPHA))
 			{
-				// nullable types should have 0.5 alpha
-				if (img.Tint.Value.a == 0.5f)
+                // nullable types should have 0.5 alpha
+                Type connectionType = GetTypeOfConnectionPointImage(img);
+                if (connectionType.GetTypeColor().a == 0.5f)
 				{
-					TrySetImageTint(img, img.Tint.Value.SetA(0.5f));
+					colorToSet = colorToSet.SetA(0.5f);
 				}
 				else
 				{
-					TrySetImageTint(img, img.Tint.Value.SetA(1f));
+                    colorToSet = colorToSet.SetA(1f);
 				}
-				changedAnything = true;
 			}
-			if (!changedAnything)
-			{
-				// set default ?
-			}
+			TrySetImageTint(img, colorToSet);
 		}
 
 		private static void UpdateOtherTextColor(ProtoFluxNode node, ProtoFluxNodeVisual visual, Text text)

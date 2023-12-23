@@ -21,7 +21,8 @@ namespace ColorMyProtoFlux
 			public IField<colorX> categoryTextColorField;
 			public HashSet<IField<colorX>> nodeNameTextColorFields;
 			public colorX modComputedCustomColor;
-			public HashSet<IField<colorX>> connectionPointImageTintFields;
+			//public HashSet<IField<colorX>> connectionPointImageTintFields;
+			public Dictionary<IField<colorX>, colorX> connectionPointColorFieldDefaultColors;
 			//public HashSet<Button> nodeButtons;
 			// dont need to store node background image because the UpdateNodeStatus patch handles coloring of that part
 		}
@@ -47,7 +48,7 @@ namespace ColorMyProtoFlux
 		//}
 
 		// might need to add handling here for if headerOnly mode is enabled
-		private static void SetTextColorForNode(NodeInfo nodeInfo)
+		private static void RefreshTextColorsForNode(NodeInfo nodeInfo)
 		{
             // default text color = radiant UI constants.NEUTRALS.light
             if (nodeInfo.otherTextColorFields != null)
@@ -133,8 +134,8 @@ namespace ColorMyProtoFlux
 				Debug("NodeInfo was not in nodeInfoSet.");
 				return;
 			}
-			NodeInfo outNodeInfo = null;
-			nodeInfoSet.TryGetValue(nodeInfo, out outNodeInfo);
+			//NodeInfo outNodeInfo = null;
+			//nodeInfoSet.TryGetValue(nodeInfo, out outNodeInfo);
 			//outNodeInfo.node = null;
 			//outNodeInfo.headerImageTintField = null;
 			//outNodeInfo.otherTextColorFields = null;
@@ -148,8 +149,8 @@ namespace ColorMyProtoFlux
 			{
 				Debug("NodeInfo was not in nodeInfoSet (this should never happen).");
 			}
-			TryTrimExcessNodeInfo();
 
+			TryTrimExcessNodeInfo();
 		}
 
 		private static void TryTrimExcessNodeInfo()
