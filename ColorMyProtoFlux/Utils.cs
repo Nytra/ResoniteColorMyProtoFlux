@@ -102,13 +102,17 @@ namespace ColorMyProtoFlux
 
 		private static colorX GetBackgroundColorOfText(Text t)
 		{
-			Debug("Text refid: " + t.ReferenceID.ToString());
+			ExtraDebug("Text refid: " + t.ReferenceID.ToString());
 			if (t.Slot.Parent?.Name == "Image" || t.Slot.Parent?.Name == "Button")
 			{
 				//Debug("Image or Button");
 				var img = t.Slot.Parent?.GetComponent<Image>();
-				Debug("Text background color (Connection or button): " + img.Tint.Value.ToString());
-				return img.Tint.Value;
+				if (img != null)
+				{
+					ExtraDebug("Text background color (Connection or button): " + img.Tint.Value.ToString());
+					return img.Tint.Value;
+				}
+				Debug("Connection or button image null!");
 			}
 			//        else if (t.Slot.Parent?.Parent?.Name == "Panel")
 			//        {
@@ -136,17 +140,17 @@ namespace ColorMyProtoFlux
 				if (Config.GetValue(COLOR_HEADER_ONLY))
 				{
 					c = GetBackgroundImageForNode(visual.Node.Target).Tint.Value;
-					Debug("color header only in text thing");
+					ExtraDebug("color header only in text thing");
 				}
 				else
 				{
 					c = ComputeColorForProtoFluxNode(visual.Node.Target);
-					Debug("NOT color header only in text thing");
+					ExtraDebug("NOT color header only in text thing");
 				}
-				Debug("Text background color: " + c.ToString());
+				ExtraDebug("Text background color: " + c.ToString());
 				return c;
 			}
-			Debug("Failed. Visual null. Returning white.");
+			Debug("GetBackgroundColorOfText Failed. Visual null. Returning white.");
 			return colorX.White;
 		}
 
@@ -226,7 +230,6 @@ namespace ColorMyProtoFlux
 			}
 		}
 
-
 		private static List<Text> GetOtherTextListForNode(ProtoFluxNode node)
 		{
 			string category = GetWorkerCategoryFilePath(node);
@@ -260,7 +263,7 @@ namespace ColorMyProtoFlux
 			return false;
 		}
 
-		private static colorX GetIdealBackgroundColorForNode(ProtoFluxNode node, colorX modComputedCustomColor)
+		private static colorX GetIntendedBackgroundColorForNode(ProtoFluxNode node, colorX modComputedCustomColor)
 		{
 			if (Config.GetValue(COLOR_HEADER_ONLY))// && GetHeaderImageForNode(node) == null) // wha?
 			{
@@ -272,6 +275,22 @@ namespace ColorMyProtoFlux
 				return modComputedCustomColor;
 
 			}
+		}
+
+		private static List<Image> GetNodeConnectionPointImageList(ProtoFluxNode node, Slot inputsRoot, Slot outputsRoot)
+		{
+			List<Image> imgs = new List<Image>();
+			foreach(Image img in inputsRoot?.GetComponentsInChildren<Image>().Concat(outputsRoot?.GetComponentsInChildren<Image>()))
+			{
+				// Skip buttons like the small ones on Impulse Demultiplexer
+				// Also skip the weird line on Multiplexers/Demultiplexers
+				if (img.Tint.IsDriven || (node.Name.ToLower().Contains("multiplexer") && img.Slot.GetComponent<IgnoreLayout>() != null))
+				{
+					continue;
+				}
+				imgs.Add(img);
+			}
+			return imgs;
 		}
 
 		private static colorX ComputeCategoryTextColor(ProtoFluxNode node, colorX modComputedCustomColor)
@@ -291,8 +310,8 @@ namespace ColorMyProtoFlux
 			{
 				// instead of getting the actual background image color here (which is succeptible to changing due to being highlighted or selected),
 				// just get the color that it *should* ideally be
-				colorX idealColor = GetIdealBackgroundColorForNode(node, modComputedCustomColor);
-				colorX textColor = GetTextColor(idealColor);
+				colorX intendedColor = GetIntendedBackgroundColorForNode(node, modComputedCustomColor);
+				colorX textColor = GetTextColor(intendedColor);
 				if (textColor == NODE_TEXT_LIGHT_COLOR)
 				{
 					return new colorX(0.75f);

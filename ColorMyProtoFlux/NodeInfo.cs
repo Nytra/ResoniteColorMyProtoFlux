@@ -21,129 +21,75 @@ namespace ColorMyProtoFlux
 			public IField<colorX> categoryTextColorField;
 			public HashSet<IField<colorX>> nodeNameTextColorFields;
 			public colorX modComputedCustomColor;
+			public HashSet<IField<colorX>> connectionPointImageTintFields;
 			//public HashSet<Button> nodeButtons;
 			// dont need to store node background image because the UpdateNodeStatus patch handles coloring of that part
 		}
 
-		private static void NodeInfoSetHeaderBgColor(NodeInfo nodeInfo, colorX c)
-		{
-			NodeInfo outNodeInfo = null;
-			if (nodeInfoSet.TryGetValue(nodeInfo, out outNodeInfo))
-			{
-				if (outNodeInfo.headerImageTintField.IsRemoved)
-				{
-					NodeInfoRemove(nodeInfo);
-				}
-				else
-				{
-					if (outNodeInfo.headerImageTintField.Value != c) outNodeInfo.headerImageTintField.Value = c;
-				}
-			}
-			else
-			{
-				Debug("Could not set Bg Color. NodeInfo was not found.");
-			}
-		}
+		//private static void NodeInfoSetHeaderBgColor(NodeInfo nodeInfo, colorX c)
+		//{
+		//	NodeInfo outNodeInfo = null;
+		//	if (nodeInfoSet.TryGetValue(nodeInfo, out outNodeInfo))
+		//	{
+		//		if (outNodeInfo.headerImageTintField.IsRemoved)
+		//		{
+		//			NodeInfoRemove(nodeInfo);
+		//		}
+		//		else
+		//		{
+		//			if (outNodeInfo.headerImageTintField.Value != c) outNodeInfo.headerImageTintField.Value = c;
+		//		}
+		//	}
+		//	else
+		//	{
+		//		Debug("Could not set Bg Color. NodeInfo was not found.");
+		//	}
+		//}
 
 		// might need to add handling here for if headerOnly mode is enabled
-		private static void SetTextColorForNode(NodeInfo nodeInfo, colorX c)
+		private static void SetTextColorForNode(NodeInfo nodeInfo)
 		{
-			NodeInfo outNodeInfo = null;
-			if (nodeInfoSet.TryGetValue(nodeInfo, out outNodeInfo))
-			{
-				// default text color = radiant UI constants.NEUTRALS.light
-                if (outNodeInfo.otherTextColorFields != null)
+            // default text color = radiant UI constants.NEUTRALS.light
+            if (nodeInfo.otherTextColorFields != null)
+            {
+                foreach (IField<colorX> field in nodeInfo.otherTextColorFields)
                 {
-                    foreach (IField<colorX> field in outNodeInfo.otherTextColorFields)
-                    {
-                        if (field.IsRemoved)
-                        {
-                            NodeInfoRemove(nodeInfo);
-                            return;
-                        }
-                        else
-                        {
-							if (ShouldColorAnyText())
-							{
-								//TrySetTextColor(text, GetTextColor(GetBackgroundColorOfText(text)));
-								Text text = field.Parent as Text;
-								if (text != null)
-								{
-                                    colorX colorToSet = GetTextColor(GetBackgroundColorOfText(text));
-                                    Button b = text.Slot.GetComponent<Button>();
-                                    Component proxy = text.Slot.GetComponent((Component c) => c.Name.Contains("Proxy"));
-                                    //Debug($"button is null: {b == null}");
-                                    //Debug($"proxy: {proxy?.Name ?? "null"}");
-                                    if ((b != null && proxy == null) || (proxy != null && proxy.Slot.Parent.Name == "Content"))
-                                    {
-                                        b.SetColors(colorToSet);
-                                    }
-                                    else
-                                    {
-                                        if (field.Value != colorToSet) field.Value = colorToSet;
-                                    }
-                                }
-                            }
-							else
-							{
-								// Neutrals.Light is Resonite default
-								if (field.Value != RadiantUI_Constants.Neutrals.LIGHT) field.Value = RadiantUI_Constants.Neutrals.LIGHT;
-							}
-                        }
-                    }
-                }
-				// category text should be dark grey by default
-				if (outNodeInfo.categoryTextColorField != null)
-				{
-                    if (outNodeInfo.categoryTextColorField.IsRemoved)
+                    if (field == null || field.IsRemoved)
                     {
                         NodeInfoRemove(nodeInfo);
                         return;
                     }
                     else
                     {
-						if (ShouldColorAnyText())
-						{
-							colorX categoryTextColor = ComputeCategoryTextColor(nodeInfo.node, nodeInfo.modComputedCustomColor);
-                            if (outNodeInfo.categoryTextColorField.Value != categoryTextColor) outNodeInfo.categoryTextColorField.Value = categoryTextColor;
-                        }
-                        else
-						{
-							// Resonite default
-							if (outNodeInfo.categoryTextColorField.Value != colorX.DarkGray) outNodeInfo.categoryTextColorField.Value = colorX.DarkGray;
-						}
-                    }
-                }
-                if (outNodeInfo.nodeNameTextColorFields != null)
-                {
-					foreach (IField<colorX> field in outNodeInfo.nodeNameTextColorFields)
-					{
-                        if (field.IsRemoved)
-                        {
-                            NodeInfoRemove(nodeInfo);
-                            return;
-                        }
-                        else
-                        {
-                            if (ShouldColorAnyText())// && ShouldColorNodeNameText(field.Parent as Text)) // wha?
-                            {
-                                if (field.Value != c) field.Value = c;
-                                //TrySetNodeNameTextColor(field.Parent as Text, c);
-                            }
-                            else
-                            {
-								// Resonite default
-                                if (field.Value != RadiantUI_Constants.Neutrals.LIGHT) field.Value = RadiantUI_Constants.Neutrals.LIGHT;
-                            }
-                        }
+						UpdateOtherTextColor(nodeInfo.node, nodeInfo.visual, field.FindNearestParent<Text>());
                     }
                 }
             }
-			else
-			{
-				Debug("Could not set Text Color. NodeInfo was not found.");
-			}
-		}
+            if (nodeInfo.categoryTextColorField == null || nodeInfo.categoryTextColorField.IsRemoved)
+            {
+                NodeInfoRemove(nodeInfo);
+                return;
+            }
+            else
+            {
+                UpdateCategoryTextColor(nodeInfo.node, nodeInfo.visual, nodeInfo.categoryTextColorField.FindNearestParent<Text>(), nodeInfo.modComputedCustomColor);
+            }
+            if (nodeInfo.nodeNameTextColorFields != null)
+            {
+                foreach (IField<colorX> field in nodeInfo.nodeNameTextColorFields)
+                {
+                    if (field.IsRemoved)
+                    {
+                        NodeInfoRemove(nodeInfo);
+                        return;
+                    }
+                    else
+                    {
+						UpdateNodeNameTextColor(nodeInfo.node, nodeInfo.visual, field.FindNearestParent<Text>(), nodeInfo.headerImageTintField.FindNearestParent<Image>(), nodeInfo.modComputedCustomColor);
+                    }
+                }
+            }
+        }
 
 		private static bool NodeInfoSetContainsNode(ProtoFluxNode node)
 		{
@@ -189,11 +135,11 @@ namespace ColorMyProtoFlux
 			}
 			NodeInfo outNodeInfo = null;
 			nodeInfoSet.TryGetValue(nodeInfo, out outNodeInfo);
-			outNodeInfo.node = null;
-			outNodeInfo.headerImageTintField = null;
-			outNodeInfo.otherTextColorFields = null;
-			outNodeInfo.categoryTextColorField = null;
-            outNodeInfo.visual = null;
+			//outNodeInfo.node = null;
+			//outNodeInfo.headerImageTintField = null;
+			//outNodeInfo.otherTextColorFields = null;
+			//outNodeInfo.categoryTextColorField = null;
+            //outNodeInfo.visual = null;
             if (nodeInfoSet.Remove(nodeInfo))
 			{
 				Debug("NodeInfo removed. New size of nodeInfoSet: " + nodeInfoSet.Count.ToString());
@@ -202,7 +148,6 @@ namespace ColorMyProtoFlux
 			{
 				Debug("NodeInfo was not in nodeInfoSet (this should never happen).");
 			}
-
 			TryTrimExcessNodeInfo();
 
 		}
@@ -238,14 +183,14 @@ namespace ColorMyProtoFlux
 
 		private static void NodeInfoSetClear()
 		{
-			foreach (NodeInfo nodeInfo in nodeInfoSet)
-			{
-				nodeInfo.node = null;
-				nodeInfo.headerImageTintField = null;
-				nodeInfo.otherTextColorFields = null;
-				nodeInfo.categoryTextColorField = null;
-				nodeInfo.visual = null;
-			}
+			//foreach (NodeInfo nodeInfo in nodeInfoSet)
+			//{
+			//	nodeInfo.node = null;
+			//	nodeInfo.headerImageTintField = null;
+			//	nodeInfo.otherTextColorFields = null;
+			//	nodeInfo.categoryTextColorField = null;
+			//	nodeInfo.visual = null;
+			//}
 			nodeInfoSet.Clear();
 			TryTrimExcessNodeInfo();
 		}
@@ -267,12 +212,8 @@ namespace ColorMyProtoFlux
 			return (nodeInfo == null ||
 				   nodeInfo.node == null ||
 				   nodeInfo.node.IsRemoved ||
-				   nodeInfo.node.IsDestroyed ||
-				   nodeInfo.node.IsDisposed ||
 				   nodeInfo.node.Slot == null ||
 				   nodeInfo.node.Slot.IsRemoved ||
-				   nodeInfo.node.Slot.IsDestroyed ||
-				   nodeInfo.node.Slot.IsDisposed ||
 				   nodeInfo.node.World == null ||
 				   nodeInfo.node.World.IsDestroyed ||
 				   nodeInfo.node.World.IsDisposed);

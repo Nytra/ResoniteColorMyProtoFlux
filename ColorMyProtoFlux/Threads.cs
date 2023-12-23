@@ -77,8 +77,8 @@ namespace ColorMyProtoFlux
 							if (IsNodeInvalid(nodeInfo))
 							{
 								NodeInfoRemove(nodeInfo);
-								Thread.Sleep(THREAD_INNER_SLEEP_TIME_MILLISECONDS);
-								continue;
+								//Thread.Sleep(THREAD_INNER_SLEEP_TIME_MILLISECONDS);
+								//continue;
 							}
 
 							//if (Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))
