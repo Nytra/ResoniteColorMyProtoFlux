@@ -53,18 +53,18 @@ namespace ColorMyProtoFlux
 
 		// ===== Important Stuff =====
 
-        [AutoRegisterConfigKey]
-        private static ModConfigurationKey<dummy> DUMMY_SEP_0_5 = new ModConfigurationKey<dummy>("DUMMY_SEP_0_5", SEP_STRING, () => new dummy());
-        [AutoRegisterConfigKey]
-        private static ModConfigurationKey<bool> COLOR_HEADER_ONLY = new ModConfigurationKey<bool>("COLOR_HEADER_ONLY", "Color node header only:", () => false);
-        [AutoRegisterConfigKey]
-        private static ModConfigurationKey<bool> MAKE_CONNECT_POINTS_FULL_ALPHA = new ModConfigurationKey<bool>("MAKE_CONNECT_POINTS_FULL_ALPHA", "Make type-colored images on nodes have full alpha:", () => true);
-        [AutoRegisterConfigKey]
-        private static ModConfigurationKey<bool> FIX_TYPE_COLORS = new ModConfigurationKey<bool>("FIX_TYPE_COLORS", "Fix type colors:", () => true);
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<dummy> DUMMY_SEP_0_5 = new ModConfigurationKey<dummy>("DUMMY_SEP_0_5", SEP_STRING, () => new dummy());
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<bool> COLOR_HEADER_ONLY = new ModConfigurationKey<bool>("COLOR_HEADER_ONLY", "Color node header only:", () => false);
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<bool> MAKE_CONNECT_POINTS_FULL_ALPHA = new ModConfigurationKey<bool>("MAKE_CONNECT_POINTS_FULL_ALPHA", "Make type-colored images on nodes have full alpha:", () => true);
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<bool> FIX_TYPE_COLORS = new ModConfigurationKey<bool>("FIX_TYPE_COLORS", "Fix type colors:", () => true);
 
-        // ===== STATIC =====
+		// ===== STATIC =====
 
-        [AutoRegisterConfigKey]
+		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_1", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_1_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_1_1", $"<color={HEADER_TEXT_COLOR}>[STATIC]</color>", () => new dummy());
@@ -585,20 +585,20 @@ namespace ColorMyProtoFlux
 						NodeInfo nodeInfo = GetNodeInfoFromVisual(__instance);
 						if (nodeInfo != null)
 						{
-                            RefreshNodeColor(nodeInfo);
-                        }
+							RefreshNodeColor(nodeInfo);
+						}
 					}
 					else
 					{
 						if ((bgImage != null && bgImage.Tint.Value == errorColorToSet) || (overviewBg != null && overviewBg.Tint.Value == errorColorToSet))
 						{
-                            // does this work? it is supposed to reset the header color when the node becomes valid after being invalid
-                            NodeInfo nodeInfo = GetNodeInfoFromVisual(__instance);
-                            if (nodeInfo != null)
-                            {
-                                RefreshNodeColor(nodeInfo);
-                            }
-                        }
+							// does this work? it is supposed to reset the header color when the node becomes valid after being invalid
+							NodeInfo nodeInfo = GetNodeInfoFromVisual(__instance);
+							if (nodeInfo != null)
+							{
+								RefreshNodeColor(nodeInfo);
+							}
+						}
 					}
 					if (bgImage != null)
 					{

@@ -270,14 +270,14 @@ namespace ColorMyProtoFlux
 				linBgPreMul = bgColor.Value.ToProfile(ColorProfile.Linear).MulRGB(bgColor.Value.a);
 
 				// alpha blend
-                result = linFgPreMul + (1 - linFgPreMul.a) * linBgPreMul;
-            }
+				result = linFgPreMul + (1 - linFgPreMul.a) * linBgPreMul;
+			}
 			else
 			{
-                result = linFgPreMul;
+				result = linFgPreMul;
 			}
 
-            float luminance = (0.2126f * result.r + 0.7152f * result.g + 0.0722f * result.b);
+			float luminance = (0.2126f * result.r + 0.7152f * result.g + 0.0722f * result.b);
 
 			return luminance;
 		}
