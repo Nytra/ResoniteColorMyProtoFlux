@@ -21,8 +21,8 @@ namespace ColorMyProtoFlux
 			public IField<colorX> categoryTextColorField;
 			public HashSet<IField<colorX>> nodeNameTextColorFields;
 			public colorX modComputedCustomColor;
-			//public HashSet<IField<colorX>> connectionPointImageTintFields;
-			public Dictionary<IField<colorX>, colorX> connectionPointColorFieldDefaultColors;
+			public HashSet<IField<colorX>> connectionPointImageTintFields;
+			//public Dictionary<IField<colorX>, colorX> connectionPointColorFieldDefaultColors;
 			//public HashSet<Button> nodeButtons;
 			// dont need to store node background image because the UpdateNodeStatus patch handles coloring of that part
 		}
@@ -62,7 +62,7 @@ namespace ColorMyProtoFlux
 					}
 					else
 					{
-						UpdateOtherTextColor(nodeInfo.node, nodeInfo.visual, field.FindNearestParent<Text>());
+						UpdateOtherTextColor(nodeInfo.node, nodeInfo.visual, field.FindNearestParent<Text>(), nodeInfo.modComputedCustomColor);
 					}
 				}
 			}
@@ -79,7 +79,7 @@ namespace ColorMyProtoFlux
 			{
 				foreach (IField<colorX> field in nodeInfo.nodeNameTextColorFields)
 				{
-					if (field.IsRemoved)
+					if (field == null || field.IsRemoved)
 					{
 						NodeInfoRemove(nodeInfo);
 						return;
@@ -118,7 +118,7 @@ namespace ColorMyProtoFlux
 
 		private static NodeInfo GetNodeInfoForNode(ProtoFluxNode node)
 		{
-			return nodeInfoSet.FirstOrDefault(nodeInfo => nodeInfo.node == node) ?? nullNodeInfo;
+			return nodeInfoSet.FirstOrDefault(nodeInfo => nodeInfo.node == node);
 		}
 
 		private static void NodeInfoRemove(NodeInfo nodeInfo)
@@ -167,7 +167,7 @@ namespace ColorMyProtoFlux
 
 		private static NodeInfo GetNodeInfoFromVisual(ProtoFluxNodeVisual visual)
 		{
-			return nodeInfoSet.FirstOrDefault(nodeInfo => nodeInfo.visual == visual) ?? nullNodeInfo;
+			return nodeInfoSet.FirstOrDefault(nodeInfo => nodeInfo.visual == visual);
 		}
 
 		//private static void TryTrimExcessRefDriverNodeInfo()

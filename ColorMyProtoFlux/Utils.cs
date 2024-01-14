@@ -124,7 +124,7 @@ namespace ColorMyProtoFlux
 			}
 		}
 
-		private static colorX GetBackgroundColorOfText(Text t)
+		private static colorX GetBackgroundColorOfText(Text t, colorX modComputedCustomColor)
 		{
 			ExtraDebug("Text refid: " + t.ReferenceID.ToString());
 			if (t.Slot.Parent?.Name == "Image" || t.Slot.Parent?.Name == "Button")
@@ -160,8 +160,8 @@ namespace ColorMyProtoFlux
 			{
 				//SyncRef<Image> bgImage = (SyncRef<Image>)AccessTools.Field(typeof(ProtoFluxNodeVisual), "_bgImage").GetValue(visual);
 				//SyncRef<Image> bgImage = (SyncRef<Image>)visual.TryGetField<SyncRef<Image>>("_bgImage");
-				colorX computedColorForNode = ComputeColorForProtoFluxNode(visual.Node.Target);
-				colorX c = GetIntendedBackgroundColorForNode(visual.Node.Target, computedColorForNode); ;
+				//colorX computedColorForNode = modComputedCustomColor;
+				colorX c = GetIntendedBackgroundColorForNode(visual.Node.Target, modComputedCustomColor); ;
 				ExtraDebug("Text background color: " + c.ToString());
 				return c;
 			}

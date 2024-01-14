@@ -35,7 +35,7 @@ namespace ColorMyProtoFlux
 			}
 			if (Config.GetValue(FIX_TYPE_COLORS))
 			{
-				float origAlpha = img.Tint.Value.a;
+				float origAlpha = colorToSet.a;
 				colorToSet = FixTypeColor(colorToSet).SetA(origAlpha);
 			}
 			if (Config.GetValue(MAKE_CONNECT_POINTS_FULL_ALPHA))
@@ -54,7 +54,7 @@ namespace ColorMyProtoFlux
 			TrySetImageTint(img, colorToSet);
 		}
 
-		private static void UpdateOtherTextColor(ProtoFluxNode node, ProtoFluxNodeVisual visual, Text text)
+		private static void UpdateOtherTextColor(ProtoFluxNode node, ProtoFluxNodeVisual visual, Text text, colorX modComputedCustomColor)
 		{
 			if (Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
 			{
@@ -64,11 +64,11 @@ namespace ColorMyProtoFlux
 				//Debug($"proxy: {proxy?.Name}");
 				if ((b != null && proxy == null) || (proxy != null && proxy.Slot.Parent.Name == "Content"))
 				{
-					b.SetColors(GetTextColor(GetBackgroundColorOfText(text)));
+					b.SetColors(GetTextColor(GetBackgroundColorOfText(text, modComputedCustomColor)));
 				}
 				else
 				{
-					TrySetTextColor(text, GetTextColor(GetBackgroundColorOfText(text)));
+					TrySetTextColor(text, GetTextColor(GetBackgroundColorOfText(text, modComputedCustomColor), GetIntendedBackgroundColorForNode(node, modComputedCustomColor)));
 				}
 			}
 			else

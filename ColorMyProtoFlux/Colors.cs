@@ -2,6 +2,7 @@
 using FrooxEngine.ProtoFlux;
 using ResoniteModLoader;
 using System;
+using System.CodeDom.Compiler;
 
 namespace ColorMyProtoFlux
 {
@@ -259,14 +260,24 @@ namespace ColorMyProtoFlux
 			}
 		}
 
-		// This worked in Neos, but maybe should be changed for Resonite?
-		private static float GetLuminance(colorX c)
+		private static float GetLuminance(colorX fgColor, colorX? bgColor = null)
 		{
-			float sR = (float)Math.Pow(c.r, 2.2f);
-			float sG = (float)Math.Pow(c.g, 2.2f);
-			float sB = (float)Math.Pow(c.b, 2.2f);
+			color result;
+			color linFgPreMul, linBgPreMul;
+			linFgPreMul = fgColor.ToProfile(ColorProfile.Linear).MulRGB(fgColor.a);
+			if (bgColor.HasValue && fgColor.a != 1.0f)
+			{
+				linBgPreMul = bgColor.Value.ToProfile(ColorProfile.Linear).MulRGB(bgColor.Value.a);
 
-			float luminance = (0.2126f * sR + 0.7152f * sG + 0.0722f * sB);
+				// alpha blend
+                result = linFgPreMul + (1 - linFgPreMul.a) * linBgPreMul;
+            }
+			else
+			{
+                result = linFgPreMul;
+			}
+
+            float luminance = (0.2126f * result.r + 0.7152f * result.g + 0.0722f * result.b);
 
 			return luminance;
 		}
@@ -278,7 +289,7 @@ namespace ColorMyProtoFlux
 			return (float)Math.Pow(luminance, Config.GetValue(PERCEPTUAL_LIGHTNESS_EXPONENT));
 		}
 
-		private static colorX GetTextColor(colorX bg)
+		private static colorX GetTextColor(colorX backgroundColorOfText, colorX? additionalBackgroundColor = null)
 		{
 			colorX c;
 			if (Config.GetValue(USE_STATIC_TEXT_COLOR))
@@ -287,7 +298,8 @@ namespace ColorMyProtoFlux
 			}
 			else
 			{
-				c = GetPerceptualLightness(GetLuminance(bg)) >= 0.5f ? NODE_TEXT_DARK_COLOR : NODE_TEXT_LIGHT_COLOR;
+				// additionalBackgroundColor used if backgroundColorOfText has transparency
+				c = GetPerceptualLightness(GetLuminance(backgroundColorOfText, additionalBackgroundColor)) >= 0.5f ? NODE_TEXT_DARK_COLOR : NODE_TEXT_LIGHT_COLOR;
 			}
 			if (!Config.GetValue(ALLOW_NEGATIVE_AND_EMISSIVE_COLORS))
 			{
