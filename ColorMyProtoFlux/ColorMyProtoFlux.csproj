@@ -12,7 +12,6 @@
     <Deterministic>true</Deterministic>
     <CopyLocal>false</CopyLocal>
     <CopyToMods Condition="'$(CopyToMods)'==''">true</CopyToMods>
-    <ResonitePath>$(MSBuildThisFileDirectory)NeosVR\</ResonitePath>
     <ResonitePath Condition="Exists('G:\Neos\app\')">G:\SteamLibrary\steamapps\common\Resonite\</ResonitePath>
     <GameRefsPath>$(ResonitePath)Resonite_Data\Managed\</GameRefsPath>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
@@ -54,6 +53,7 @@
   </Target>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(CopyToMods)'=='true'">
+	<Copy SourceFiles="$(TargetPath)" DestinationFolder="$(ResonitePath)rml_mods\HotReloadMods" />
     <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(ResonitePath)rml_mods" />
   </Target>
 </Project>

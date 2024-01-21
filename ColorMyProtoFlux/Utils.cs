@@ -282,7 +282,7 @@ namespace ColorMyProtoFlux
 		{
 			// basically, I don't want to get the actual node background color because it is succeptible to being changed by highlighting or selection with the tool
 			// so we get the color that it *should* be in normal conditions
-			if (Config.GetValue(COLOR_HEADER_ONLY))// && GetHeaderImageForNode(node) == null) // wha?
+			if (ShouldColorHeaderOnly(node)) // wha?
 			{
 				return RadiantUI_Constants.BG_COLOR;
 			}
@@ -291,6 +291,11 @@ namespace ColorMyProtoFlux
 				// return the mod computed custom color
 				return modComputedCustomColor;
 			}
+		}
+
+		private static bool ShouldColorHeaderOnly(ProtoFluxNode node)
+		{
+			return Config.GetValue(COLOR_HEADER_ONLY) && GetHeaderImageForNode(node) != null;
 		}
 
 		private static List<Image> GetNodeConnectionPointImageList(ProtoFluxNode node, Slot inputsRoot, Slot outputsRoot)
@@ -317,7 +322,7 @@ namespace ColorMyProtoFlux
 			{
 				return Config.GetValue(STATIC_TEXT_COLOR);
 			}
-			else if (Config.GetValue(ENABLE_TEXT_CONTRAST) && !Config.GetValue(COLOR_HEADER_ONLY))
+			else if (Config.GetValue(ENABLE_TEXT_CONTRAST) && !ShouldColorHeaderOnly(node))
 			{
 				// instead of getting the actual background image color here (which is succeptible to changing due to being highlighted or selected),
 				// just get the color that it *should* ideally be
@@ -366,5 +371,11 @@ namespace ColorMyProtoFlux
 				Debug(msg);
 			}
 		}
-	}
+
+        private static colorX FixTypeColor(colorX origColor)
+        {
+            // Resonite multiplies Type color by 1.5 on node visuals, so reverse it
+            return origColor / 1.5f;
+        }
+    }
 }

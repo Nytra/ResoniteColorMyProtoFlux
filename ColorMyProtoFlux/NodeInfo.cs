@@ -196,6 +196,18 @@ namespace ColorMyProtoFlux
 			TryTrimExcessNodeInfo();
 		}
 
+		private static void NodeInfoResetNodesToDefault()
+		{
+			foreach (var nodeInfo in nodeInfoSet)
+			{
+				var overrideField = nodeInfo.visual?.Slot?.GetComponent((ValueField<bool> valueField) => valueField.UpdateOrder == 1);
+				overrideField.RunSynchronously(() => 
+				{
+                    overrideField.Value.Value = true;
+                });
+			}
+		}
+
 		//private static void RefDriverNodeInfoSetClear()
 		//{
 		//	foreach (RefDriverNodeInfo refDriverNodeInfo in refDriverNodeInfoSet)
