@@ -17,6 +17,13 @@ using ResoniteHotReloadLib;
 
 namespace ColorMyProtoFlux
 {
+	public static class IWorldElementExtensions
+	{
+		public static bool Exists(this IWorldElement element)
+		{
+			return element != null && !element.IsRemoved;
+		}
+	}
 	public partial class ColorMyProtoFlux : ResoniteMod
 	{
 		public override string Name => "ColorMyProtoFlux";
@@ -287,7 +294,7 @@ namespace ColorMyProtoFlux
 
 		private static long lastColorChangeTime = DateTime.UtcNow.Ticks;
 
-		private const string restoreFieldsStreamName = "ColorMyProtoFlux.RestoreFields";
+		private const string overrideFieldsStreamName = "ColorMyProtoFlux.OverrideFields";
 
 		static void OnConfigChanged(ConfigurationChangedEvent configChangedEvent)
 		{
@@ -326,10 +333,11 @@ namespace ColorMyProtoFlux
 			// if modEnabled was set to false, OR (updateNodesOnConfigChanged OR useAutoRandomColorChange was changed AND they are both false)
 			if ((modEnabled_KeyChanged) || updateNodesOnConfigChanged_KeyChanged)//((updateNodesOnConfigChanged_KeyChanged || useAutoRandomColorChange_KeyChanged) && ((!updateNodesOnConfigChanged && !useAutoRandomColorChange))))
 			{
-				if (!modEnabled)
-				{
-					NodeInfoResetNodesToDefault();
-				}
+				// Maybe it should refresh the nodes colors here to put them back to normal?
+				//if (!modEnabled)
+				//{
+					//NodeInfoResetNodesToDefault();
+				//}
 				Debug("nodeInfoList Size before clear: " + nodeInfoSet.Count.ToString());
 				NodeInfoSetClear();
 				Debug("Cleared nodeInfoList. New size: " + nodeInfoSet.Count.ToString());
@@ -337,12 +345,12 @@ namespace ColorMyProtoFlux
 
 			foreach (World world in Engine.Current.WorldManager.Worlds)
 			{
-				ValueStream<bool> stream = GetOrAddRestoreFieldsStream(world.LocalUser, dontAdd: true);
+				ValueStream<bool> stream = GetOrAddOverrideFieldsStream(world.LocalUser, dontAdd: true);
 				if (stream != null)
 				{
 					world.RunSynchronously(() =>
 					{
-						stream.Value = ShouldRestoreFields();
+						stream.Value = ComputeOverrideStreamValue();
 					});
 				}
 			}
@@ -376,7 +384,7 @@ namespace ColorMyProtoFlux
 
 				foreach (NodeInfo nodeInfo in nodeInfoSet.ToList())
 				{
-					if (nodeInfo == null || nodeInfo.node == null || nodeInfo.node.IsRemoved)
+					if (nodeInfo == null || !nodeInfo.node.Exists())
 					{
 						NodeInfoRemove(nodeInfo);
 						continue;
@@ -390,7 +398,7 @@ namespace ColorMyProtoFlux
 						continue;
 					}
 
-					if (visualSlot == null || visualSlot.IsRemoved)
+					if (!visualSlot.Exists())
 					{
 						NodeInfoRemove(nodeInfo);
 						continue;
@@ -406,21 +414,21 @@ namespace ColorMyProtoFlux
 
 					nodeInfo.node.RunSynchronously(() =>
 					{
-						if (colorHeaderOnly_KeyChanged)
-						{
+						//if (colorHeaderOnly_KeyChanged)
+						//{
 							// There are two ValueField<bool> components added to the node, the one which has UpdateOrder = 1 is the one which should store the COLOR_HEADER_ONLY config value
-							ValueField<bool> colorHeaderOnlyField = visualSlot.GetComponent((ValueField<bool> b) => b.UpdateOrder == 1);
-							if (colorHeaderOnlyField != null)
-							{
-								colorHeaderOnlyField.Value.Value = Config.GetValue(COLOR_HEADER_ONLY);
-							}
-						}
+							//ValueField<bool> colorHeaderOnlyField = visualSlot.GetComponent((ValueField<bool> b) => b.UpdateOrder == 1);
+							//if (colorHeaderOnlyField != null && !colorHeaderOnlyField.IsDriven)
+							//{
+								//colorHeaderOnlyField.Value.Value = Config.GetValue(COLOR_HEADER_ONLY);
+                            //}
+						//}
 
 						if (fixTypeColors_KeyChanged || makeConnectPointsFullAlpha_KeyChanged || enhanceTypeColors_KeyChanged)
 						{
 							foreach (IField<colorX> field in nodeInfo.connectionPointImageTintFields.ToList())
 							{
-								if (field == null || field.IsRemoved)
+								if (!field.Exists())
 								{
 									nodeInfo.connectionPointImageTintFields.Remove(field);
 								}
@@ -461,12 +469,12 @@ namespace ColorMyProtoFlux
 
 			foreach (World world in Engine.Current.WorldManager.Worlds)
 			{
-				ValueStream<bool> restoreFieldsStream = world.LocalUser.GetStream<ValueStream<bool>>((stream) => stream.Name == restoreFieldsStreamName);
-				if (restoreFieldsStream != null)
+				ValueStream<bool> overrideFieldsStream = world.LocalUser.GetStream<ValueStream<bool>>((stream) => stream.Name == overrideFieldsStreamName);
+				if (overrideFieldsStream != null)
 				{
 					world.RunSynchronously(() =>
 					{
-						restoreFieldsStream.Destroy();
+                        overrideFieldsStream.Destroy();
 					});
 				}
 			}
@@ -522,7 +530,7 @@ namespace ColorMyProtoFlux
 			{
 				nodeInfo.node.RunInUpdates(0, () =>
 				{
-					if (nodeInfo == null || nodeInfo.node == null || nodeInfo.node.IsRemoved || nodeInfo.node.IsDestroyed || nodeInfo.node.IsDisposed || nodeInfo.headerImageTintField.IsRemoved)
+					if (nodeInfo == null || !nodeInfo.node.Exists() || nodeInfo.headerImageTintField.IsRemoved)
 					{
 						NodeInfoRemove(nodeInfo);
 					}
@@ -530,7 +538,7 @@ namespace ColorMyProtoFlux
 					{
 						ProtoFluxNodeVisual visual = nodeInfo.visual; //GetNodeVisual(nodeInfo.node);
 
-						if (visual != null && !visual.IsRemoved)
+						if (visual.Exists())
 						{
 							UpdateHeaderImageColor(nodeInfo.node, visual, nodeInfo.headerImageTintField.FindNearestParent<Image>(), c);
 						}
@@ -546,7 +554,7 @@ namespace ColorMyProtoFlux
 			{
 				nodeInfo.node.RunInUpdates(0, () =>
 				{
-					if (nodeInfo == null || nodeInfo.node == null || nodeInfo.node.IsRemoved)
+					if (nodeInfo == null || !nodeInfo.node.Exists())
 					{
 						NodeInfoRemove(nodeInfo);
 					}
@@ -569,7 +577,7 @@ namespace ColorMyProtoFlux
 			if (field != null && conflictingSyncElement != null && (!field.IsDriven || field.IsHooked) && conflictingSyncElement.LastModifyingUser != field.World.LocalUser)
 			{
 				ProtoFluxNodeVisual visual = field.FindNearestParent<Slot>().GetComponentInParents<ProtoFluxNodeVisual>();
-				if (visual != null && !visual.IsRemoved)
+				if (visual.Exists())
 				{
 					if (Config.GetValue(MOD_ENABLED) == false || ShouldColorHeaderOnly(visual.Node.Target)) return;
 					try
@@ -578,7 +586,9 @@ namespace ColorMyProtoFlux
 					}
 					catch (Exception ex)
 					{
-						Warn("Exception while updating node status in changed event for color field.");
+						// The modification of the color fields is probably blocked, this can happen if the LocalUser changes the field and then
+						// tries to change it again too quickly
+						Warn("Exception while updating node status in changed event for color field.\n" + ex.ToString());
 					}
 				}
 			}
@@ -586,11 +596,13 @@ namespace ColorMyProtoFlux
 
 		// Each node will refer to the ValueStream to know if it should restore the fields on the node visual.
 		// How to handle this for nodes without a header image?
-		private static bool ShouldRestoreFields()
+		private static bool ComputeOverrideStreamValue()
 		{
-			// Should restore fields?
-			if (Config.GetValue(MOD_ENABLED) && !Config.GetValue(COLOR_HEADER_ONLY)) return false;
-			return true;
+			if (Config.GetValue(MOD_ENABLED) && !Config.GetValue(COLOR_HEADER_ONLY))
+			{
+				return true;
+			}
+			return false;
 		}
 
 		[HarmonyPatch(typeof(Userspace), "OnCommonUpdate")]
@@ -616,38 +628,20 @@ namespace ColorMyProtoFlux
 				// if this node visual does not belong to LocalUser, skip this patch
 				if (__instance.ReferenceID.User != __instance.LocalUser.AllocationID) return;
 
-
-
-				// basically, if I want to color nodes without a header in header only mode, i need to remove this line and do something else
-				//if (Config.GetValue(COLOR_HEADER_ONLY)) return;
-
-				// Hot reload doesn't work if I do this ???
-				//var overrideField = (ValueField<bool>)__instance.Slot.GetComponent((Component c) => c is ValueField<bool> valueField && valueField.UpdateOrder == 1);
-				ValueField<bool> overrideField = null;
-
-				// If the mod is disabled, and the patch runs, it should reset the override field 
-				if (!Config.GetValue(MOD_ENABLED)) 
-				{
-					if (overrideField != null && overrideField.Value.Value != true) overrideField.Value.Value = true;
-					return;
-				}
-
-				if (overrideField != null && overrideField.Value.Value == true) return;
+				//if (ShouldOverrideNodeBackgroundColor)
 
 				//if (__instance.World != Engine.Current.WorldManager.FocusedWorld) return true; // just in case
 
-				// This patch could probably be better
+				if (____bgImage.Target != null) return;
 
-				if (____bgImage.Target != null && (____overviewVisual.Target == null && ____overviewBg.Target != null))
-				{
-					return;
-				}
+				//if (____bgImage.Target != null && (____overviewVisual.Target == null && ____overviewBg.Target != null))
+				//{
+					//return;
+				//}
 
 				Image bgImage = GetBackgroundImageForNode(__instance.Node.Target);
-				//Image bgImage = ____bgImage.Target;
 				Slot overviewSlot = (Slot)____overviewVisual.Target?.Parent;
 				Image overviewBg = overviewSlot?.GetComponent<Image>();
-				//Image overviewBg = ____overviewBg.Target?.FindNearestParent<Image>();
 
 				if (overviewSlot != null)
 				{
@@ -665,10 +659,10 @@ namespace ColorMyProtoFlux
 				if (bgImage == null && (overviewSlot == null || overviewBg == null)) return;
 
 				// For nodes like IF
-				if (____bgImage.Target != null && ____overviewBg.Target != null) return;
+				//if (____bgImage.Target != null && ____overviewBg.Target != null) return;
 
 				// For nodes like Input<Uri>
-				if (____bgImage.Target != null && ____overviewVisual.Target == null && ____overviewBg.Target == null) return;
+				//if (____bgImage.Target != null && ____overviewVisual.Target == null && ____overviewBg.Target == null) return;
 
 				ExtraDebug("UpdateNodeStatus Patch - Colors will change.");
 
@@ -676,7 +670,14 @@ namespace ColorMyProtoFlux
 				{
 					colorX a;
 
-					a = ComputeColorForProtoFluxNode(__instance.Node.Target);
+					if (!ShouldColorHeaderOnly(__instance.Node.Target))
+					{
+                        a = ComputeColorForProtoFluxNode(__instance.Node.Target);
+                    }
+					else
+					{
+						a = RadiantUI_Constants.BG_COLOR;
+					}
 
 					colorX b;
 					if (__instance.IsSelected.Value)
@@ -690,10 +691,19 @@ namespace ColorMyProtoFlux
 					{
 						//colorX b = colorX.Yellow;
 						//colorX b = MathX.LerpUnclamped(a, GetTextColor(a), 0.5f);
+						// might want to force alpha here in case of the alpha override option being used
 						b = GetTextColor(a);
 						a = MathX.LerpUnclamped(in a, in b, 0.25f);
 					}
-					b = Config.GetValue(NODE_ERROR_COLOR);
+					
+					if (!ShouldColorHeaderOnly(__instance.Node.Target))
+					{
+                        b = Config.GetValue(NODE_ERROR_COLOR);
+                    }
+					else
+					{
+                        b = colorX.Red;
+                    }
 					//colorX errorColorToSet = MathX.LerpUnclamped(in a, in b, 0.5f);
 					colorX errorColorToSet = b;
 					if (!__instance.IsNodeValid)
@@ -798,14 +808,14 @@ namespace ColorMyProtoFlux
 			}
 		}
 
-		private static ValueStream<bool> GetOrAddRestoreFieldsStream(User user, bool dontAdd = false)
+		private static ValueStream<bool> GetOrAddOverrideFieldsStream(User user, bool dontAdd = false)
 		{
-			ValueStream<bool> stream = user.GetStream<ValueStream<bool>>((stream) => stream.Name == restoreFieldsStreamName);
+			ValueStream<bool> stream = user.GetStream<ValueStream<bool>>((stream) => stream.Name == overrideFieldsStreamName);
 			if (stream == null && dontAdd == false)
 			{
 				stream = user.AddStream<ValueStream<bool>>();
-				stream.Name = restoreFieldsStreamName;
-				stream.Value = ShouldRestoreFields();
+				stream.Name = overrideFieldsStreamName;
+				stream.Value = ComputeOverrideStreamValue();
 			}
 			return stream;
 		}
@@ -838,12 +848,12 @@ namespace ColorMyProtoFlux
 							}
 						}
 
-						GetOrAddRestoreFieldsStream(__instance.LocalUser);
+						//GetOrAddRestoreFieldsStream(__instance.LocalUser);
 
 						// Does this need to be 3?
 						__instance.RunInUpdates(3, () =>
 						{
-							if (__instance == null || __instance.IsRemoved) return;
+							if (!__instance.Exists()) return;
 
 							Debug("New node: " + node.NodeName);
 
@@ -981,13 +991,6 @@ namespace ColorMyProtoFlux
 
 								Slot targetSlot = root;
 
-								var referenceField = targetSlot.AttachComponent<ReferenceField<User>>();
-								referenceField.Reference.Target = __instance.LocalUser;
-
-								var referenceEqualityDriver = targetSlot.AttachComponent<ReferenceEqualityDriver<User>>();
-								referenceEqualityDriver.TargetReference.Target = referenceField.Reference;
-								referenceEqualityDriver.Reference.Target = null;
-
 								var booleanReferenceDriver1 = targetSlot.AttachComponent<BooleanReferenceDriver<Image>>();
 								booleanReferenceDriver1.TrueTarget.Target = ____bgImage.Target;
 								booleanReferenceDriver1.FalseTarget.Target = null;
@@ -995,23 +998,31 @@ namespace ColorMyProtoFlux
 
 								____bgImage.Target.Tint.Changed += OnNodeBackgroundColorChanged;
 
-								MultiBoolConditionDriver multiBoolConditionDriver = null;
+								var overrideStream = GetOrAddOverrideFieldsStream(targetSlot.LocalUser);
 
-								if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) && headerImage != null)
+								BooleanValueDriver<bool> booleanValueDriver = null;
+								ReferenceEqualityDriver<ValueStream<bool>> referenceEqualityDriver = null;
+
+                                if (headerImage == null)
+                                {
+                                    var referenceField = targetSlot.AttachComponent<ReferenceField<ValueStream<bool>>>();
+                                    referenceField.Reference.Target = overrideStream;
+                                    referenceEqualityDriver = targetSlot.AttachComponent<ReferenceEqualityDriver<ValueStream<bool>>>();
+                                    referenceEqualityDriver.TargetReference.Target = referenceField.Reference;
+                                    //referenceEqualityDriver.Reference.Target = null;
+                                    //referenceEqualityDriver.Invert.Value = true;
+                                }
+								else
 								{
-									var valueField1 = targetSlot.AttachComponent<ValueField<bool>>();
-									referenceEqualityDriver.Target.Target = valueField1.Value;
+                                    var valueDriver = targetSlot.AttachComponent<ValueDriver<bool>>();
+                                    valueDriver.ValueSource.Target = overrideStream;
 
-									// second valueField could be a bool in the NodeInfo instead? although not really because it needs to affect the drive
-									var valueField2 = targetSlot.AttachComponent<ValueField<bool>>();
-									valueField2.UpdateOrder = 1; // set this to 1 so we can find it later
-									valueField2.Value.Value = Config.GetValue(COLOR_HEADER_ONLY);
+                                    booleanValueDriver = targetSlot.AttachComponent<BooleanValueDriver<bool>>();
+                                    booleanValueDriver.TrueValue.Value = false;
+                                    booleanValueDriver.FalseValue.Value = true;
 
-									multiBoolConditionDriver = targetSlot.AttachComponent<MultiBoolConditionDriver>();
-									multiBoolConditionDriver.Mode.Value = MultiBoolConditionDriver.ConditionMode.Any;
-									multiBoolConditionDriver.Conditions.Add().Field.Target = valueField1.Value;
-									multiBoolConditionDriver.Conditions.Add().Field.Target = valueField2.Value;
-								}
+                                    valueDriver.DriveTarget.Target = booleanValueDriver.State;
+                                }
 
 								if (____overviewBg.Target != null)
 								{
@@ -1025,10 +1036,10 @@ namespace ColorMyProtoFlux
 									booleanReferenceDriver2.FalseTarget.Target = null;
 									booleanReferenceDriver2.TargetReference.Target = ____overviewBg;
 
-									if (multiBoolConditionDriver != null)
+									if (booleanValueDriver != null)
 									{
-										multiBoolConditionDriver.Target.Target = valueMultiDriver.Value;
-									}
+                                        booleanValueDriver.TargetField.Target = valueMultiDriver.Value;
+                                    }
 									else
 									{
 										referenceEqualityDriver.Target.Target = valueMultiDriver.Value;
@@ -1038,11 +1049,11 @@ namespace ColorMyProtoFlux
 								}
 								else
 								{
-									if (multiBoolConditionDriver != null)
+									if (booleanValueDriver != null)
 									{
-										multiBoolConditionDriver.Target.Target = booleanReferenceDriver1.State;
-									}
-									else
+                                        booleanValueDriver.TargetField.Target = booleanReferenceDriver1.State;
+                                    }
+                                    else
 									{
 										referenceEqualityDriver.Target.Target = booleanReferenceDriver1.State;
 									}

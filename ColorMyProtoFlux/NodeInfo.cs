@@ -55,7 +55,7 @@ namespace ColorMyProtoFlux
 			{
 				foreach (IField<colorX> field in nodeInfo.otherTextColorFields)
 				{
-					if (field == null || field.IsRemoved)
+					if (!field.Exists())
 					{
 						NodeInfoRemove(nodeInfo);
 						return;
@@ -66,7 +66,7 @@ namespace ColorMyProtoFlux
 					}
 				}
 			}
-			if (nodeInfo.categoryTextColorField == null || nodeInfo.categoryTextColorField.IsRemoved)
+			if (!nodeInfo.categoryTextColorField.Exists())
 			{
 				NodeInfoRemove(nodeInfo);
 				return;
@@ -79,7 +79,7 @@ namespace ColorMyProtoFlux
 			{
 				foreach (IField<colorX> field in nodeInfo.nodeNameTextColorFields)
 				{
-					if (field == null || field.IsRemoved)
+					if (!field.Exists())
 					{
 						NodeInfoRemove(nodeInfo);
 						return;
@@ -223,10 +223,8 @@ namespace ColorMyProtoFlux
 		private static bool IsNodeInvalid(NodeInfo nodeInfo)
 		{
 			return (nodeInfo == null ||
-				   nodeInfo.node == null ||
-				   nodeInfo.node.IsRemoved ||
-				   nodeInfo.node.Slot == null ||
-				   nodeInfo.node.Slot.IsRemoved ||
+				   !nodeInfo.node.Exists() ||
+				   !nodeInfo.node.Slot.Exists() ||
 				   nodeInfo.node.World == null ||
 				   nodeInfo.node.World.IsDestroyed ||
 				   nodeInfo.node.World.IsDisposed);

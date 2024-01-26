@@ -15,15 +15,18 @@ namespace ColorMyProtoFlux
 	{
 		private static void UpdateHeaderImageColor(ProtoFluxNode node, ProtoFluxNodeVisual visual, Image headerImage, colorX color)
 		{
-			if (!visual.IsNodeValid)
-			{
-				TrySetImageTint(headerImage, Config.GetValue(NODE_ERROR_COLOR));
-			}
-			else
-			{
-				TrySetImageTint(headerImage, color);
-			}
-		}
+            //if (!visual.IsNodeValid)
+            //{
+            //	TrySetImageTint(headerImage, Config.GetValue(NODE_ERROR_COLOR));
+            //}
+            //else
+            //{
+            //	TrySetImageTint(headerImage, color);
+            //}
+
+			// Trying this to fix a problem when the node is spawned and it is already invalid
+            TrySetImageTint(headerImage, color);
+        }
 
 		private static void UpdateConnectPointImageColor(ProtoFluxNode node, ProtoFluxNodeVisual visual, Image img)
 		{

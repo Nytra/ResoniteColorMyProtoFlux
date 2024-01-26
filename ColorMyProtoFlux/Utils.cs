@@ -115,10 +115,11 @@ namespace ColorMyProtoFlux
 			ProtoFluxElementProxy proxy = GetElementProxyFromConnectionPointImage(img);
 			if (proxy != null)
 			{
-				return GetElementProxyFromConnectionPointImage(img).WireColor;
+				return proxy.WireColor;
 			}
 			else
 			{
+				// maybe it should just return the img color here?
 				Debug("Could not find ProtoFluxElementProxy from connection point image! Returning clear color.");
 				return colorX.Clear;
 			}
@@ -271,18 +272,19 @@ namespace ColorMyProtoFlux
 		//    return false;
 		//}
 
-		private static bool ShouldColorAnyText()
-		{
-			if (Config.GetValue(MOD_ENABLED) == true &&
-				(Config.GetValue(ENABLE_TEXT_CONTRAST) == true || Config.GetValue(USE_STATIC_TEXT_COLOR) == true)) return true;
-			return false;
-		}
+		//private static bool ShouldColorAnyText()
+		//{
+		//	if (Config.GetValue(MOD_ENABLED) == true &&
+		//		(Config.GetValue(ENABLE_TEXT_CONTRAST) == true || Config.GetValue(USE_STATIC_TEXT_COLOR) == true)) return true;
+		//	return false;
+		//}
 
 		private static colorX GetIntendedBackgroundColorForNode(ProtoFluxNode node, colorX modComputedCustomColor)
 		{
 			// basically, I don't want to get the actual node background color because it is succeptible to being changed by highlighting or selection with the tool
 			// so we get the color that it *should* be in normal conditions
-			if (ShouldColorHeaderOnly(node)) // wha?
+			
+			if (Config.GetValue(COLOR_HEADER_ONLY) && GetHeaderImageForNode(node) != null || Config.GetValue(COLOR_HEADER_ONLY) && GetHeaderImageForNode(node) == null) // wha?
 			{
 				return RadiantUI_Constants.BG_COLOR;
 			}
