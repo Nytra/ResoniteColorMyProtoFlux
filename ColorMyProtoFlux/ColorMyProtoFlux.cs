@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System;
 using ResoniteHotReloadLib;
+using System.Reflection;
 
 #if DEBUG
 
@@ -17,7 +18,7 @@ using ResoniteHotReloadLib;
 
 namespace ColorMyProtoFlux
 {
-	public static class IWorldElementExtensions
+	public static class WorldElementExtensions
 	{
 		public static bool Exists(this IWorldElement element)
 		{
@@ -42,10 +43,11 @@ namespace ColorMyProtoFlux
 
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> MOD_ENABLED = new ModConfigurationKey<bool>("MOD_ENABLED", "Mod Enabled:", () => true);
+        [AutoRegisterConfigKey]
+        private static ModConfigurationKey<bool> RUN_FINAL_UPDATE_ON_MOD_DISABLE = new ModConfigurationKey<bool>("RUN_FINAL_UPDATE_ON_MOD_DISABLE", "Run final update on mod disable:", () => true, internalAccessOnly: true);
+        // ===== COLOR MODEL =====
 
-		// ===== COLOR MODEL =====
-
-		[AutoRegisterConfigKey]
+        [AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_0 = new ModConfigurationKey<dummy>("DUMMY_SEP_0", SEP_STRING, () => new dummy());
 		//[AutoRegisterConfigKey]
 		//private static ModConfigurationKey<dummy> DUMMY_SEP_0_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_0_1", $"<color={HEADER_TEXT_COLOR}>[COLOR MODEL]</color>", () => new dummy());
@@ -63,13 +65,15 @@ namespace ColorMyProtoFlux
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_0_5 = new ModConfigurationKey<dummy>("DUMMY_SEP_0_5", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> COLOR_HEADER_ONLY = new ModConfigurationKey<bool>("COLOR_HEADER_ONLY", "Only color the node header:", () => false);
+		private static ModConfigurationKey<bool> COLOR_HEADER_ONLY = new ModConfigurationKey<bool>("COLOR_HEADER_ONLY", "Only color the node header (If the node has one):", () => false);
+        [AutoRegisterConfigKey]
+        private static ModConfigurationKey<bool> COLOR_NODES_WITHOUT_HEADER = new ModConfigurationKey<bool>("COLOR_NODES_WITHOUT_HEADER", "Color nodes that don't have a header:", () => false);
+        [AutoRegisterConfigKey]
+		private static ModConfigurationKey<bool> ENHANCE_TYPE_COLORS = new ModConfigurationKey<bool>("ENHANCE_TYPE_COLORS", "Make type colors more visible (Helps if you are coloring the full node):", () => true);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> ENHANCE_TYPE_COLORS = new ModConfigurationKey<bool>("ENHANCE_TYPE_COLORS", "Enhance type colors:", () => true);
+		private static ModConfigurationKey<bool> MAKE_CONNECT_POINTS_FULL_ALPHA = new ModConfigurationKey<bool>("MAKE_CONNECT_POINTS_FULL_ALPHA", "[Enhance type colors] Make type-colored images on nodes have full alpha:", () => true, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> MAKE_CONNECT_POINTS_FULL_ALPHA = new ModConfigurationKey<bool>("MAKE_CONNECT_POINTS_FULL_ALPHA", "Make type-colored images on nodes have full alpha:", () => true, internalAccessOnly: true);
-		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> FIX_TYPE_COLORS = new ModConfigurationKey<bool>("FIX_TYPE_COLORS", "Fix type colors:", () => true, internalAccessOnly: true);
+		private static ModConfigurationKey<bool> RESTORE_ORIGINAL_TYPE_COLORS = new ModConfigurationKey<bool>("RESTORE_ORIGINAL_TYPE_COLORS", "[Enhance type colors] Restore original type colors:", () => true, internalAccessOnly: true);
 
 		// ===== STATIC =====
 
@@ -228,9 +232,9 @@ namespace ColorMyProtoFlux
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<colorX> NODE_ERROR_COLOR = new ModConfigurationKey<colorX>("NODE_ERROR_COLOR", "Node Error Color:", () => new colorX(3.0f, 0.5f, 0.5f, 1.0f));
 
-		// ===== MORE INTERNAL ACCESS CONFIG KEYS =====
+        // ===== MORE INTERNAL ACCESS CONFIG KEYS =====
 
-		[AutoRegisterConfigKey]
+        [AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_7 = new ModConfigurationKey<dummy>("DUMMY_SEP_7", SEP_STRING, () => new dummy(), internalAccessOnly: true);
 		//[AutoRegisterConfigKey]
 		//private static ModConfigurationKey<bool> COLOR_NULL_REFERENCE_NODES = new ModConfigurationKey<bool>("COLOR_NULL_REFERENCE_NODES", "Should Null Reference Nodes use Node Error Color:", () => true, internalAccessOnly: true);
@@ -261,6 +265,7 @@ namespace ColorMyProtoFlux
 			NodeName,
 			NodeCategory,
 			TopmostNodeCategory,
+			NodeGroup,
 			FullTypeName,
 			RefID
 		}
@@ -296,6 +301,8 @@ namespace ColorMyProtoFlux
 
 		private const string overrideFieldsStreamName = "ColorMyProtoFlux.OverrideFields";
 
+		private static bool runFinalNodeUpdate = false;
+
 		static void OnConfigChanged(ConfigurationChangedEvent configChangedEvent)
 		{
 			//Msg("Configuration changed!");
@@ -311,36 +318,45 @@ namespace ColorMyProtoFlux
 			bool makeConnectPointsFullAlpha = Config.GetValue(MAKE_CONNECT_POINTS_FULL_ALPHA);
 			bool makeConnectPointsFullAlpha_KeyChanged = configChangedEvent.Key == MAKE_CONNECT_POINTS_FULL_ALPHA;
 
-			bool fixTypeColors = Config.GetValue(FIX_TYPE_COLORS);
-			bool fixTypeColors_KeyChanged = configChangedEvent.Key == FIX_TYPE_COLORS;
+			bool restoreOriginalTypeColors = Config.GetValue(RESTORE_ORIGINAL_TYPE_COLORS);
+			bool restoreOriginalTypeColors_KeyChanged = configChangedEvent.Key == RESTORE_ORIGINAL_TYPE_COLORS;
 
 			bool enhanceTypeColors = Config.GetValue(ENHANCE_TYPE_COLORS);
 			bool enhanceTypeColors_KeyChanged = configChangedEvent.Key == ENHANCE_TYPE_COLORS;
 
-			bool colorHeaderOnly = Config.GetValue(COLOR_HEADER_ONLY);
-			bool colorHeaderOnly_KeyChanged = configChangedEvent.Key == COLOR_HEADER_ONLY;
+			bool runFinalUpdateOnModDisable = Config.GetValue(RUN_FINAL_UPDATE_ON_MOD_DISABLE);
 
-			//bool useAutoRandomColorChange = Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE);
-			//bool useAutoRandomColorChange_KeyChanged = configChangedEvent.Key == USE_AUTO_RANDOM_COLOR_CHANGE;
+			//bool colorHeaderOnly = Config.GetValue(COLOR_HEADER_ONLY);
+			//bool colorHeaderOnly_KeyChanged = configChangedEvent.Key == COLOR_HEADER_ONLY;
 
-			//if ((modEnabled_KeyChanged && !modEnabled) || (autoUpdateRefDriverNodes_KeyChanged && !autoUpdateRefDriverNodes))
-			//{
-			//	Debug("refDriverNodeInfoSet Size before clear: " + refDriverNodeInfoSet.Count.ToString());
-			//	RefDriverNodeInfoSetClear();
-			//	Debug("Cleared refDriverNodeInfoSet. New size: " + refDriverNodeInfoSet.Count.ToString());
-			//}
+            //bool useAutoRandomColorChange = Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE);
+            //bool useAutoRandomColorChange_KeyChanged = configChangedEvent.Key == USE_AUTO_RANDOM_COLOR_CHANGE;
 
-			// if modEnabled was set to false, OR (updateNodesOnConfigChanged OR useAutoRandomColorChange was changed AND they are both false)
-			if ((modEnabled_KeyChanged) || updateNodesOnConfigChanged_KeyChanged)//((updateNodesOnConfigChanged_KeyChanged || useAutoRandomColorChange_KeyChanged) && ((!updateNodesOnConfigChanged && !useAutoRandomColorChange))))
+            //if ((modEnabled_KeyChanged && !modEnabled) || (autoUpdateRefDriverNodes_KeyChanged && !autoUpdateRefDriverNodes))
+            //{
+            //	Debug("refDriverNodeInfoSet Size before clear: " + refDriverNodeInfoSet.Count.ToString());
+            //	RefDriverNodeInfoSetClear();
+            //	Debug("Cleared refDriverNodeInfoSet. New size: " + refDriverNodeInfoSet.Count.ToString());
+            //}
+
+            // if modEnabled was set to false, OR (updateNodesOnConfigChanged OR useAutoRandomColorChange was changed AND they are both false)
+            if ((modEnabled_KeyChanged) || updateNodesOnConfigChanged_KeyChanged)//((updateNodesOnConfigChanged_KeyChanged || useAutoRandomColorChange_KeyChanged) && ((!updateNodesOnConfigChanged && !useAutoRandomColorChange))))
 			{
 				// Maybe it should refresh the nodes colors here to put them back to normal?
-				//if (!modEnabled)
-				//{
+				// At least the text colors
+				if ((!modEnabled || !updateNodesOnConfigChanged) && runFinalUpdateOnModDisable)
+				{
+                    runFinalNodeUpdate = true;
+					Debug("Run final node update set to true.");
 					//NodeInfoResetNodesToDefault();
-				//}
-				Debug("nodeInfoList Size before clear: " + nodeInfoSet.Count.ToString());
-				NodeInfoSetClear();
-				Debug("Cleared nodeInfoList. New size: " + nodeInfoSet.Count.ToString());
+				}
+				else
+				{
+					Debug("nodeInfoSet should already be clear here maybe?");
+                    Debug("nodeInfoSet Size before clear: " + nodeInfoSet.Count.ToString());
+                    NodeInfoSetClear();
+                    Debug("Cleared nodeInfoSet. New size: " + nodeInfoSet.Count.ToString());
+                }
 			}
 
 			foreach (World world in Engine.Current.WorldManager.Worlds)
@@ -362,7 +378,7 @@ namespace ColorMyProtoFlux
 			//}
 
 			// don't do anything in here if USE_AUTO_RANDOM_COLOR_CHANGE is enabled
-			if (modEnabled && updateNodesOnConfigChanged)// && !useAutoRandomColorChange)
+			if ((modEnabled && updateNodesOnConfigChanged) || runFinalNodeUpdate)// && !useAutoRandomColorChange)
 			{
 				// anti-photosensitivity check
 				if (ALWAYS_THROTTLE_REALTIME_COLOR_CHANGE || (Config.GetValue(USE_STATIC_COLOR) && Config.GetValue(USE_STATIC_RANGES) && Config.GetValue(STATIC_RANGE_MODE) == StaticRangeModeEnum.SystemTime))
@@ -382,7 +398,9 @@ namespace ColorMyProtoFlux
 					lastColorChangeTime = 10000 * REALTIME_COLOR_CHANGE_INTERVAL_MILLISECONDS;
 				}
 
-				foreach (NodeInfo nodeInfo in nodeInfoSet.ToList())
+                bool runFinalNodeUpdateCopy = runFinalNodeUpdate;
+
+                foreach (NodeInfo nodeInfo in nodeInfoSet.ToList())
 				{
 					if (nodeInfo == null || !nodeInfo.node.Exists())
 					{
@@ -412,42 +430,42 @@ namespace ColorMyProtoFlux
 
 					//Msg("Refreshing node color in config changed.");
 
-					nodeInfo.node.RunSynchronously(() =>
-					{
-						//if (colorHeaderOnly_KeyChanged)
-						//{
-							// There are two ValueField<bool> components added to the node, the one which has UpdateOrder = 1 is the one which should store the COLOR_HEADER_ONLY config value
-							//ValueField<bool> colorHeaderOnlyField = visualSlot.GetComponent((ValueField<bool> b) => b.UpdateOrder == 1);
-							//if (colorHeaderOnlyField != null && !colorHeaderOnlyField.IsDriven)
-							//{
-								//colorHeaderOnlyField.Value.Value = Config.GetValue(COLOR_HEADER_ONLY);
-                            //}
-						//}
-
-						if (fixTypeColors_KeyChanged || makeConnectPointsFullAlpha_KeyChanged || enhanceTypeColors_KeyChanged)
+                    // need to wait for the drives on the node visual to update
+                    nodeInfo.node.RunInUpdates(1, () =>
+                    {
+                        if (runFinalNodeUpdateCopy || restoreOriginalTypeColors_KeyChanged || makeConnectPointsFullAlpha_KeyChanged || enhanceTypeColors_KeyChanged)
+                        {
+                            foreach (IField<colorX> field in nodeInfo.connectionPointImageTintFields.ToList())
+                            {
+                                if (!field.Exists())
+                                {
+                                    nodeInfo.connectionPointImageTintFields.Remove(field);
+                                }
+                                else
+                                {
+                                    UpdateConnectPointImageColor(nodeInfo.node, nodeInfo.visual, field.FindNearestParent<Image>());
+                                }
+                            }
+                        }
+                        GetNodeVisual(nodeInfo.node).UpdateNodeStatus();
+                        RefreshNodeColor(nodeInfo);
+						if (runFinalNodeUpdateCopy)
 						{
-							foreach (IField<colorX> field in nodeInfo.connectionPointImageTintFields.ToList())
-							{
-								if (!field.Exists())
-								{
-									nodeInfo.connectionPointImageTintFields.Remove(field);
-								}
-								else
-								{
-									UpdateConnectPointImageColor(nodeInfo.node, nodeInfo.visual, field.FindNearestParent<Image>());
-								}
-							}
-						}
+                            nodeInfo.node.RunInUpdates(0, () =>
+                            {
+								NodeInfoRemove(nodeInfo);
+                                Debug("Removed a nodeInfo from nodeInfoSet. New size: " + nodeInfoSet.Count.ToString());
+                            });
+                        }
+                    });
+                }
 
-						// need to wait for the drives on the node visual to update
-						nodeInfo.node.RunInUpdates(1, () =>
-						{
-							GetNodeVisual(nodeInfo.node).UpdateNodeStatus();
-							RefreshNodeColor(nodeInfo);
-						});
-					});
-				}
-			}
+                if (runFinalNodeUpdate)
+                {
+                    runFinalNodeUpdate = false;
+                    Debug("runFinalNodeUpdate set to false");
+                }
+            }
 		}
 
 		public override void OnEngineInit()
@@ -499,6 +517,8 @@ namespace ColorMyProtoFlux
 			//Msg("Done printing config keys.");
 			
 			SetupMod();
+
+			//Msg(Assembly.GetExecutingAssembly().Location);
 		}
 
 		static void SetupMod()
@@ -525,6 +545,12 @@ namespace ColorMyProtoFlux
 			colorX c = ComputeColorForProtoFluxNode(nodeInfo.node);
 
 			nodeInfo.modComputedCustomColor = c;
+
+			if (!Config.GetValue(MOD_ENABLED))
+			{
+				// default header color
+				c = RadiantUI_Constants.HEADER;
+			}
 
 			if (nodeInfo.headerImageTintField != null)
 			{
@@ -570,6 +596,9 @@ namespace ColorMyProtoFlux
 			}
 		}
 
+		// This ideally runs when another user other than LocalUser changes the field
+		// The reason for checking LastModifyingUser is to try to ensure this
+		// Although I'm not sure if it works correctly
 		private static void OnNodeBackgroundColorChanged(IChangeable changeable)
 		{
 			var field = changeable as IField;
@@ -579,7 +608,7 @@ namespace ColorMyProtoFlux
 				ProtoFluxNodeVisual visual = field.FindNearestParent<Slot>().GetComponentInParents<ProtoFluxNodeVisual>();
 				if (visual.Exists())
 				{
-					if (Config.GetValue(MOD_ENABLED) == false || ShouldColorHeaderOnly(visual.Node.Target)) return;
+					if (Config.GetValue(MOD_ENABLED) == false || !ShouldColorNodeBody(visual.Node.Target)) return;
 					try
 					{
 						visual.UpdateNodeStatus();
@@ -587,7 +616,7 @@ namespace ColorMyProtoFlux
 					catch (Exception ex)
 					{
 						// The modification of the color fields is probably blocked, this can happen if the LocalUser changes the field and then
-						// tries to change it again too quickly
+						// tries to change it again too quickly (Change loop)
 						Warn("Exception while updating node status in changed event for color field.\n" + ex.ToString());
 					}
 				}
@@ -598,7 +627,7 @@ namespace ColorMyProtoFlux
 		// How to handle this for nodes without a header image?
 		private static bool ComputeOverrideStreamValue()
 		{
-			if (Config.GetValue(MOD_ENABLED) && !Config.GetValue(COLOR_HEADER_ONLY))
+			if (Config.GetValue(MOD_ENABLED) && (!Config.GetValue(COLOR_HEADER_ONLY) || Config.GetValue(COLOR_NODES_WITHOUT_HEADER)))
 			{
 				return true;
 			}
@@ -670,7 +699,7 @@ namespace ColorMyProtoFlux
 				{
 					colorX a;
 
-					if (!ShouldColorHeaderOnly(__instance.Node.Target))
+					if (ShouldColorNodeBody(__instance.Node.Target))
 					{
                         a = ComputeColorForProtoFluxNode(__instance.Node.Target);
                     }
@@ -696,7 +725,7 @@ namespace ColorMyProtoFlux
 						a = MathX.LerpUnclamped(in a, in b, 0.25f);
 					}
 					
-					if (!ShouldColorHeaderOnly(__instance.Node.Target))
+					if (ShouldColorNodeBody(__instance.Node.Target))
 					{
                         b = Config.GetValue(NODE_ERROR_COLOR);
                     }
@@ -784,7 +813,7 @@ namespace ColorMyProtoFlux
 
 				ProtoFluxNodeVisual visual = __instance.Visual.Target;
 				NodeInfo nodeInfo = GetNodeInfoFromVisual(visual);
-				if (Config.GetValue(MAKE_CONNECT_POINTS_FULL_ALPHA) || Config.GetValue(FIX_TYPE_COLORS) || Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
+				if (Config.GetValue(MAKE_CONNECT_POINTS_FULL_ALPHA) || Config.GetValue(RESTORE_ORIGINAL_TYPE_COLORS) || Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
 				{
 					var inputsRoot = (SyncRef<Slot>)visual.TryGetField("_inputsRoot");
 					var outputsRoot = (SyncRef<Slot>)visual.TryGetField("_outputsRoot");
@@ -816,6 +845,8 @@ namespace ColorMyProtoFlux
 				stream = user.AddStream<ValueStream<bool>>();
 				stream.Name = overrideFieldsStreamName;
 				stream.Value = ComputeOverrideStreamValue();
+				stream.Encoding = ValueEncoding.Quantized;
+				stream.SetUpdatePeriod(2, 0); // period means it will only fetch the value every X updates
 			}
 			return stream;
 		}
@@ -880,7 +911,7 @@ namespace ColorMyProtoFlux
 								Debug("Set header image color");
 							}
 							
-							if (Config.GetValue(MAKE_CONNECT_POINTS_FULL_ALPHA) || Config.GetValue(FIX_TYPE_COLORS) || Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
+							if (Config.GetValue(MAKE_CONNECT_POINTS_FULL_ALPHA) || Config.GetValue(RESTORE_ORIGINAL_TYPE_COLORS) || Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
 							{
 								if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
 								{
@@ -985,7 +1016,8 @@ namespace ColorMyProtoFlux
 
 							Debug("Demultiplexer button fix applied");
 							
-							if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) || !ShouldColorHeaderOnly(__instance.Node.Target))
+							// this should run for all nodes now
+							if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) || ShouldColorNodeBody(__instance.Node.Target))
 							{
 								// Nulling the node visual fields stops other users from running UpdateNodeStatus on this node, which prevents the custom colors from being reset
 
@@ -1003,26 +1035,26 @@ namespace ColorMyProtoFlux
 								BooleanValueDriver<bool> booleanValueDriver = null;
 								ReferenceEqualityDriver<ValueStream<bool>> referenceEqualityDriver = null;
 
-                                if (headerImage == null)
-                                {
-                                    var referenceField = targetSlot.AttachComponent<ReferenceField<ValueStream<bool>>>();
-                                    referenceField.Reference.Target = overrideStream;
-                                    referenceEqualityDriver = targetSlot.AttachComponent<ReferenceEqualityDriver<ValueStream<bool>>>();
-                                    referenceEqualityDriver.TargetReference.Target = referenceField.Reference;
-                                    //referenceEqualityDriver.Reference.Target = null;
-                                    //referenceEqualityDriver.Invert.Value = true;
-                                }
-								else
-								{
-                                    var valueDriver = targetSlot.AttachComponent<ValueDriver<bool>>();
-                                    valueDriver.ValueSource.Target = overrideStream;
+                                //if (headerImage == null || false)
+                                //{
+                                //    var referenceField = targetSlot.AttachComponent<ReferenceField<ValueStream<bool>>>();
+                                //    referenceField.Reference.Target = overrideStream;
+                                //    referenceEqualityDriver = targetSlot.AttachComponent<ReferenceEqualityDriver<ValueStream<bool>>>();
+                                //    referenceEqualityDriver.TargetReference.Target = referenceField.Reference;
+                                //    //referenceEqualityDriver.Reference.Target = null;
+                                //    //referenceEqualityDriver.Invert.Value = true;
+                                //}
+								//else
+								//{
+                                var valueDriver = targetSlot.AttachComponent<ValueDriver<bool>>();
+                                valueDriver.ValueSource.Target = overrideStream;
 
-                                    booleanValueDriver = targetSlot.AttachComponent<BooleanValueDriver<bool>>();
-                                    booleanValueDriver.TrueValue.Value = false;
-                                    booleanValueDriver.FalseValue.Value = true;
+                                booleanValueDriver = targetSlot.AttachComponent<BooleanValueDriver<bool>>();
+                                booleanValueDriver.TrueValue.Value = false;
+                                booleanValueDriver.FalseValue.Value = true;
 
-                                    valueDriver.DriveTarget.Target = booleanValueDriver.State;
-                                }
+                                valueDriver.DriveTarget.Target = booleanValueDriver.State;
+                                //}
 
 								if (____overviewBg.Target != null)
 								{

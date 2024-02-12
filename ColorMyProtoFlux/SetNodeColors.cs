@@ -36,18 +36,18 @@ namespace ColorMyProtoFlux
 			{
 				colorToSet = colorToSet.SetA(0.3f);
 			}
-			if (Config.GetValue(ENHANCE_TYPE_COLORS))
+			if (Config.GetValue(MOD_ENABLED) && Config.GetValue(ENHANCE_TYPE_COLORS))
 			{
-                if (Config.GetValue(FIX_TYPE_COLORS))
+                if (Config.GetValue(RESTORE_ORIGINAL_TYPE_COLORS))
                 {
                     float origAlpha = colorToSet.a;
-                    colorToSet = FixTypeColor(colorToSet).SetA(origAlpha);
+                    colorToSet = RestoreOriginalTypeColor(colorToSet).SetA(origAlpha);
                 }
                 if (Config.GetValue(MAKE_CONNECT_POINTS_FULL_ALPHA))
                 {
                     // nullable types should have 0.5 alpha
                     Type connectionType = GetTypeOfConnectionPointImage(img);
-                    if (connectionType.GetTypeColor().a == 0.5f)
+                    if (connectionType?.GetTypeColor().a == 0.5f)
                     {
                         colorToSet = colorToSet.SetA(0.5f);
                     }
@@ -62,7 +62,7 @@ namespace ColorMyProtoFlux
 
 		private static void UpdateOtherTextColor(ProtoFluxNode node, ProtoFluxNodeVisual visual, Text text, colorX modComputedCustomColor)
 		{
-			if (Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
+			if (Config.GetValue(MOD_ENABLED) && Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
 			{
 				Button b = text.Slot.GetComponent<Button>();
 				Component proxy = text.Slot.GetComponent((Component c) => c.Name.Contains("Proxy"));
@@ -90,7 +90,7 @@ namespace ColorMyProtoFlux
 
 		private static void UpdateCategoryTextColor(ProtoFluxNode node, ProtoFluxNodeVisual visual, Text text, colorX modComputedCustomColor)
 		{
-			if (Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
+			if (Config.GetValue(MOD_ENABLED) && Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
 			{
 				TrySetTextColor(text, ComputeCategoryTextColor(node, modComputedCustomColor));
 			}
@@ -108,10 +108,11 @@ namespace ColorMyProtoFlux
 		private static void UpdateNodeNameTextColor(ProtoFluxNode node, ProtoFluxNodeVisual visual, Text text, Image headerImage, colorX modComputedCustomColor)
 		{
 			//Image headerImage = GetHeaderImageForNode(node);
-			if (Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
+			if (Config.GetValue(MOD_ENABLED) && Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
 			{
 				if (true)//ShouldColorNodeNameText(t)) // wha?
 				{
+					// idk what this is doing
 					if (text.Slot.Parent?.Name == "Overview" || (headerImage == null && Config.GetValue(COLOR_HEADER_ONLY)))
 					{
 						TrySetTextColor(text, GetTextColor(GetIntendedBackgroundColorForNode(node, modComputedCustomColor)));

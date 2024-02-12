@@ -234,17 +234,18 @@ namespace ColorMyProtoFlux
 		//{
 		//	return GetNodeVisual(node)?.Slot.GetComponentsInChildren<Text>((Text text) => text.IsDriven)
 		//}
-		private static bool ShouldColorNodeNameText(Text t)
-		{
-			if (Config.GetValue(COLOR_HEADER_ONLY) && t.Slot.Parent?.Name == "Overview")
-			{
-				return false;
-			}
-			else
-			{
-				return true;
-			}
-		}
+
+		//private static bool ShouldColorNodeNameText(Text t)
+		//{
+		//	if (Config.GetValue(COLOR_HEADER_ONLY) && t.Slot.Parent?.Name == "Overview")
+		//	{
+		//		return false;
+		//	}
+		//	else
+		//	{
+		//		return true;
+		//	}
+		//}
 
 		private static List<Text> GetOtherTextListForNode(ProtoFluxNode node)
 		{
@@ -284,7 +285,8 @@ namespace ColorMyProtoFlux
 			// basically, I don't want to get the actual node background color because it is succeptible to being changed by highlighting or selection with the tool
 			// so we get the color that it *should* be in normal conditions
 			
-			if (Config.GetValue(COLOR_HEADER_ONLY) && GetHeaderImageForNode(node) != null || Config.GetValue(COLOR_HEADER_ONLY) && GetHeaderImageForNode(node) == null) // wha?
+			//if ((Config.GetValue(COLOR_HEADER_ONLY) && GetHeaderImageForNode(node) != null))// || (Config.GetValue(COLOR_HEADER_ONLY) && GetHeaderImageForNode(node) == null)) // wha?
+			if (!ShouldColorNodeBody(node))
 			{
 				return RadiantUI_Constants.BG_COLOR;
 			}
@@ -295,9 +297,12 @@ namespace ColorMyProtoFlux
 			}
 		}
 
-		private static bool ShouldColorHeaderOnly(ProtoFluxNode node)
+		private static bool ShouldColorNodeBody(ProtoFluxNode node)
 		{
-			return Config.GetValue(COLOR_HEADER_ONLY) && GetHeaderImageForNode(node) != null;
+			//bool result;
+			Image headerImage = GetHeaderImageForNode(node);
+			return (!Config.GetValue(COLOR_HEADER_ONLY) && headerImage != null) || (Config.GetValue(COLOR_NODES_WITHOUT_HEADER) && headerImage == null); // && Config.GetValue(MOD_ENABLED);
+			//return !result;
 		}
 
 		private static List<Image> GetNodeConnectionPointImageList(ProtoFluxNode node, Slot inputsRoot, Slot outputsRoot)
@@ -324,7 +329,7 @@ namespace ColorMyProtoFlux
 			{
 				return Config.GetValue(STATIC_TEXT_COLOR);
 			}
-			else if (Config.GetValue(ENABLE_TEXT_CONTRAST) && !ShouldColorHeaderOnly(node))
+			else if (Config.GetValue(ENABLE_TEXT_CONTRAST) && ShouldColorNodeBody(node))
 			{
 				// instead of getting the actual background image color here (which is succeptible to changing due to being highlighted or selected),
 				// just get the color that it *should* ideally be
@@ -374,10 +379,11 @@ namespace ColorMyProtoFlux
 			}
 		}
 
-        private static colorX FixTypeColor(colorX origColor)
+        private static colorX RestoreOriginalTypeColor(colorX modifiedColor)
         {
-            // Resonite multiplies Type color by 1.5 on node visuals, so reverse it
-            return origColor / 1.5f;
+			// Resonite multiplies Type color by 1.5 on node visuals, so reverse it
+			return modifiedColor.MulRGB(1f / 1.5f);
+            //return modifiedColor / 1.5f;
         }
     }
 }

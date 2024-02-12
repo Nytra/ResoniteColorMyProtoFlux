@@ -370,6 +370,9 @@ namespace ColorMyProtoFlux
 						ExtraDebug("Node category string: " + nodeCategoryString);
 						rng = new System.Random(nodeCategoryString.GetHashCode() + Config.GetValue(RANDOM_SEED));
 						break;
+					case NodeColorModeEnum.NodeGroup:
+						rng = new System.Random(node.Group.Name.GetHashCode() + Config.GetValue(RANDOM_SEED));
+						break;
 					case NodeColorModeEnum.FullTypeName:
 						rng = new System.Random(node.GetType().FullName.GetHashCode() + Config.GetValue(RANDOM_SEED));
 						break;
