@@ -106,8 +106,6 @@ namespace ColorMyProtoFlux
 		private static ModConfigurationKey<NodeColorModeEnum> NODE_COLOR_MODE = new ModConfigurationKey<NodeColorModeEnum>("NODE_COLOR_MODE", "Selected Node Factor:", () => NodeColorModeEnum.NodeCategory);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> ALTERNATE_CATEGORY_STRING = new ModConfigurationKey<bool>("ALTERNATE_CATEGORY_STRING", "Use alternate node category string (only uses the part after the final '/'):", () => false, internalAccessOnly: true);
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<dummy> DUMMY_SEP_2_2 = new ModConfigurationKey<dummy>("DUMMY_SEP_2_2", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<int> RANDOM_SEED = new ModConfigurationKey<int>("RANDOM_SEED", "Seed:", () => 0);
 		[AutoRegisterConfigKey]
@@ -156,9 +154,9 @@ namespace ColorMyProtoFlux
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_5_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_5_1", $"<color={HEADER_TEXT_COLOR}>[EXTRA FEATURES]</color>", () => new dummy());
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> UPDATE_NODES_ON_CONFIG_CHANGED = new ModConfigurationKey<bool>("UPDATE_NODES_ON_CONFIG_CHANGED", "Automatically update the color of standard nodes when your mod config changes:", () => false);
+		private static ModConfigurationKey<bool> UPDATE_NODES_ON_CONFIG_CHANGED = new ModConfigurationKey<bool>("UPDATE_NODES_ON_CONFIG_CHANGED", "Automatically update the color of nodes when your mod config changes:", () => false);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<dummy> DUMMY_SEP_5_1_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_5_1_1", $"<color={DETAIL_TEXT_COLOR}><i>Uses some extra memory and CPU for every standard node</i></color>", () => new dummy());
+		private static ModConfigurationKey<dummy> DUMMY_SEP_5_1_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_5_1_1", $"<color={DETAIL_TEXT_COLOR}><i>Uses some extra memory for every node</i></color>", () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_5_1_2 = new ModConfigurationKey<dummy>("DUMMY_SEP_5_1_2", $"<color={DETAIL_TEXT_COLOR}><i>Only applies to nodes created after this option was enabled</i></color>", () => new dummy());
 		[AutoRegisterConfigKey]
@@ -170,38 +168,9 @@ namespace ColorMyProtoFlux
 		//[AutoRegisterConfigKey]
 		//private static ModConfigurationKey<dummy> DUMMY_SEP_5_7 = new ModConfigurationKey<dummy>("DUMMY_SEP_5_7", SEP_STRING, () => new dummy(), internalAccessOnly: true);
 		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<bool> USE_AUTO_RANDOM_COLOR_CHANGE = new ModConfigurationKey<bool>("USE_AUTO_RANDOM_COLOR_CHANGE", "Use auto random color change:", () => false, internalAccessOnly: true);
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<int> AUTO_RANDOM_COLOR_CHANGE_THREAD_SLEEP_TIME = new ModConfigurationKey<int>("AUTO_RANDOM_COLOR_CHANGE_THREAD_SLEEP_TIME", "Auto random color change interval (milliseconds, min 2500, max 30000):", () => 2500, internalAccessOnly: true);
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<dummy> DUMMY_SEP_5_8 = new ModConfigurationKey<dummy>("DUMMY_SEP_5_8", $"<color={DETAIL_TEXT_COLOR}><i>Auto random color change shares memory with the first option</i></color>", () => new dummy(), internalAccessOnly: true);
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<dummy> DUMMY_SEP_5_7_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_5_7_1", SEP_STRING, () => new dummy());
-		//[AutoRegisterConfigKey]
 		//private static ModConfigurationKey<dummy> DUMMY_SEP_5_5 = new ModConfigurationKey<dummy>("DUMMY_SEP_5_5", $"<color={DETAIL_TEXT_COLOR}><i>Extra features will only apply to newly created nodes</i></color>", () => new dummy());
 		//[AutoRegisterConfigKey]
 		//private static ModConfigurationKey<dummy> DUMMY_SEP_5_4 = new ModConfigurationKey<dummy>("DUMMY_SEP_5_4", $"<color={DETAIL_TEXT_COLOR}><i>Setting an option here to false will clear its memory</i></color>", () => new dummy());
-
-		// ===== OVERRIDES =====
-
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<dummy> DUMMY_SEP_3 = new ModConfigurationKey<dummy>("DUMMY_SEP_3", SEP_STRING, () => new dummy());
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<dummy> DUMMY_SEP_3_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_3_1", $"<color={HEADER_TEXT_COLOR}>[OVERRIDES]</color>", () => new dummy());
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<bool> USE_DISPLAY_COLOR_OVERRIDE = new ModConfigurationKey<bool>("USE_DISPLAY_COLOR_OVERRIDE", "Override display node color:", () => false);
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<colorX> DISPLAY_COLOR_OVERRIDE = new ModConfigurationKey<colorX>("DISPLAY_COLOR_OVERRIDE", "Display node color:", () => new colorX(0.25f, 0.25f, 0.25f, 0.8f));
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<dummy> DUMMY_SEP_3_2 = new ModConfigurationKey<dummy>("DUMMY_SEP_3_2", SEP_STRING, () => new dummy());
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<bool> USE_INPUT_COLOR_OVERRIDE = new ModConfigurationKey<bool>("USE_INPUT_COLOR_OVERRIDE", "Override input node color:", () => false);
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<InputNodeOverrideEnum> INPUT_NODE_OVERRIDE_TYPE = new ModConfigurationKey<InputNodeOverrideEnum>("INPUT_NODE_OVERRIDE_TYPE", "Input Node Type:", () => InputNodeOverrideEnum.PrimitivesAndEnums, internalAccessOnly: true);
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<colorX> INPUT_COLOR_OVERRIDE = new ModConfigurationKey<colorX>("INPUT_COLOR_OVERRIDE", "Input node color:", () => new colorX(0.25f, 0.25f, 0.25f, 0.8f));
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<bool> OVERRIDE_DYNAMIC_VARIABLE_INPUT = new ModConfigurationKey<bool>("OVERRIDE_DYNAMIC_VARIABLE_INPUT", "Include DynamicVariableInput nodes:", () => true, internalAccessOnly: true);
 
 		// ===== MISC =====
 
@@ -246,8 +215,6 @@ namespace ColorMyProtoFlux
 		private static ModConfigurationKey<bool> USE_SYSTEM_TIME_RNG = new ModConfigurationKey<bool>("USE_SYSTEM_TIME_RNG", "Always use randomness seeded by system time (Complete randomness, not suitable for normal use):", () => false, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> ALLOW_NEGATIVE_AND_EMISSIVE_COLORS = new ModConfigurationKey<bool>("ALLOW_NEGATIVE_AND_EMISSIVE_COLORS", "Allow negative and emissive colors:", () => false, internalAccessOnly: true);
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<bool> COLOR_RELAY_NODES = new ModConfigurationKey<bool>("COLOR_RELAY_NODES", "Apply colors to Relay Nodes:", () => false, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> EXTRA_DEBUG_LOGGING = new ModConfigurationKey<bool>("EXTRA_DEBUG_LOGGING", "Enable extra debug logging (NML must be in debug mode, warning! may spam logs):", () => false, internalAccessOnly: true);
 
@@ -274,7 +241,6 @@ namespace ColorMyProtoFlux
 			SystemTime
 		}
 
-		//private static NodeInfo nullNodeInfo = new();
 		private static HashSet<NodeInfo> nodeInfoSet = new();
 		//private static HashSet<RefDriverNodeInfo> refDriverNodeInfoSet = new();
 		private static HashSet<NodeGroup> subscribedGroupsSet = new();
@@ -323,29 +289,13 @@ namespace ColorMyProtoFlux
 
 			bool runFinalUpdateOnModDisable = Config.GetValue(RUN_FINAL_UPDATE_ON_MOD_DISABLE);
 
-			//bool colorHeaderOnly = Config.GetValue(COLOR_HEADER_ONLY);
-			//bool colorHeaderOnly_KeyChanged = configChangedEvent.Key == COLOR_HEADER_ONLY;
-
-			//bool useAutoRandomColorChange = Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE);
-			//bool useAutoRandomColorChange_KeyChanged = configChangedEvent.Key == USE_AUTO_RANDOM_COLOR_CHANGE;
-
-			//if ((modEnabled_KeyChanged && !modEnabled) || (autoUpdateRefDriverNodes_KeyChanged && !autoUpdateRefDriverNodes))
-			//{
-			//	Debug("refDriverNodeInfoSet Size before clear: " + refDriverNodeInfoSet.Count.ToString());
-			//	RefDriverNodeInfoSetClear();
-			//	Debug("Cleared refDriverNodeInfoSet. New size: " + refDriverNodeInfoSet.Count.ToString());
-			//}
-
-			// if modEnabled was set to false, OR (updateNodesOnConfigChanged OR useAutoRandomColorChange was changed AND they are both false)
-			if ((modEnabled_KeyChanged) || updateNodesOnConfigChanged_KeyChanged)//((updateNodesOnConfigChanged_KeyChanged || useAutoRandomColorChange_KeyChanged) && ((!updateNodesOnConfigChanged && !useAutoRandomColorChange))))
+			if ((modEnabled_KeyChanged) || updateNodesOnConfigChanged_KeyChanged)
 			{
-				// Maybe it should refresh the nodes colors here to put them back to normal?
-				// At least the text colors
+				// Run a final update to set the node colors back to default states
 				if ((!modEnabled || !updateNodesOnConfigChanged) && runFinalUpdateOnModDisable)
 				{
 					runFinalNodeUpdate = true;
 					Debug("Run final node update set to true.");
-					//NodeInfoResetNodesToDefault();
 				}
 				else
 				{
@@ -368,19 +318,12 @@ namespace ColorMyProtoFlux
 				}
 			}
 
-			//if (useAutoRandomColorChange_KeyChanged && useAutoRandomColorChange)
-			//{
-			//	manualResetEvent.Set();
-			//	Debug("Setting manualResetEvent");
-			//}
-
-			// don't do anything in here if USE_AUTO_RANDOM_COLOR_CHANGE is enabled
-			if ((modEnabled && updateNodesOnConfigChanged) || runFinalNodeUpdate)// && !useAutoRandomColorChange)
+			if ((modEnabled && updateNodesOnConfigChanged) || runFinalNodeUpdate)
 			{
 				// anti-photosensitivity check
 				if (ALWAYS_THROTTLE_REALTIME_COLOR_CHANGE || (Config.GetValue(USE_STATIC_COLOR) && Config.GetValue(USE_STATIC_RANGES) && Config.GetValue(STATIC_RANGE_MODE) == StaticRangeModeEnum.SystemTime))
 				{
-					// color can change exactly 5 times per second when this config is used. it strobes very quickly without this check.
+					// color can change exactly N times per second when this config is used. it strobes very quickly without this check.
 					if (DateTime.UtcNow.Ticks - lastColorChangeTime < 10000 * REALTIME_COLOR_CHANGE_INTERVAL_MILLISECONDS)
 					{
 						return;
@@ -436,9 +379,7 @@ namespace ColorMyProtoFlux
 		public override void OnEngineInit()
 		{
 			HotReloader.RegisterForHotReload(this);
-			//mod = this;
 			Config = GetConfiguration();
-			//config = Config;
 			SetupMod();
 		}
 
@@ -454,11 +395,8 @@ namespace ColorMyProtoFlux
 				ValueStream<bool> overrideFieldsStream = world.LocalUser.GetStream<ValueStream<bool>>((stream) => stream.Name == overrideFieldsStreamName);
 				if (overrideFieldsStream.Exists())
 				{
+					// This might need to be in a synchronous action
 					overrideFieldsStream.Destroy();
-					//world.RunSynchronously(() =>
-					//{
-					//                   overrideFieldsStream.Destroy();
-					//});
 				}
 			}
 		}
@@ -478,15 +416,10 @@ namespace ColorMyProtoFlux
 		static void SetupMod()
 		{
 			Harmony harmony = new Harmony("owo.Nytra.ColorMyProtoFlux");
-			//Config.Unset(USE_AUTO_RANDOM_COLOR_CHANGE);
-			//Config.Save(true);
 			harmony.PatchAll();
 
 			//Thread thread1 = new(new ThreadStart(RefDriverNodeThread));
 			//thread1.Start();
-
-			//Thread thread2 = new(new ThreadStart(StandardNodeThread));
-			//thread2.Start();
 
 			Config.OnThisConfigurationChanged += OnConfigChanged;
 
@@ -497,6 +430,7 @@ namespace ColorMyProtoFlux
 		// This ideally runs when another user other than LocalUser changes the field
 		// The reason for checking LastModifyingUser is to try to ensure this
 		// Although I'm not sure if it works correctly
+		// Might need to improve this somehow
 		private static void OnNodeBackgroundColorChanged(IChangeable changeable)
 		{
 			if (!Config.GetValue(MOD_ENABLED)) return;
@@ -543,12 +477,8 @@ namespace ColorMyProtoFlux
 			{
 				if (!Config.GetValue(MOD_ENABLED)) return;
 
-				//if (__instance == null || __instance.IsRemoved || __instance.Node.Target == null || __instance.Node.Target.IsRemoved) return;
-
 				// if this node visual does not belong to LocalUser, skip this patch
 				if (__instance.ReferenceID.User != __instance.LocalUser.AllocationID) return;
-
-				//if (ShouldOverrideNodeBackgroundColor)
 
 				NodeInfo nodeInfo2 = GetNodeInfoForNode(__instance.Node.Target);
 				if (nodeInfo2 != null && __instance.Node.Target?.Group?.Name != nodeInfo2?.LastGroupName)
@@ -566,23 +496,14 @@ namespace ColorMyProtoFlux
 					});
 				}
 
-				//if (__instance.World != Engine.Current.WorldManager.FocusedWorld) return true; // just in case
+				//if (__instance.World != Engine.Current.WorldManager.FocusedWorld) return true; // just in case?
 
+				// If the field is not null, don't run this patch
 				if (____bgImage.Target.Exists()) return;
-
-				//if (____bgImage.Target != null && (____overviewVisual.Target == null && ____overviewBg.Target != null))
-				//{
-				//return;
-				//}
 
 				Image bgImage = GetBackgroundImageForNode(__instance.Node.Target);
 				Slot overviewSlot = (Slot)____overviewVisual.Target?.Parent;
 				Image overviewBg = overviewSlot?.GetComponent<Image>();
-
-				//if (overviewSlot != null)
-				//{
-				//ExtraDebug("Slot: " + overviewSlot.ToString());
-				//}
 
 				if (!overviewSlot.Exists() && ____overviewBg.IsLinked)
 				{
@@ -594,81 +515,82 @@ namespace ColorMyProtoFlux
 
 				if (!bgImage.Exists() && (!overviewSlot.Exists() || !overviewBg.Exists())) return;
 
-				// For nodes like IF
-				//if (____bgImage.Target != null && ____overviewBg.Target != null) return;
-
-				// For nodes like Input<Uri>
-				//if (____bgImage.Target != null && ____overviewVisual.Target == null && ____overviewBg.Target == null) return;
-
 				//ExtraDebug("UpdateNodeStatus Patch - Colors will change.");
 
-				if (true)
+				colorX a;
+				bool shouldColorNodeBody = ShouldColorNodeBody(__instance.Node.Target);
+
+				if (shouldColorNodeBody)
 				{
-					colorX a;
-					bool shouldColorNodeBody = ShouldColorNodeBody(__instance.Node.Target);
+					a = ComputeColorForProtoFluxNode(__instance.Node.Target);
+				}
+				else
+				{
+					a = RadiantUI_Constants.BG_COLOR;
+				}
 
-					if (shouldColorNodeBody)
+				colorX b;
+				if (__instance.IsSelected.Value)
+				{
+					// maybe make the selection color a value you can set in the mod config?
+					b = colorX.Cyan;
+					if (!shouldColorNodeBody)
 					{
-						a = ComputeColorForProtoFluxNode(__instance.Node.Target);
+						a = MathX.LerpUnclamped(in a, in b, 0.5f);
 					}
 					else
 					{
-						a = RadiantUI_Constants.BG_COLOR;
+						a = colorX.Cyan.MulRGB(0.75f);
 					}
 
-					colorX b;
-					if (__instance.IsSelected.Value)
-					{
-						b = colorX.Cyan;
-						if (!shouldColorNodeBody)
-						{
-							a = MathX.LerpUnclamped(in a, in b, 0.5f);
-						}
-						else
-						{
-							//a = colorX.Cyan;
-							//a = MathX.LerpUnclamped(in a, in b, 0.63f);
-							a = colorX.Cyan.MulRGB(0.75f);
-						}
-						// maybe make the selection color a value you can set in the mod config?
-						//a = colorX.Cyan;
-					}
-					if (__instance.IsHighlighted.Value)
-					{
-						//colorX b = colorX.Yellow;
-						//colorX b = MathX.LerpUnclamped(a, GetTextColor(a), 0.5f);
-						// might want to force alpha here in case of the alpha override option being used
-						float lerp;
-						if (shouldColorNodeBody)
-						{
-							b = GetTextColor(a);
-							//lerp = 0.25f;
-							//lerp = 0.33f;
-							lerp = 0.375f;
-						}
-						else
-						{
-							b = colorX.Yellow;
-							lerp = 0.1f;
-						}
-						a = MathX.LerpUnclamped(in a, in b, lerp);
-					}
-
+				}
+				if (__instance.IsHighlighted.Value)
+				{
+					// might want to force alpha here in case of the alpha override option being used
+					float lerp;
 					if (shouldColorNodeBody)
 					{
-						b = Config.GetValue(NODE_ERROR_COLOR);
+						b = GetTextColor(a);
+						lerp = 0.375f;
 					}
 					else
 					{
-						b = colorX.Red;
+						b = colorX.Yellow;
+						lerp = 0.1f;
 					}
+					a = MathX.LerpUnclamped(in a, in b, lerp);
+				}
 
-					//colorX errorColorToSet = MathX.LerpUnclamped(in a, in b, 0.5f);
-					colorX errorColorToSet = b;
-					if (!__instance.IsNodeValid)
+				if (shouldColorNodeBody)
+				{
+					b = Config.GetValue(NODE_ERROR_COLOR);
+				}
+				else
+				{
+					b = colorX.Red;
+				}
+
+				colorX errorColorToSet = b;
+				if (!__instance.IsNodeValid)
+				{
+					Debug("Node not valid");
+					a = errorColorToSet;
+					NodeInfo nodeInfo = GetNodeInfoFromVisual(__instance);
+					if (!IsNodeInvalid(nodeInfo))
 					{
-						Debug("Node not valid");
-						a = errorColorToSet;
+						RefreshNodeColor(nodeInfo);
+					}
+					else
+					{
+						NodeInfoRemove(nodeInfo);
+					}
+				}
+				else
+				{
+					if ((bgImage.Exists() && bgImage.Tint.Value == errorColorToSet) || (overviewBg.Exists() && overviewBg.Tint.Value == errorColorToSet))
+					{
+						Debug("Node valid after being not valid");
+						// does this work? it is supposed to reset the header color when the node becomes valid after being invalid
 						NodeInfo nodeInfo = GetNodeInfoFromVisual(__instance);
 						if (!IsNodeInvalid(nodeInfo))
 						{
@@ -679,36 +601,18 @@ namespace ColorMyProtoFlux
 							NodeInfoRemove(nodeInfo);
 						}
 					}
-					else
-					{
-						if ((bgImage.Exists() && bgImage.Tint.Value == errorColorToSet) || (overviewBg.Exists() && overviewBg.Tint.Value == errorColorToSet))
-						{
-							Debug("Node valid after being not valid");
-							// does this work? it is supposed to reset the header color when the node becomes valid after being invalid
-							NodeInfo nodeInfo = GetNodeInfoFromVisual(__instance);
-							if (!IsNodeInvalid(nodeInfo))
-							{
-								RefreshNodeColor(nodeInfo);
-							}
-							else
-							{
-								NodeInfoRemove(nodeInfo);
-							}
-						}
-					}
-					if (bgImage.Exists())
-					{
-						bgImage.Tint.Value = a;
-					}
-					if (overviewBg.Exists())
-					{
-						overviewBg.Tint.Value = a;
-					}
+				}
+				if (bgImage.Exists())
+				{
+					bgImage.Tint.Value = a;
+				}
+				if (overviewBg.Exists())
+				{
+					overviewBg.Tint.Value = a;
 				}
 			}
 		}
 
-		// Unused
 		//private static List<Button> GetNodeButtons(ProtoFluxNode node)
 		//{
 		//	return GetNodeVisual(node)?.Slot.GetComponentsInChildren<Button>();
@@ -751,6 +655,7 @@ namespace ColorMyProtoFlux
 				if (!Config.GetValue(MOD_ENABLED)) return;
 
 				if (__instance.Visual.Target?.ReferenceID.User != __instance.LocalUser.AllocationID) return;
+
 				//if (__instance.World != Engine.Current.WorldManager.FocusedWorld) return;
 
 				ProtoFluxNodeVisual visual = __instance.Visual.Target;
@@ -764,7 +669,6 @@ namespace ColorMyProtoFlux
 						bool invalidNodeInfo = IsNodeInvalid(nodeInfo);
 						if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) && !invalidNodeInfo)
 						{
-							//nodeInfo.connectionPointColorFieldDefaultColors.Add(img.TryGetField<colorX>("Tint"), img.Tint.Value);
 							if (!nodeInfo.connectionPointImageTintFields.Contains(img.Tint))
 							{
 								nodeInfo.connectionPointImageTintFields.Add(img.Tint);
@@ -784,7 +688,6 @@ namespace ColorMyProtoFlux
 			}
 		}
 
-		// maybe this method should not set color itself, but only collect the fields first and then call refresh node color after?
 		[HarmonyPatch(typeof(ProtoFluxNodeVisual))]
 		[HarmonyPatch("BuildUI")]
 		class Patch_ProtoFluxNodeVisual_BuildUI
@@ -811,8 +714,6 @@ namespace ColorMyProtoFlux
 								}
 							}
 						}
-
-						//GetOrAddRestoreFieldsStream(__instance.LocalUser);
 
 						// Does this need to be 3?
 						__instance.RunInUpdates(3, () =>
@@ -941,7 +842,6 @@ namespace ColorMyProtoFlux
 
 							Debug("Demultiplexer button fix applied");
 
-							// this should run for all nodes now
 							if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) || ShouldColorNodeBody(__instance.Node.Target))
 							{
 								// Nulling the node visual fields stops other users from running UpdateNodeStatus on this node, which prevents the custom colors from being reset
@@ -960,17 +860,6 @@ namespace ColorMyProtoFlux
 								BooleanValueDriver<bool> booleanValueDriver = null;
 								ReferenceEqualityDriver<ValueStream<bool>> referenceEqualityDriver = null;
 
-								//if (headerImage == null || false)
-								//{
-								//    var referenceField = targetSlot.AttachComponent<ReferenceField<ValueStream<bool>>>();
-								//    referenceField.Reference.Target = overrideStream;
-								//    referenceEqualityDriver = targetSlot.AttachComponent<ReferenceEqualityDriver<ValueStream<bool>>>();
-								//    referenceEqualityDriver.TargetReference.Target = referenceField.Reference;
-								//    //referenceEqualityDriver.Reference.Target = null;
-								//    //referenceEqualityDriver.Invert.Value = true;
-								//}
-								//else
-								//{
 								var valueDriver = targetSlot.AttachComponent<ValueDriver<bool>>();
 								valueDriver.ValueSource.Target = overrideStream;
 
@@ -979,7 +868,6 @@ namespace ColorMyProtoFlux
 								booleanValueDriver.FalseValue.Value = true;
 
 								valueDriver.DriveTarget.Target = booleanValueDriver.State;
-								//}
 
 								if (____overviewBg.Target.Exists())
 								{
@@ -1033,8 +921,9 @@ namespace ColorMyProtoFlux
 								{
 									node.NodeInstance.Runtime.Group.ChangeTrackingInvalidated += (nodeGroup) =>
 									{
-										if (Config.GetValue(NODE_COLOR_MODE) != NodeColorModeEnum.NodeGroup) return;
 										//if (node == null) return;
+										if (Config.GetValue(NODE_COLOR_MODE) != NodeColorModeEnum.NodeGroup) return;
+										
 										Debug("Change tracking invalidated for group: " + nodeGroup.Name);
 
 										RemoveInvalidNodeInfos();

@@ -137,7 +137,6 @@ namespace ColorMyProtoFlux
 			float hue = 0f;
 			float sat = 0f;
 			float val_lightness = 0f;
-			//float alpha = 0.8f;
 			float alpha = 1.0f;
 			if (Config.GetValue(USE_NODE_ALPHA))
 			{
@@ -230,7 +229,6 @@ namespace ColorMyProtoFlux
 			float hue;
 			float sat;
 			float val_lightness;
-			//float alpha = 0.8f;
 			float alpha = 1.0f;
 			if (Config.GetValue(USE_NODE_ALPHA))
 			{
@@ -326,86 +324,54 @@ namespace ColorMyProtoFlux
 			//ExtraDebug("WorkerCategoryPath onlyTopmost: " + GetWorkerCategoryPath(node, onlyTopmost: true));
 			//ExtraDebug("WorkerCategoryFilePath: " + GetWorkerCategoryFilePath(node));
 
-			//if (!Config.GetValue(COLOR_RELAY_NODES) && (node.Name.StartsWith("RelayNode") || node.Name.StartsWith("ImpulseRelay")))
-			//{
-			//	// Might need to change this
-			//	if (node.Name.StartsWith("ImpulseRelay"))
-			//	{
-			//		return colorX.Gray;
-			//	}
-			//	else
-			//	{
-			//		colorX cRGB = GetNodeDefaultColor(node);
-			//		ColorHSV colorHSV = new ColorHSV(in cRGB);
-			//		colorHSV.v = ((colorHSV.v > 0.5f) ? (colorHSV.v * 0.5f) : (colorHSV.v * 2f));
-			//		return new colorX(colorHSV.ToRGB());
-			//	}
-			//}
-
-			//if (Config.GetValue(USE_DISPLAY_COLOR_OVERRIDE) && (node.Name.StartsWith("Display_") || node.Name == "DisplayImpulse"))
-			//{
-			//	colorToSet = Config.GetValue(DISPLAY_COLOR_OVERRIDE);
-			//}
-			//else if (Config.GetValue(USE_INPUT_COLOR_OVERRIDE) && ShouldColorInputNode(node))
-			//{
-			//	colorToSet = Config.GetValue(INPUT_COLOR_OVERRIDE);
-			//}
-			//if (!Config.GetValue(USE_AUTO_RANDOM_COLOR_CHANGE))
-			if (true)
+			string nodeCategoryString;
+			switch (Config.GetValue(NODE_COLOR_MODE))
 			{
-				string nodeCategoryString;
-				switch (Config.GetValue(NODE_COLOR_MODE))
-				{
-					case NodeColorModeEnum.NodeName:
-						rng = new System.Random(node.GetType().GetNiceName().BeautifyName().GetHashCode() + Config.GetValue(RANDOM_SEED));
-						break;
-					case NodeColorModeEnum.NodeCategory:
-						nodeCategoryString = GetWorkerCategoryPath(node);
-						//ExtraDebug("Node category string: " + nodeCategoryString);
-						rng = new System.Random(nodeCategoryString.GetHashCode() + Config.GetValue(RANDOM_SEED));
-						break;
-					case NodeColorModeEnum.TopmostNodeCategory:
-						nodeCategoryString = GetWorkerCategoryPath(node, onlyTopmost: true);
-						//ExtraDebug("Node category string: " + nodeCategoryString);
-						rng = new System.Random(nodeCategoryString.GetHashCode() + Config.GetValue(RANDOM_SEED));
-						break;
-					case NodeColorModeEnum.NodeGroup:
-						rng = new System.Random(node.Group.Name.GetHashCode() + Config.GetValue(RANDOM_SEED));
-						break;
-					case NodeColorModeEnum.FullTypeName:
-						rng = new System.Random(node.GetType().FullName.GetHashCode() + Config.GetValue(RANDOM_SEED));
-						break;
-					case NodeColorModeEnum.RefID:
-						rng = new System.Random(node.Slot.ReferenceID.GetHashCode() + Config.GetValue(RANDOM_SEED));
-						//Msg($"RefID Position: {root.Parent.ReferenceID.Position.ToString()}");
-						break;
-					default:
-						break;
-				}
-
-				if (Config.GetValue(ENABLE_NON_RANDOM_REFID))
-				{
-					int refidModDivisor = Config.GetValue(REFID_MOD_DIVISOR);
-
-					// force it to 1 to avoid dividing by 0
-					ulong divisor = (refidModDivisor > 1) ? (ulong)refidModDivisor : 1;
-
-					if (Config.GetValue(USE_SYSTEM_TIME_RNG))
-					{
-						colorToSet = GetColorFromUlong(node.Slot.ReferenceID.Position, divisor, rngTimeSeeded);
-					}
-					else
-					{
-						colorToSet = GetColorFromUlong(node.Slot.ReferenceID.Position, divisor, rng);
-					}
-
-					// set rng to null so that the color doesn't get messed with
-					rng = null;
-				}
+				case NodeColorModeEnum.NodeName:
+					rng = new System.Random(node.GetType().GetNiceName().BeautifyName().GetHashCode() + Config.GetValue(RANDOM_SEED));
+					break;
+				case NodeColorModeEnum.NodeCategory:
+					nodeCategoryString = GetWorkerCategoryPath(node);
+					//ExtraDebug("Node category string: " + nodeCategoryString);
+					rng = new System.Random(nodeCategoryString.GetHashCode() + Config.GetValue(RANDOM_SEED));
+					break;
+				case NodeColorModeEnum.TopmostNodeCategory:
+					nodeCategoryString = GetWorkerCategoryPath(node, onlyTopmost: true);
+					//ExtraDebug("Node category string: " + nodeCategoryString);
+					rng = new System.Random(nodeCategoryString.GetHashCode() + Config.GetValue(RANDOM_SEED));
+					break;
+				case NodeColorModeEnum.NodeGroup:
+					rng = new System.Random(node.Group.Name.GetHashCode() + Config.GetValue(RANDOM_SEED));
+					break;
+				case NodeColorModeEnum.FullTypeName:
+					rng = new System.Random(node.GetType().FullName.GetHashCode() + Config.GetValue(RANDOM_SEED));
+					break;
+				case NodeColorModeEnum.RefID:
+					rng = new System.Random(node.Slot.ReferenceID.GetHashCode() + Config.GetValue(RANDOM_SEED));
+					//Msg($"RefID Position: {root.Parent.ReferenceID.Position.ToString()}");
+					break;
+				default:
+					break;
 			}
-			else
+
+			if (Config.GetValue(ENABLE_NON_RANDOM_REFID))
 			{
-				rng = rngTimeSeeded;
+				int refidModDivisor = Config.GetValue(REFID_MOD_DIVISOR);
+
+				// force it to 1 to avoid dividing by 0
+				ulong divisor = (refidModDivisor > 1) ? (ulong)refidModDivisor : 1;
+
+				if (Config.GetValue(USE_SYSTEM_TIME_RNG))
+				{
+					colorToSet = GetColorFromUlong(node.Slot.ReferenceID.Position, divisor, rngTimeSeeded);
+				}
+				else
+				{
+					colorToSet = GetColorFromUlong(node.Slot.ReferenceID.Position, divisor, rng);
+				}
+
+				// set rng to null so that the color doesn't get messed with
+				rng = null;
 			}
 
 			if (rng != null)

@@ -11,16 +11,6 @@ namespace ColorMyProtoFlux
 	{
 		private static void UpdateHeaderImageColor(ProtoFluxNode node, ProtoFluxNodeVisual visual, Image headerImage, colorX color)
 		{
-			//if (!visual.IsNodeValid)
-			//{
-			//	TrySetImageTint(headerImage, Config.GetValue(NODE_ERROR_COLOR));
-			//}
-			//else
-			//{
-			//	TrySetImageTint(headerImage, color);
-			//}
-
-			// Trying this to fix a problem when the node is spawned and it is already invalid
 			TrySetImageTint(headerImage, color);
 		}
 
@@ -76,7 +66,6 @@ namespace ColorMyProtoFlux
 			else
 			{
 				// Neutrals.Light is Resonite default
-				// if (field.Value != RadiantUI_Constants.Neutrals.LIGHT) field.Value = RadiantUI_Constants.Neutrals.LIGHT;
 				if (text.Color.Value != RadiantUI_Constants.Neutrals.LIGHT)
 				{
 					TrySetTextColor(text, RadiantUI_Constants.Neutrals.LIGHT);
@@ -93,7 +82,6 @@ namespace ColorMyProtoFlux
 			else
 			{
 				// Resonite default
-				//if (nodeInfo.categoryTextColorField.Value != colorX.DarkGray) nodeInfo.categoryTextColorField.Value = colorX.DarkGray;
 				if (text.Color.Value != colorX.DarkGray)
 				{
 					TrySetTextColor(text, colorX.DarkGray);
@@ -103,25 +91,20 @@ namespace ColorMyProtoFlux
 
 		private static void UpdateNodeNameTextColor(ProtoFluxNode node, ProtoFluxNodeVisual visual, Text text, Image headerImage, colorX modComputedCustomColor)
 		{
-			//Image headerImage = GetHeaderImageForNode(node);
 			if (Config.GetValue(MOD_ENABLED) && Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
 			{
-				if (true)//ShouldColorNodeNameText(t)) // wha?
+				// idk what this is doing but it seems to work lol
+				if (text.Slot.Parent?.Name == "Overview" || (!headerImage.Exists() && Config.GetValue(COLOR_HEADER_ONLY)))
 				{
-					// idk what this is doing
-					if (text.Slot.Parent?.Name == "Overview" || (!headerImage.Exists() && Config.GetValue(COLOR_HEADER_ONLY)))
-					{
-						TrySetTextColor(text, GetTextColor(GetIntendedBackgroundColorForNode(node, modComputedCustomColor)));
-					}
-					else
-					{
-						TrySetTextColor(text, GetTextColor(modComputedCustomColor));
-					}
+					TrySetTextColor(text, GetTextColor(GetIntendedBackgroundColorForNode(node, modComputedCustomColor)));
+				}
+				else
+				{
+					TrySetTextColor(text, GetTextColor(modComputedCustomColor));
 				}
 			}
 			else
 			{
-				//if (field.Value != RadiantUI_Constants.Neutrals.LIGHT) field.Value = RadiantUI_Constants.Neutrals.LIGHT;
 				if (text.Color.Value != RadiantUI_Constants.Neutrals.LIGHT)
 				{
 					TrySetTextColor(text, RadiantUI_Constants.Neutrals.LIGHT);

@@ -133,7 +133,7 @@ namespace ColorMyProtoFlux
 			//ExtraDebug("Text refid: " + t.ReferenceID.ToString());
 			if (t.Slot.Parent?.Name == "Image" || t.Slot.Parent?.Name == "Button")
 			{
-				//Debug("Image or Button");
+				//ExtraDebug("Connection or Button");
 				var img = t.Slot.Parent?.GetComponent<Image>();
 				if (img.Exists())
 				{
@@ -142,29 +142,9 @@ namespace ColorMyProtoFlux
 				}
 				Debug("Connection or button image null!");
 			}
-			//        else if (t.Slot.Parent?.Parent?.Name == "Panel")
-			//        {
-			//Debug("Panel");
-			//            var visual = t.Slot.GetComponentInParents<ProtoFluxNodeVisual>();
-			//            if (visual != null)
-			//            {
-			//	//SyncRef<Image> bgImage = (SyncRef<Image>)AccessTools.Field(typeof(ProtoFluxNodeVisual), "_bgImage").GetValue(visual);
-			//	//SyncRef<Image> bgImage = (SyncRef<Image>)visual.TryGetField<SyncRef<Image>>("_bgImage");
-			//	colorX c = ComputeColorForProtoFluxNode(visual.Node.Target);
-			//                Debug("Text background color: " + c.ToString());
-			//	return c;
-			//            }
-			//else
-			//{
-			//	Debug("Visual null");
-			//}
-			//        }
 			var visual = t.Slot.GetComponentInParents<ProtoFluxNodeVisual>();
 			if (visual.Exists() && visual.Node.Target.Exists())
 			{
-				//SyncRef<Image> bgImage = (SyncRef<Image>)AccessTools.Field(typeof(ProtoFluxNodeVisual), "_bgImage").GetValue(visual);
-				//SyncRef<Image> bgImage = (SyncRef<Image>)visual.TryGetField<SyncRef<Image>>("_bgImage");
-				//colorX computedColorForNode = modComputedCustomColor;
 				colorX c = GetIntendedBackgroundColorForNode(visual.Node.Target, modComputedCustomColor); ;
 				//ExtraDebug("Text background color: " + c.ToString());
 				return c;
@@ -175,8 +155,6 @@ namespace ColorMyProtoFlux
 
 		private static ProtoFluxNodeVisual GetNodeVisual(ProtoFluxNode node)
 		{
-			//return node.Slot.GetComponentInChildren<ProtoFluxNodeVisual>();
-
 			NodeInfo nodeInfo = GetNodeInfoForNode(node);
 			ProtoFluxNodeVisual visual = nodeInfo?.visual;
 			if (visual.Exists())
@@ -199,15 +177,6 @@ namespace ColorMyProtoFlux
 
 		private static Image GetHeaderImageForNode(ProtoFluxNode node)
 		{
-
-
-			//var imageSlot = nodeVisual?.Slot.GetComponentInChildren<Text>((Text t) => t.Content == node.NodeName && t.Slot.Name == "Text" && t.Slot.Parent.Name == "Image")?.Slot.Parent;
-			//if (imageSlot != null)
-			//{
-			//	return imageSlot.GetComponent<Image>();
-			//}
-			//return null;
-
 			NodeInfo nodeInfo = GetNodeInfoForNode(node);
 			if (nodeInfo != null && nodeInfo.headerImageTintField.Exists())
 			{
@@ -235,31 +204,6 @@ namespace ColorMyProtoFlux
 			return null;
 		}
 
-		//private static bool? GetOverviewVisualEnabled(ProtoFluxNode node)
-		//{
-		//	ProtoFluxNodeVisual nodeVisual = GetNodeVisual(node);
-		//	FieldDrive<bool> overviewVisualEnabled = (FieldDrive<bool>)AccessTools.Field(typeof(ProtoFluxNodeVisual), "_overviewVisual").GetValue(nodeVisual);
-		//	//return overviewVisualEnabled?.Target == null ? true : overviewVisualEnabled.Target.Value;
-		//	return overviewVisualEnabled?.Target?.Value;
-		//}
-
-		//private static List<Text> GetButtonTextListForNode(ProtoFluxNode node)
-		//{
-		//	return GetNodeVisual(node)?.Slot.GetComponentsInChildren<Text>((Text text) => text.IsDriven)
-		//}
-
-		//private static bool ShouldColorNodeNameText(Text t)
-		//{
-		//	if (Config.GetValue(COLOR_HEADER_ONLY) && t.Slot.Parent?.Name == "Overview")
-		//	{
-		//		return false;
-		//	}
-		//	else
-		//	{
-		//		return true;
-		//	}
-		//}
-
 		private static List<Text> GetOtherTextListForNode(ProtoFluxNode node)
 		{
 			string category = GetWorkerCategoryFilePath(node);
@@ -279,29 +223,14 @@ namespace ColorMyProtoFlux
 			return textList;
 		}
 
-		//private static bool ShouldColorCategoryTextOrOtherText()
-		//{
-		//    if (Config.GetValue(MOD_ENABLED) == true &&
-		//        //Config.GetValue(COLOR_HEADER_ONLY) == false &&
-		//        (Config.GetValue(ENABLE_TEXT_CONTRAST) == true || Config.GetValue(USE_STATIC_TEXT_COLOR) == true)) return true;
-		//    return false;
-		//}
-
-		//private static bool ShouldColorAnyText()
-		//{
-		//	if (Config.GetValue(MOD_ENABLED) == true &&
-		//		(Config.GetValue(ENABLE_TEXT_CONTRAST) == true || Config.GetValue(USE_STATIC_TEXT_COLOR) == true)) return true;
-		//	return false;
-		//}
-
 		private static colorX GetIntendedBackgroundColorForNode(ProtoFluxNode node, colorX modComputedCustomColor)
 		{
 			// basically, I don't want to get the actual node background color because it is succeptible to being changed by highlighting or selection with the tool
-			// so we get the color that it *should* be in normal conditions
+			// so we get the color that it *should* be if it wasn't highlighted or selected
 
-			//if ((Config.GetValue(COLOR_HEADER_ONLY) && GetHeaderImageForNode(node) != null))// || (Config.GetValue(COLOR_HEADER_ONLY) && GetHeaderImageForNode(node) == null)) // wha?
 			if (!ShouldColorNodeBody(node))
 			{
+				// default color
 				return RadiantUI_Constants.BG_COLOR;
 			}
 			else
@@ -313,10 +242,8 @@ namespace ColorMyProtoFlux
 
 		private static bool ShouldColorNodeBody(ProtoFluxNode node)
 		{
-			//bool result;
 			Image headerImage = GetHeaderImageForNode(node);
-			return (!Config.GetValue(COLOR_HEADER_ONLY) && headerImage.Exists()) || (Config.GetValue(COLOR_NODES_WITHOUT_HEADER) && !headerImage.Exists()); // && Config.GetValue(MOD_ENABLED);
-																																							//return !result;
+			return (!Config.GetValue(COLOR_HEADER_ONLY) && headerImage.Exists()) || (Config.GetValue(COLOR_NODES_WITHOUT_HEADER) && !headerImage.Exists());
 		}
 
 		private static List<Image> GetNodeConnectionPointImageList(ProtoFluxNode node, Slot inputsRoot, Slot outputsRoot)
@@ -337,16 +264,12 @@ namespace ColorMyProtoFlux
 
 		private static colorX ComputeCategoryTextColor(ProtoFluxNode node, colorX modComputedCustomColor)
 		{
-			//return MathX.LerpUnclamped(colorX.Gray, regularTextColor, 0.5f);
-
 			if (Config.GetValue(USE_STATIC_TEXT_COLOR))
 			{
 				return Config.GetValue(STATIC_TEXT_COLOR);
 			}
 			else if (Config.GetValue(ENABLE_TEXT_CONTRAST) && ShouldColorNodeBody(node))
 			{
-				// instead of getting the actual background image color here (which is succeptible to changing due to being highlighted or selected),
-				// just get the color that it *should* ideally be
 				colorX intendedColor = GetIntendedBackgroundColorForNode(node, modComputedCustomColor);
 				colorX textColor = GetTextColor(intendedColor);
 				if (textColor == NODE_TEXT_LIGHT_COLOR)
@@ -365,21 +288,6 @@ namespace ColorMyProtoFlux
 			}
 		}
 
-		//private static colorX GetNodeDefaultColor(ProtoFluxNode node)
-		//{
-		//	Type nodeType = node.GetType();
-		//	Type[] genericArgs = nodeType.GetGenericArguments();
-
-		//	if (genericArgs.Length > 0)
-		//	{
-		//		return genericArgs[0].GetTypeColor();
-		//	}
-		//	else
-		//	{
-		//		return nodeType.GetTypeColor();
-		//	}
-		//}
-
 		private static int Clamp(int value, int minValue, int maxValue)
 		{
 			return Math.Min(Math.Max(value, minValue), maxValue);
@@ -397,11 +305,10 @@ namespace ColorMyProtoFlux
 		{
 			// Resonite multiplies Type color by 1.5 on node visuals, so reverse it
 			return modifiedColor.MulRGB(1f / 1.5f);
-			//return modifiedColor / 1.5f;
 		}
 
 		// Each node will refer to the ValueStream to know if it should restore the fields on the node visual.
-		// How to handle this for nodes without a header image?
+		// this is generic and not specific to any certain nodes
 		private static bool ComputeOverrideStreamValue()
 		{
 			if (Config.GetValue(MOD_ENABLED) && (!Config.GetValue(COLOR_HEADER_ONLY) || Config.GetValue(COLOR_NODES_WITHOUT_HEADER)))

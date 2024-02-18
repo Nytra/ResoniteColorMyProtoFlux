@@ -22,35 +22,12 @@ namespace ColorMyProtoFlux
 			public colorX modComputedCustomColor;
 			public HashSet<IField<colorX>> connectionPointImageTintFields;
 			public string LastGroupName;
-			//public Dictionary<IField<colorX>, colorX> connectionPointColorFieldDefaultColors;
 			//public HashSet<Button> nodeButtons;
 			// dont need to store node background image because the UpdateNodeStatus patch handles coloring of that part
 		}
 
-		//private static void NodeInfoSetHeaderBgColor(NodeInfo nodeInfo, colorX c)
-		//{
-		//	NodeInfo outNodeInfo = null;
-		//	if (nodeInfoSet.TryGetValue(nodeInfo, out outNodeInfo))
-		//	{
-		//		if (outNodeInfo.headerImageTintField.IsRemoved)
-		//		{
-		//			NodeInfoRemove(nodeInfo);
-		//		}
-		//		else
-		//		{
-		//			if (outNodeInfo.headerImageTintField.Value != c) outNodeInfo.headerImageTintField.Value = c;
-		//		}
-		//	}
-		//	else
-		//	{
-		//		Debug("Could not set Bg Color. NodeInfo was not found.");
-		//	}
-		//}
-
-		// might need to add handling here for if headerOnly mode is enabled
 		private static void RefreshTextColorsForNode(NodeInfo nodeInfo)
 		{
-			// default text color = radiant UI constants.NEUTRALS.light
 			if (nodeInfo.otherTextColorFields != null)
 			{
 				foreach (IField<colorX> field in nodeInfo.otherTextColorFields.ToList())
@@ -130,20 +107,6 @@ namespace ColorMyProtoFlux
 				return;
 			}
 
-			//if (!nodeInfoSet.Contains(nodeInfo))
-			//{
-			//Debug("NodeInfo was not in nodeInfoSet.");
-			//return;
-			//}
-
-			//NodeInfo outNodeInfo = null;
-			//nodeInfoSet.TryGetValue(nodeInfo, out outNodeInfo);
-			//outNodeInfo.node = null;
-			//outNodeInfo.headerImageTintField = null;
-			//outNodeInfo.otherTextColorFields = null;
-			//outNodeInfo.categoryTextColorField = null;
-			//outNodeInfo.visual = null;
-
 			if (nodeInfoSet.Remove(nodeInfo))
 			{
 				Debug("NodeInfo removed. New size of nodeInfoSet: " + nodeInfoSet.Count.ToString());
@@ -187,29 +150,9 @@ namespace ColorMyProtoFlux
 
 		private static void NodeInfoSetClear()
 		{
-			//foreach (NodeInfo nodeInfo in nodeInfoSet)
-			//{
-			//	nodeInfo.node = null;
-			//	nodeInfo.headerImageTintField = null;
-			//	nodeInfo.otherTextColorFields = null;
-			//	nodeInfo.categoryTextColorField = null;
-			//	nodeInfo.visual = null;
-			//}
 			nodeInfoSet.Clear();
 			TryTrimExcessNodeInfo();
 		}
-
-		//private static void NodeInfoResetNodesToDefault()
-		//{
-		//	foreach (var nodeInfo in nodeInfoSet)
-		//	{
-		//		var overrideField = nodeInfo.visual?.Slot?.GetComponent((ValueField<bool> valueField) => valueField.UpdateOrder == 1);
-		//		overrideField.RunSynchronously(() => 
-		//		{
-		//                  overrideField.Value.Value = true;
-		//              });
-		//	}
-		//}
 
 		//private static void RefDriverNodeInfoSetClear()
 		//{
@@ -294,7 +237,7 @@ namespace ColorMyProtoFlux
 					}
 					else if (nodeInfoSet.Contains(nodeInfo))
 					{
-						ProtoFluxNodeVisual visual = nodeInfo.visual; //GetNodeVisual(nodeInfo.node);
+						ProtoFluxNodeVisual visual = nodeInfo.visual;
 
 						if (visual.Exists())
 						{
