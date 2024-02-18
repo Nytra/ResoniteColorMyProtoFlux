@@ -38,11 +38,11 @@ namespace ColorMyProtoFlux
 
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> MOD_ENABLED = new ModConfigurationKey<bool>("MOD_ENABLED", "Mod Enabled:", () => true);
-		
+
 		// When disabling this mod, if this is true it will run a final update on all nodes with NodeInfo to put them back to default color state
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> RUN_FINAL_UPDATE_ON_MOD_DISABLE = new ModConfigurationKey<bool>("RUN_FINAL_UPDATE_ON_MOD_DISABLE", "Run final update on mod disable:", () => true, internalAccessOnly: true);
-		
+
 		// ===== COLOR MODEL =====
 
 		[AutoRegisterConfigKey]
@@ -137,7 +137,7 @@ namespace ColorMyProtoFlux
 		private static ModConfigurationKey<dummy> DUMMY_SEP_4_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_4_1", $"<color={HEADER_TEXT_COLOR}>[TEXT]</color>", () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> ENABLE_TEXT_CONTRAST = new ModConfigurationKey<bool>("ENABLE_TEXT_CONTRAST", "Automatically change the color of text to improve readability:", () => true);
-		
+
 		[Range(0, 1)]
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<float> PERCEPTUAL_LIGHTNESS_EXPONENT = new ModConfigurationKey<float>("PERCEPTUAL_LIGHTNESS_EXPONENT", "Exponent for perceptual lightness calculation (affects automatic text color, best ~0.5):", () => 0.5f, internalAccessOnly: true);
@@ -467,11 +467,11 @@ namespace ColorMyProtoFlux
 		{
 			Config = modInstance.GetConfiguration();
 
-			foreach(ResoniteModBase mod in ModLoader.Mods())
+			foreach (ResoniteModBase mod in ModLoader.Mods())
 			{
 				Msg(mod.GetType().Assembly.FullName + " | " + mod.GetType().FullName);
 			}
-			
+
 			SetupMod();
 		}
 
@@ -557,7 +557,7 @@ namespace ColorMyProtoFlux
 					__instance.RunSynchronously(() =>
 					{
 						//if (!__instance.Exists()) return;
-						if (IsNodeInvalid(nodeInfo2)) 
+						if (IsNodeInvalid(nodeInfo2))
 						{
 							NodeInfoRemove(nodeInfo2);
 							return;
@@ -572,7 +572,7 @@ namespace ColorMyProtoFlux
 
 				//if (____bgImage.Target != null && (____overviewVisual.Target == null && ____overviewBg.Target != null))
 				//{
-					//return;
+				//return;
 				//}
 
 				Image bgImage = GetBackgroundImageForNode(__instance.Node.Target);
@@ -581,7 +581,7 @@ namespace ColorMyProtoFlux
 
 				//if (overviewSlot != null)
 				//{
-					//ExtraDebug("Slot: " + overviewSlot.ToString());
+				//ExtraDebug("Slot: " + overviewSlot.ToString());
 				//}
 
 				if (!overviewSlot.Exists() && ____overviewBg.IsLinked)
@@ -653,7 +653,7 @@ namespace ColorMyProtoFlux
 						}
 						a = MathX.LerpUnclamped(in a, in b, lerp);
 					}
-					
+
 					if (shouldColorNodeBody)
 					{
 						b = Config.GetValue(NODE_ERROR_COLOR);
@@ -846,7 +846,7 @@ namespace ColorMyProtoFlux
 								UpdateHeaderImageColor(node, __instance, headerImage, colorToSet);
 								Debug("Set header image color");
 							}
-							
+
 							if (Config.GetValue(MAKE_CONNECT_POINTS_FULL_ALPHA) || Config.GetValue(RESTORE_ORIGINAL_TYPE_COLORS) || Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
 							{
 								if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
@@ -862,7 +862,7 @@ namespace ColorMyProtoFlux
 									UpdateConnectPointImageColor(node, __instance, img);
 								}
 							}
-							
+
 							Debug("Connect point colors done");
 
 							// set node's text color, there could be multiple text components that need to be colored
@@ -940,7 +940,7 @@ namespace ColorMyProtoFlux
 							//}
 
 							Debug("Demultiplexer button fix applied");
-							
+
 							// this should run for all nodes now
 							if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) || ShouldColorNodeBody(__instance.Node.Target))
 							{
@@ -984,7 +984,7 @@ namespace ColorMyProtoFlux
 								if (____overviewBg.Target.Exists())
 								{
 									var valueMultiDriver = targetSlot.AttachComponent<ValueMultiDriver<bool>>();
-									
+
 									valueMultiDriver.Drives.Add().Target = booleanReferenceDriver1.State;
 
 									var booleanReferenceDriver2 = targetSlot.AttachComponent<BooleanReferenceDriver<IField<colorX>>>();
@@ -1055,7 +1055,7 @@ namespace ColorMyProtoFlux
 
 								nodeInfo.node.RunInUpdates(1, () =>
 								{
-									if (IsNodeInvalid(nodeInfo)) 
+									if (IsNodeInvalid(nodeInfo))
 									{
 										NodeInfoRemove(nodeInfo);
 										return;
@@ -1063,7 +1063,7 @@ namespace ColorMyProtoFlux
 									foreach (ProtoFluxNode node in node.Group.Nodes.Where((ProtoFluxNode n) => NodeInfoSetContainsNode(n)))
 									{
 										NodeInfo info = GetNodeInfoForNode(node);
-										if (IsNodeInvalid(info)) 
+										if (IsNodeInvalid(info))
 										{
 											NodeInfoRemove(info);
 											continue;

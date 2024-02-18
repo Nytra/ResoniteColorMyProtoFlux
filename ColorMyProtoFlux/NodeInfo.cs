@@ -132,8 +132,8 @@ namespace ColorMyProtoFlux
 
 			//if (!nodeInfoSet.Contains(nodeInfo))
 			//{
-				//Debug("NodeInfo was not in nodeInfoSet.");
-				//return;
+			//Debug("NodeInfo was not in nodeInfoSet.");
+			//return;
 			//}
 
 			//NodeInfo outNodeInfo = null;
@@ -206,8 +206,8 @@ namespace ColorMyProtoFlux
 		//		var overrideField = nodeInfo.visual?.Slot?.GetComponent((ValueField<bool> valueField) => valueField.UpdateOrder == 1);
 		//		overrideField.RunSynchronously(() => 
 		//		{
-  //                  overrideField.Value.Value = true;
-  //              });
+		//                  overrideField.Value.Value = true;
+		//              });
 		//	}
 		//}
 

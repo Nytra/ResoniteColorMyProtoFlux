@@ -83,7 +83,7 @@ namespace ColorMyProtoFlux
 				int i = parts.IndexOf("Nodes");
 				if (i != -1)
 				{
-					if (parts.Count > i+1)
+					if (parts.Count > i + 1)
 					{
 						return parts[i + 1];
 					}
@@ -199,7 +199,7 @@ namespace ColorMyProtoFlux
 
 		private static Image GetHeaderImageForNode(ProtoFluxNode node)
 		{
-			
+
 
 			//var imageSlot = nodeVisual?.Slot.GetComponentInChildren<Text>((Text t) => t.Content == node.NodeName && t.Slot.Name == "Text" && t.Slot.Parent.Name == "Image")?.Slot.Parent;
 			//if (imageSlot != null)
@@ -298,7 +298,7 @@ namespace ColorMyProtoFlux
 		{
 			// basically, I don't want to get the actual node background color because it is succeptible to being changed by highlighting or selection with the tool
 			// so we get the color that it *should* be in normal conditions
-			
+
 			//if ((Config.GetValue(COLOR_HEADER_ONLY) && GetHeaderImageForNode(node) != null))// || (Config.GetValue(COLOR_HEADER_ONLY) && GetHeaderImageForNode(node) == null)) // wha?
 			if (!ShouldColorNodeBody(node))
 			{
@@ -316,13 +316,13 @@ namespace ColorMyProtoFlux
 			//bool result;
 			Image headerImage = GetHeaderImageForNode(node);
 			return (!Config.GetValue(COLOR_HEADER_ONLY) && headerImage.Exists()) || (Config.GetValue(COLOR_NODES_WITHOUT_HEADER) && !headerImage.Exists()); // && Config.GetValue(MOD_ENABLED);
-			//return !result;
+																																							//return !result;
 		}
 
 		private static List<Image> GetNodeConnectionPointImageList(ProtoFluxNode node, Slot inputsRoot, Slot outputsRoot)
 		{
 			List<Image> imgs = new List<Image>();
-			foreach(Image img in inputsRoot?.GetComponentsInChildren<Image>().Concat(outputsRoot?.GetComponentsInChildren<Image>()))
+			foreach (Image img in inputsRoot?.GetComponentsInChildren<Image>().Concat(outputsRoot?.GetComponentsInChildren<Image>()))
 			{
 				// Skip buttons like the small ones on Impulse Demultiplexer
 				// Also skip the weird line on Multiplexers/Demultiplexers
@@ -338,7 +338,7 @@ namespace ColorMyProtoFlux
 		private static colorX ComputeCategoryTextColor(ProtoFluxNode node, colorX modComputedCustomColor)
 		{
 			//return MathX.LerpUnclamped(colorX.Gray, regularTextColor, 0.5f);
-			
+
 			if (Config.GetValue(USE_STATIC_TEXT_COLOR))
 			{
 				return Config.GetValue(STATIC_TEXT_COLOR);
