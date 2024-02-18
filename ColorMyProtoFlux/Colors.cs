@@ -265,7 +265,7 @@ namespace ColorMyProtoFlux
 			color result;
 			color linFgPreMul, linBgPreMul;
 			linFgPreMul = fgColor.ToProfile(ColorProfile.Linear).MulRGB(fgColor.a);
-			if (bgColor.HasValue && fgColor.a != 1.0f)
+			if (bgColor.HasValue && !MathX.Approximately(fgColor.a, 1.0f, 0.0001))
 			{
 				linBgPreMul = bgColor.Value.ToProfile(ColorProfile.Linear).MulRGB(bgColor.Value.a);
 
@@ -323,9 +323,9 @@ namespace ColorMyProtoFlux
 			colorX colorToSet = Config.GetValue(NODE_COLOR);
 			rng = null;
 
-			ExtraDebug("WorkerCategoryPath: " + GetWorkerCategoryPath(node));
-			ExtraDebug("WorkerCategoryPath onlyTopmost: " + GetWorkerCategoryPath(node, onlyTopmost: true));
-			ExtraDebug("WorkerCategoryFilePath: " + GetWorkerCategoryFilePath(node));
+			//ExtraDebug("WorkerCategoryPath: " + GetWorkerCategoryPath(node));
+			//ExtraDebug("WorkerCategoryPath onlyTopmost: " + GetWorkerCategoryPath(node, onlyTopmost: true));
+			//ExtraDebug("WorkerCategoryFilePath: " + GetWorkerCategoryFilePath(node));
 
 			//if (!Config.GetValue(COLOR_RELAY_NODES) && (node.Name.StartsWith("RelayNode") || node.Name.StartsWith("ImpulseRelay")))
 			//{
@@ -362,12 +362,12 @@ namespace ColorMyProtoFlux
 						break;
 					case NodeColorModeEnum.NodeCategory:
 						nodeCategoryString = GetWorkerCategoryPath(node);
-						ExtraDebug("Node category string: " + nodeCategoryString);
+						//ExtraDebug("Node category string: " + nodeCategoryString);
 						rng = new System.Random(nodeCategoryString.GetHashCode() + Config.GetValue(RANDOM_SEED));
 						break;
 					case NodeColorModeEnum.TopmostNodeCategory:
 						nodeCategoryString = GetWorkerCategoryPath(node, onlyTopmost: true);
-						ExtraDebug("Node category string: " + nodeCategoryString);
+						//ExtraDebug("Node category string: " + nodeCategoryString);
 						rng = new System.Random(nodeCategoryString.GetHashCode() + Config.GetValue(RANDOM_SEED));
 						break;
 					case NodeColorModeEnum.NodeGroup:

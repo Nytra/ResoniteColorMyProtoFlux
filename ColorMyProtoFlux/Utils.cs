@@ -3,17 +3,20 @@ using FrooxEngine.ProtoFlux;
 using FrooxEngine.UIX;
 using ResoniteModLoader;
 using System;
-using System.Reflection;
 using Elements.Core;
-using ProtoFlux.Core;
-using Mono.Cecil;
 using System.Linq;
-using HarmonyLib;
 using System.Collections.Generic;
 using System.IO;
 
 namespace ColorMyProtoFlux
 {
+	public static class WorldElementExtensions
+	{
+		public static bool Exists(this IWorldElement element)
+		{
+			return element != null && !element.IsRemoved;
+		}
+	}
 	public partial class ColorMyProtoFlux : ResoniteMod
 	{
 		private static void TrySetSlotTag(Slot s, string tag)
@@ -113,7 +116,7 @@ namespace ColorMyProtoFlux
 		private static colorX GetWireColorOfConnectionPointImage(Image img)
 		{
 			ProtoFluxElementProxy proxy = GetElementProxyFromConnectionPointImage(img);
-			if (proxy != null)
+			if (proxy.Exists())
 			{
 				return proxy.WireColor;
 			}
@@ -127,14 +130,14 @@ namespace ColorMyProtoFlux
 
 		private static colorX GetBackgroundColorOfText(Text t, colorX modComputedCustomColor)
 		{
-			ExtraDebug("Text refid: " + t.ReferenceID.ToString());
+			//ExtraDebug("Text refid: " + t.ReferenceID.ToString());
 			if (t.Slot.Parent?.Name == "Image" || t.Slot.Parent?.Name == "Button")
 			{
 				//Debug("Image or Button");
 				var img = t.Slot.Parent?.GetComponent<Image>();
-				if (img != null)
+				if (img.Exists())
 				{
-					ExtraDebug("Text background color (Connection or button): " + img.Tint.Value.ToString());
+					//ExtraDebug("Text background color (Connection or button): " + img.Tint.Value.ToString());
 					return img.Tint.Value;
 				}
 				Debug("Connection or button image null!");
@@ -157,13 +160,13 @@ namespace ColorMyProtoFlux
 			//}
 			//        }
 			var visual = t.Slot.GetComponentInParents<ProtoFluxNodeVisual>();
-			if (visual != null && visual.Node.Target != null)
+			if (visual.Exists() && visual.Node.Target.Exists())
 			{
 				//SyncRef<Image> bgImage = (SyncRef<Image>)AccessTools.Field(typeof(ProtoFluxNodeVisual), "_bgImage").GetValue(visual);
 				//SyncRef<Image> bgImage = (SyncRef<Image>)visual.TryGetField<SyncRef<Image>>("_bgImage");
 				//colorX computedColorForNode = modComputedCustomColor;
 				colorX c = GetIntendedBackgroundColorForNode(visual.Node.Target, modComputedCustomColor); ;
-				ExtraDebug("Text background color: " + c.ToString());
+				//ExtraDebug("Text background color: " + c.ToString());
 				return c;
 			}
 			Debug("GetBackgroundColorOfText Failed. Visual null. Returning white.");
@@ -172,18 +175,19 @@ namespace ColorMyProtoFlux
 
 		private static ProtoFluxNodeVisual GetNodeVisual(ProtoFluxNode node)
 		{
-			return node.Slot.GetComponentInChildren<ProtoFluxNodeVisual>();
-
-			// xD
+			//return node.Slot.GetComponentInChildren<ProtoFluxNodeVisual>();
 
 			NodeInfo nodeInfo = GetNodeInfoForNode(node);
 			ProtoFluxNodeVisual visual = nodeInfo?.visual;
-			if (visual != null && !visual.IsDestroyed && !visual.IsDisposed && !visual.IsRemoved)
+			if (visual.Exists())
 			{
 				return visual;
 			}
 			visual = node.Slot.GetComponentInChildren<ProtoFluxNodeVisual>();
-			nodeInfo.visual = visual;
+			if (nodeInfo != null)
+			{
+				nodeInfo.visual = visual;
+			}
 			return visual;
 		}
 
@@ -195,7 +199,7 @@ namespace ColorMyProtoFlux
 
 		private static Image GetHeaderImageForNode(ProtoFluxNode node)
 		{
-			ProtoFluxNodeVisual nodeVisual = GetNodeVisual(node);
+			
 
 			//var imageSlot = nodeVisual?.Slot.GetComponentInChildren<Text>((Text t) => t.Content == node.NodeName && t.Slot.Name == "Text" && t.Slot.Parent.Name == "Image")?.Slot.Parent;
 			//if (imageSlot != null)
@@ -204,10 +208,19 @@ namespace ColorMyProtoFlux
 			//}
 			//return null;
 
-			if (nodeVisual != null && nodeVisual.Slot.ChildrenCount > 1)
+			NodeInfo nodeInfo = GetNodeInfoForNode(node);
+			if (nodeInfo != null && nodeInfo.headerImageTintField.Exists())
+			{
+				return (Image)nodeInfo.headerImageTintField.Parent;
+			}
+
+			ProtoFluxNodeVisual nodeVisual = nodeInfo?.visual ?? GetNodeVisual(node);
+
+			if (nodeVisual.Exists() && nodeVisual.Slot.ChildrenCount > 1)
 			{
 				return nodeVisual.Slot[1].GetComponent<Image>();
 			}
+
 			return null;
 		}
 
@@ -215,20 +228,20 @@ namespace ColorMyProtoFlux
 		{
 			ProtoFluxNodeVisual nodeVisual = GetNodeVisual(node);
 
-			if (nodeVisual != null && nodeVisual.Slot.ChildrenCount > 0)
+			if (nodeVisual.Exists() && nodeVisual.Slot.ChildrenCount > 0)
 			{
 				return nodeVisual.Slot[0].GetComponent<Image>();
 			}
 			return null;
 		}
 
-		private static bool? GetOverviewVisualEnabled(ProtoFluxNode node)
-		{
-			ProtoFluxNodeVisual nodeVisual = GetNodeVisual(node);
-			FieldDrive<bool> overviewVisualEnabled = (FieldDrive<bool>)AccessTools.Field(typeof(ProtoFluxNodeVisual), "_overviewVisual").GetValue(nodeVisual);
-			//return overviewVisualEnabled?.Target == null ? true : overviewVisualEnabled.Target.Value;
-			return overviewVisualEnabled?.Target?.Value;
-		}
+		//private static bool? GetOverviewVisualEnabled(ProtoFluxNode node)
+		//{
+		//	ProtoFluxNodeVisual nodeVisual = GetNodeVisual(node);
+		//	FieldDrive<bool> overviewVisualEnabled = (FieldDrive<bool>)AccessTools.Field(typeof(ProtoFluxNodeVisual), "_overviewVisual").GetValue(nodeVisual);
+		//	//return overviewVisualEnabled?.Target == null ? true : overviewVisualEnabled.Target.Value;
+		//	return overviewVisualEnabled?.Target?.Value;
+		//}
 
 		//private static List<Text> GetButtonTextListForNode(ProtoFluxNode node)
 		//{
@@ -256,7 +269,8 @@ namespace ColorMyProtoFlux
 		private static Text GetCategoryTextForNode(ProtoFluxNode node)
 		{
 			string category = GetWorkerCategoryFilePath(node);
-			return GetNodeVisual(node)?.Slot.GetComponentInChildren<Text>((Text text) => text.Content == category);
+			var visual = GetNodeVisual(node);
+			return visual?.Slot.GetComponentInChildren<Text>((Text text) => text.Content == category && text.Slot?.Parent == visual?.Slot);
 		}
 
 		private static List<Text> GetNodeNameTextListForNode(ProtoFluxNode node)
@@ -301,7 +315,7 @@ namespace ColorMyProtoFlux
 		{
 			//bool result;
 			Image headerImage = GetHeaderImageForNode(node);
-			return (!Config.GetValue(COLOR_HEADER_ONLY) && headerImage != null) || (Config.GetValue(COLOR_NODES_WITHOUT_HEADER) && headerImage == null); // && Config.GetValue(MOD_ENABLED);
+			return (!Config.GetValue(COLOR_HEADER_ONLY) && headerImage.Exists()) || (Config.GetValue(COLOR_NODES_WITHOUT_HEADER) && !headerImage.Exists()); // && Config.GetValue(MOD_ENABLED);
 			//return !result;
 		}
 
@@ -312,7 +326,7 @@ namespace ColorMyProtoFlux
 			{
 				// Skip buttons like the small ones on Impulse Demultiplexer
 				// Also skip the weird line on Multiplexers/Demultiplexers
-				if (img.Tint.IsDriven || (node.Name.ToLower().Contains("multiplexer") && img.Slot.GetComponent<IgnoreLayout>() != null))
+				if (img.Tint.IsDriven || (node.Name.ToLower().Contains("multiplexer") && img.Slot.GetComponent<IgnoreLayout>().Exists()))
 				{
 					continue;
 				}
@@ -375,15 +389,40 @@ namespace ColorMyProtoFlux
 		{
 			if (Config.GetValue(EXTRA_DEBUG_LOGGING))
 			{
-				Debug(msg);
+				Debug("[Extra debug] " + msg);
 			}
 		}
 
-        private static colorX RestoreOriginalTypeColor(colorX modifiedColor)
-        {
+		private static colorX RestoreOriginalTypeColor(colorX modifiedColor)
+		{
 			// Resonite multiplies Type color by 1.5 on node visuals, so reverse it
 			return modifiedColor.MulRGB(1f / 1.5f);
-            //return modifiedColor / 1.5f;
-        }
-    }
+			//return modifiedColor / 1.5f;
+		}
+
+		// Each node will refer to the ValueStream to know if it should restore the fields on the node visual.
+		// How to handle this for nodes without a header image?
+		private static bool ComputeOverrideStreamValue()
+		{
+			if (Config.GetValue(MOD_ENABLED) && (!Config.GetValue(COLOR_HEADER_ONLY) || Config.GetValue(COLOR_NODES_WITHOUT_HEADER)))
+			{
+				return true;
+			}
+			return false;
+		}
+
+		private static ValueStream<bool> GetOrAddOverrideFieldsStream(User user, bool dontAdd = false)
+		{
+			ValueStream<bool> stream = user.GetStream<ValueStream<bool>>((stream) => stream.Name == overrideFieldsStreamName);
+			if (!stream.Exists() && dontAdd == false)
+			{
+				stream = user.AddStream<ValueStream<bool>>();
+				stream.Name = overrideFieldsStreamName;
+				stream.Value = ComputeOverrideStreamValue();
+				stream.Encoding = ValueEncoding.Quantized;
+				stream.SetUpdatePeriod(2, 0); // period means it will only fetch the value every X updates
+			}
+			return stream;
+		}
+	}
 }

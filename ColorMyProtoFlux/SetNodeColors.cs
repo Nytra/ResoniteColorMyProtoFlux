@@ -1,13 +1,9 @@
 ﻿using FrooxEngine.ProtoFlux;
 using FrooxEngine;
 using ResoniteModLoader;
-using System.Collections.Generic;
 using Elements.Core;
 using System;
-using System.Linq;
-using ProtoFlux.Core;
 using FrooxEngine.UIX;
-using static ColorMyProtoFlux.ColorMyProtoFlux;
 
 namespace ColorMyProtoFlux
 {
@@ -15,18 +11,18 @@ namespace ColorMyProtoFlux
 	{
 		private static void UpdateHeaderImageColor(ProtoFluxNode node, ProtoFluxNodeVisual visual, Image headerImage, colorX color)
 		{
-            //if (!visual.IsNodeValid)
-            //{
-            //	TrySetImageTint(headerImage, Config.GetValue(NODE_ERROR_COLOR));
-            //}
-            //else
-            //{
-            //	TrySetImageTint(headerImage, color);
-            //}
+			//if (!visual.IsNodeValid)
+			//{
+			//	TrySetImageTint(headerImage, Config.GetValue(NODE_ERROR_COLOR));
+			//}
+			//else
+			//{
+			//	TrySetImageTint(headerImage, color);
+			//}
 
 			// Trying this to fix a problem when the node is spawned and it is already invalid
-            TrySetImageTint(headerImage, color);
-        }
+			TrySetImageTint(headerImage, color);
+		}
 
 		private static void UpdateConnectPointImageColor(ProtoFluxNode node, ProtoFluxNodeVisual visual, Image img)
 		{
@@ -38,25 +34,25 @@ namespace ColorMyProtoFlux
 			}
 			if (Config.GetValue(MOD_ENABLED) && Config.GetValue(ENHANCE_TYPE_COLORS))
 			{
-                if (Config.GetValue(RESTORE_ORIGINAL_TYPE_COLORS))
-                {
-                    float origAlpha = colorToSet.a;
-                    colorToSet = RestoreOriginalTypeColor(colorToSet).SetA(origAlpha);
-                }
-                if (Config.GetValue(MAKE_CONNECT_POINTS_FULL_ALPHA))
-                {
-                    // nullable types should have 0.5 alpha
-                    Type connectionType = GetTypeOfConnectionPointImage(img);
-                    if (connectionType?.GetTypeColor().a == 0.5f)
-                    {
-                        colorToSet = colorToSet.SetA(0.5f);
-                    }
-                    else
-                    {
-                        colorToSet = colorToSet.SetA(1f);
-                    }
-                }
-            }
+				if (Config.GetValue(RESTORE_ORIGINAL_TYPE_COLORS))
+				{
+					float origAlpha = colorToSet.a;
+					colorToSet = RestoreOriginalTypeColor(colorToSet).SetA(origAlpha);
+				}
+				if (Config.GetValue(MAKE_CONNECT_POINTS_FULL_ALPHA))
+				{
+					// nullable types should have 0.5 alpha
+					Type connectionType = GetTypeOfConnectionPointImage(img);
+					if (connectionType?.GetTypeColor().a == 0.5f)
+					{
+						colorToSet = colorToSet.SetA(0.5f);
+					}
+					else
+					{
+						colorToSet = colorToSet.SetA(1f);
+					}
+				}
+			}
 			TrySetImageTint(img, colorToSet);
 		}
 
@@ -64,13 +60,13 @@ namespace ColorMyProtoFlux
 		{
 			if (Config.GetValue(MOD_ENABLED) && Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
 			{
-				Button b = text.Slot.GetComponent<Button>();
+				Button button = text.Slot.GetComponent<Button>();
 				Component proxy = text.Slot.GetComponent((Component c) => c.Name.Contains("Proxy"));
 				//Debug($"button is null: {b == null}");
 				//Debug($"proxy: {proxy?.Name}");
-				if ((b != null && proxy == null) || (proxy != null && proxy.Slot.Parent.Name == "Content"))
+				if ((button.Exists() && !proxy.Exists()) || (proxy.Exists() && proxy.Slot.Parent.Name == "Content"))
 				{
-					b.SetColors(GetTextColor(GetBackgroundColorOfText(text, modComputedCustomColor)));
+					button.SetColors(GetTextColor(GetBackgroundColorOfText(text, modComputedCustomColor)));
 				}
 				else
 				{
@@ -113,7 +109,7 @@ namespace ColorMyProtoFlux
 				if (true)//ShouldColorNodeNameText(t)) // wha?
 				{
 					// idk what this is doing
-					if (text.Slot.Parent?.Name == "Overview" || (headerImage == null && Config.GetValue(COLOR_HEADER_ONLY)))
+					if (text.Slot.Parent?.Name == "Overview" || (!headerImage.Exists() && Config.GetValue(COLOR_HEADER_ONLY)))
 					{
 						TrySetTextColor(text, GetTextColor(GetIntendedBackgroundColorForNode(node, modComputedCustomColor)));
 					}
