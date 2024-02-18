@@ -395,8 +395,10 @@ namespace ColorMyProtoFlux
 				ValueStream<bool> overrideFieldsStream = world.LocalUser.GetStream<ValueStream<bool>>((stream) => stream.Name == overrideFieldsStreamName);
 				if (overrideFieldsStream.Exists())
 				{
-					// This might need to be in a synchronous action
-					overrideFieldsStream.Destroy();
+					world.RunSynchronously(() => 
+					{
+						overrideFieldsStream.Destroy();
+					});
 				}
 			}
 		}
