@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using Elements.Core;
 using System;
 using System.Linq;
-using ProtoFlux.Core;
 using FrooxEngine.UIX;
 
 namespace ColorMyProtoFlux
@@ -83,7 +82,7 @@ namespace ColorMyProtoFlux
 					if (!field.Exists())
 					{
 						nodeInfo.nodeNameTextColorFields.Remove(field);
-                        return;
+						return;
 					}
 					else
 					{
@@ -256,78 +255,78 @@ namespace ColorMyProtoFlux
 			}
 		}
 
-        private static void RefreshNodeColor(NodeInfo nodeInfo)
-        {
-            nodeInfo.modComputedCustomColor = ComputeColorForProtoFluxNode(nodeInfo.node);
+		private static void RefreshNodeColor(NodeInfo nodeInfo)
+		{
+			nodeInfo.modComputedCustomColor = ComputeColorForProtoFluxNode(nodeInfo.node);
 
-            if (nodeInfo.connectionPointImageTintFields != null)
-            {
-                nodeInfo.node.RunInUpdates(0, () =>
-                {
-                    if (!nodeInfo.node.Exists())
-                    {
-                        NodeInfoRemove(nodeInfo);
-                    }
-                    else if (nodeInfoSet.Contains(nodeInfo))
-                    {
-                        foreach (IField<colorX> field in nodeInfo.connectionPointImageTintFields.ToList())
-                        {
-                            if (!field.Exists())
-                            {
-                                nodeInfo.connectionPointImageTintFields.Remove(field);
-                            }
-                            else
-                            {
-                                UpdateConnectPointImageColor(nodeInfo.node, nodeInfo.visual, field.FindNearestParent<Image>());
-                            }
-                        }
-                    }
-                });
-            }
+			if (nodeInfo.connectionPointImageTintFields != null)
+			{
+				nodeInfo.node.RunInUpdates(0, () =>
+				{
+					if (!nodeInfo.node.Exists())
+					{
+						NodeInfoRemove(nodeInfo);
+					}
+					else if (nodeInfoSet.Contains(nodeInfo))
+					{
+						foreach (IField<colorX> field in nodeInfo.connectionPointImageTintFields.ToList())
+						{
+							if (!field.Exists())
+							{
+								nodeInfo.connectionPointImageTintFields.Remove(field);
+							}
+							else
+							{
+								UpdateConnectPointImageColor(nodeInfo.node, nodeInfo.visual, field.FindNearestParent<Image>());
+							}
+						}
+					}
+				});
+			}
 
-            if (nodeInfo.headerImageTintField != null)
-            {
-                nodeInfo.node.RunInUpdates(0, () =>
-                {
-                    if (IsNodeInvalid(nodeInfo) || nodeInfo.headerImageTintField.IsRemoved)
-                    {
-                        NodeInfoRemove(nodeInfo);
-                    }
-                    else if (nodeInfoSet.Contains(nodeInfo))
-                    {
-                        ProtoFluxNodeVisual visual = nodeInfo.visual; //GetNodeVisual(nodeInfo.node);
+			if (nodeInfo.headerImageTintField != null)
+			{
+				nodeInfo.node.RunInUpdates(0, () =>
+				{
+					if (IsNodeInvalid(nodeInfo) || nodeInfo.headerImageTintField.IsRemoved)
+					{
+						NodeInfoRemove(nodeInfo);
+					}
+					else if (nodeInfoSet.Contains(nodeInfo))
+					{
+						ProtoFluxNodeVisual visual = nodeInfo.visual; //GetNodeVisual(nodeInfo.node);
 
-                        if (visual.Exists())
-                        {
-                            colorX colorToSet = Config.GetValue(MOD_ENABLED) ? nodeInfo.modComputedCustomColor : RadiantUI_Constants.HEADER;
-                            UpdateHeaderImageColor(nodeInfo.node, visual, nodeInfo.headerImageTintField.FindNearestParent<Image>(), colorToSet);
-                        }
-                        else
-                        {
-                            NodeInfoRemove(nodeInfo);
-                        }
-                    }
-                });
-            }
+						if (visual.Exists())
+						{
+							colorX colorToSet = Config.GetValue(MOD_ENABLED) ? nodeInfo.modComputedCustomColor : RadiantUI_Constants.HEADER;
+							UpdateHeaderImageColor(nodeInfo.node, visual, nodeInfo.headerImageTintField.FindNearestParent<Image>(), colorToSet);
+						}
+						else
+						{
+							NodeInfoRemove(nodeInfo);
+						}
+					}
+				});
+			}
 
-            if (Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
-            {
-                nodeInfo.node.RunInUpdates(0, () =>
-                {
-                    if (IsNodeInvalid(nodeInfo))
-                    {
-                        NodeInfoRemove(nodeInfo);
-                    }
-                    else if (nodeInfoSet.Contains(nodeInfo))
-                    {
-                        // if it didn't already get removed in another thread before this coroutine
-                        if (nodeInfoSet.Contains(nodeInfo))
-                        {
-                            RefreshTextColorsForNode(nodeInfo);
-                        }
-                    }
-                });
-            }
-        }
-    }
+			if (Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
+			{
+				nodeInfo.node.RunInUpdates(0, () =>
+				{
+					if (IsNodeInvalid(nodeInfo))
+					{
+						NodeInfoRemove(nodeInfo);
+					}
+					else if (nodeInfoSet.Contains(nodeInfo))
+					{
+						// if it didn't already get removed in another thread before this coroutine
+						if (nodeInfoSet.Contains(nodeInfo))
+						{
+							RefreshTextColorsForNode(nodeInfo);
+						}
+					}
+				});
+			}
+		}
+	}
 }

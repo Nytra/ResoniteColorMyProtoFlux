@@ -1,9 +1,4 @@
-﻿using FrooxEngine;
-using ResoniteModLoader;
-using System.Linq;
-using System;
-using System.Threading;
-using Elements.Core;
+﻿using ResoniteModLoader;
 
 namespace ColorMyProtoFlux
 {
