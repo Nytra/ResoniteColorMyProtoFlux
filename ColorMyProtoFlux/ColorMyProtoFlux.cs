@@ -923,7 +923,7 @@ namespace ColorMyProtoFlux
 									{
 										//if (node == null) return;
 										if (Config.GetValue(NODE_COLOR_MODE) != NodeColorModeEnum.NodeGroup) return;
-										
+
 										Debug("Change tracking invalidated for group: " + nodeGroup.Name);
 
 										RemoveInvalidNodeInfos();
