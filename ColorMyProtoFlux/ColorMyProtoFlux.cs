@@ -1,4 +1,4 @@
-﻿//#define DEBUG
+﻿#define HOT_RELOAD
 
 using Elements.Core;
 using FrooxEngine;
@@ -6,17 +6,14 @@ using FrooxEngine.ProtoFlux;
 using FrooxEngine.UIX;
 using HarmonyLib;
 using ProtoFlux.Core;
-using ResoniteHotReloadLib;
 using ResoniteModLoader;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-
-
-#if DEBUG
-
-#endif
+#if HOT_RELOAD
+using ResoniteHotReloadLib;
+#endif //HOT_RELOAD
 
 namespace ColorMyProtoFlux
 {
@@ -381,11 +378,15 @@ namespace ColorMyProtoFlux
 		public override void OnEngineInit()
 		{
 			//Harmony.DEBUG = true;
+#if HOT_RELOAD
+			Msg("Hot reload active!");
 			HotReloader.RegisterForHotReload(this);
+#endif // HOT_RELOAD
 			Config = GetConfiguration();
 			SetupMod();
 		}
 
+#if HOT_RELOAD
 		static void BeforeHotReload()
 		{
 			Config.OnThisConfigurationChanged -= OnConfigChanged;
@@ -417,6 +418,7 @@ namespace ColorMyProtoFlux
 
 			SetupMod();
 		}
+#endif // HOT_RELOAD
 
 		static void SetupMod()
 		{
@@ -461,6 +463,7 @@ namespace ColorMyProtoFlux
 			}
 		}
 
+#if HOT_RELOAD
 		[HarmonyPatch(typeof(Userspace), "OnCommonUpdate")]
 		class HotReloadPatch
 		{
@@ -473,6 +476,7 @@ namespace ColorMyProtoFlux
 				}
 			}
 		}
+#endif // HOT_RELOAD
 
 		[HarmonyPatch(typeof(ProtoFluxNodeVisual))]
 		[HarmonyPatch("UpdateNodeStatus")]
