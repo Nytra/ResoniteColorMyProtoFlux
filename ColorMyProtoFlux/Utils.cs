@@ -10,15 +10,12 @@ using System.Linq;
 
 namespace ColorMyProtoFlux
 {
-	public static class WorldElementExtensions
+	public partial class ColorMyProtoFlux : ResoniteMod
 	{
-		public static bool Exists(this IWorldElement element)
+		private static bool ElementExists(IWorldElement element)
 		{
 			return element != null && !element.IsRemoved;
 		}
-	}
-	public partial class ColorMyProtoFlux : ResoniteMod
-	{
 		private static void TrySetSlotTag(Slot s, string tag)
 		{
 			try
@@ -116,7 +113,7 @@ namespace ColorMyProtoFlux
 		private static colorX GetWireColorOfConnectionPointImage(Image img)
 		{
 			ProtoFluxElementProxy proxy = GetElementProxyFromConnectionPointImage(img);
-			if (proxy.Exists())
+			if (ElementExists(proxy))
 			{
 				return proxy.WireColor;
 			}
@@ -135,7 +132,7 @@ namespace ColorMyProtoFlux
 			{
 				//ExtraDebug("Connection or Button");
 				var img = t.Slot.Parent?.GetComponent<Image>();
-				if (img.Exists())
+				if (ElementExists(img))
 				{
 					//ExtraDebug("Text background color (Connection or button): " + img.Tint.Value.ToString());
 					return img.Tint.Value;
@@ -143,7 +140,7 @@ namespace ColorMyProtoFlux
 				Debug("Connection or button image null!");
 			}
 			var visual = t.Slot.GetComponentInParents<ProtoFluxNodeVisual>();
-			if (visual.Exists() && visual.Node.Target.Exists())
+			if (ElementExists(visual) && ElementExists(visual.Node.Target))
 			{
 				colorX c = GetIntendedBackgroundColorForNode(visual.Node.Target, modComputedCustomColor); ;
 				//ExtraDebug("Text background color: " + c.ToString());
@@ -157,7 +154,7 @@ namespace ColorMyProtoFlux
 		{
 			NodeInfo nodeInfo = GetNodeInfoForNode(node);
 			ProtoFluxNodeVisual visual = nodeInfo?.visual;
-			if (visual.Exists())
+			if (ElementExists(visual))
 			{
 				return visual;
 			}
@@ -178,14 +175,21 @@ namespace ColorMyProtoFlux
 		private static Image GetHeaderImageForNode(ProtoFluxNode node)
 		{
 			NodeInfo nodeInfo = GetNodeInfoForNode(node);
-			if (nodeInfo != null && nodeInfo.headerImageTintField.Exists())
+			if (!IsNodeInvalid(nodeInfo))
 			{
-				return (Image)nodeInfo.headerImageTintField.Parent;
+				if (ElementExists(nodeInfo.headerImageTintField))
+				{
+					return (Image)nodeInfo.headerImageTintField.Parent;
+				}
+			}
+			else
+			{
+				NodeInfoRemove(nodeInfo);
 			}
 
 			ProtoFluxNodeVisual nodeVisual = nodeInfo?.visual ?? GetNodeVisual(node);
 
-			if (nodeVisual.Exists() && nodeVisual.Slot.ChildrenCount > 1)
+			if (ElementExists(nodeVisual) && nodeVisual.Slot.ChildrenCount > 1)
 			{
 				return nodeVisual.Slot[1].GetComponent<Image>();
 			}
@@ -197,7 +201,7 @@ namespace ColorMyProtoFlux
 		{
 			ProtoFluxNodeVisual nodeVisual = GetNodeVisual(node);
 
-			if (nodeVisual.Exists() && nodeVisual.Slot.ChildrenCount > 0)
+			if (ElementExists(nodeVisual) && nodeVisual.Slot.ChildrenCount > 0)
 			{
 				return nodeVisual.Slot[0].GetComponent<Image>();
 			}
@@ -243,7 +247,7 @@ namespace ColorMyProtoFlux
 		private static bool ShouldColorNodeBody(ProtoFluxNode node)
 		{
 			Image headerImage = GetHeaderImageForNode(node);
-			return (!Config.GetValue(COLOR_HEADER_ONLY) && headerImage.Exists()) || (Config.GetValue(COLOR_NODES_WITHOUT_HEADER) && !headerImage.Exists());
+			return (!Config.GetValue(COLOR_HEADER_ONLY) && ElementExists(headerImage)) || (Config.GetValue(COLOR_NODES_WITHOUT_HEADER) && !ElementExists(headerImage));
 		}
 
 		private static List<Image> GetNodeConnectionPointImageList(ProtoFluxNode node, Slot inputsRoot, Slot outputsRoot)
@@ -253,7 +257,7 @@ namespace ColorMyProtoFlux
 			{
 				// Skip buttons like the small ones on Impulse Demultiplexer
 				// Also skip the weird line on Multiplexers/Demultiplexers
-				if (img.Tint.IsDriven || (node.Name.ToLower().Contains("multiplexer") && img.Slot.GetComponent<IgnoreLayout>().Exists()))
+				if (img.Tint.IsDriven || (node.Name.ToLower().Contains("multiplexer") && ElementExists(img.Slot.GetComponent<IgnoreLayout>())))
 				{
 					continue;
 				}
@@ -321,7 +325,7 @@ namespace ColorMyProtoFlux
 		private static ValueStream<bool> GetOrAddOverrideFieldsStream(User user, bool dontAdd = false)
 		{
 			ValueStream<bool> stream = user.GetStream<ValueStream<bool>>((stream) => stream.Name == overrideFieldsStreamName);
-			if (!stream.Exists() && dontAdd == false)
+			if (!ElementExists(stream) && dontAdd == false)
 			{
 				stream = user.AddStream<ValueStream<bool>>();
 				stream.Name = overrideFieldsStreamName;

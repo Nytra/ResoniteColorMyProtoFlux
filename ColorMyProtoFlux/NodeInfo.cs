@@ -32,7 +32,7 @@ namespace ColorMyProtoFlux
 			{
 				foreach (IField<colorX> field in nodeInfo.otherTextColorFields.ToList())
 				{
-					if (!field.Exists())
+					if (!ElementExists(field))
 					{
 						nodeInfo.otherTextColorFields.Remove(field);
 						return;
@@ -43,7 +43,7 @@ namespace ColorMyProtoFlux
 					}
 				}
 			}
-			if (!nodeInfo.categoryTextColorField.Exists())
+			if (!ElementExists(nodeInfo.categoryTextColorField))
 			{
 				NodeInfoRemove(nodeInfo);
 				return;
@@ -56,7 +56,7 @@ namespace ColorMyProtoFlux
 			{
 				foreach (IField<colorX> field in nodeInfo.nodeNameTextColorFields.ToList())
 				{
-					if (!field.Exists())
+					if (!ElementExists(field))
 					{
 						nodeInfo.nodeNameTextColorFields.Remove(field);
 						return;
@@ -169,10 +169,10 @@ namespace ColorMyProtoFlux
 		private static bool IsNodeInvalid(NodeInfo nodeInfo)
 		{
 			return (nodeInfo == null ||
-				   !nodeInfo.node.Exists() ||
-				   !nodeInfo.node.Slot.Exists() ||
-				   !nodeInfo.visual.Exists() ||
-				   !nodeInfo.visual.Slot.Exists() ||
+				   !ElementExists(nodeInfo.node) ||
+				   !ElementExists(nodeInfo.node.Slot) ||
+				   !ElementExists(nodeInfo.visual) ||
+				   !ElementExists(nodeInfo.visual.Slot) ||
 				   nodeInfo.node.World == null ||
 				   nodeInfo.node.World.IsDestroyed ||
 				   nodeInfo.node.World.IsDisposed);
@@ -206,7 +206,7 @@ namespace ColorMyProtoFlux
 			{
 				nodeInfo.node.RunInUpdates(0, () =>
 				{
-					if (!nodeInfo.node.Exists())
+					if (!ElementExists(nodeInfo.node))
 					{
 						NodeInfoRemove(nodeInfo);
 					}
@@ -214,7 +214,7 @@ namespace ColorMyProtoFlux
 					{
 						foreach (IField<colorX> field in nodeInfo.connectionPointImageTintFields.ToList())
 						{
-							if (!field.Exists())
+							if (!ElementExists(field))
 							{
 								nodeInfo.connectionPointImageTintFields.Remove(field);
 							}
@@ -239,7 +239,7 @@ namespace ColorMyProtoFlux
 					{
 						ProtoFluxNodeVisual visual = nodeInfo.visual;
 
-						if (visual.Exists())
+						if (ElementExists(visual))
 						{
 							colorX colorToSet = Config.GetValue(MOD_ENABLED) ? nodeInfo.modComputedCustomColor : RadiantUI_Constants.HEADER;
 							UpdateHeaderImageColor(nodeInfo.node, visual, nodeInfo.headerImageTintField.FindNearestParent<Image>(), colorToSet);

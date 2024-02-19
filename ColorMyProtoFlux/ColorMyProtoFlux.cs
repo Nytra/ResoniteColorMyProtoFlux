@@ -12,6 +12,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
+
+
 #if DEBUG
 
 #endif
@@ -309,7 +311,7 @@ namespace ColorMyProtoFlux
 			foreach (World world in Engine.Current.WorldManager.Worlds)
 			{
 				ValueStream<bool> stream = GetOrAddOverrideFieldsStream(world.LocalUser, dontAdd: true);
-				if (stream.Exists())
+				if (ElementExists(stream))
 				{
 					world.RunSynchronously(() =>
 					{
@@ -378,6 +380,7 @@ namespace ColorMyProtoFlux
 
 		public override void OnEngineInit()
 		{
+			//Harmony.DEBUG = true;
 			HotReloader.RegisterForHotReload(this);
 			Config = GetConfiguration();
 			SetupMod();
@@ -393,9 +396,9 @@ namespace ColorMyProtoFlux
 			foreach (World world in Engine.Current.WorldManager.Worlds)
 			{
 				ValueStream<bool> overrideFieldsStream = world.LocalUser.GetStream<ValueStream<bool>>((stream) => stream.Name == overrideFieldsStreamName);
-				if (overrideFieldsStream.Exists())
+				if (ElementExists(overrideFieldsStream))
 				{
-					world.RunSynchronously(() => 
+					world.RunSynchronously(() =>
 					{
 						overrideFieldsStream.Destroy();
 					});
@@ -441,7 +444,7 @@ namespace ColorMyProtoFlux
 			if (field != null && conflictingSyncElement != null && (!field.IsDriven || field.IsHooked) && conflictingSyncElement.LastModifyingUser != field.World.LocalUser)
 			{
 				ProtoFluxNodeVisual visual = field.FindNearestParent<Slot>().GetComponentInParents<ProtoFluxNodeVisual>();
-				if (visual.Exists())
+				if (ElementExists(visual))
 				{
 					if (!ShouldColorNodeBody(visual.Node.Target)) return;
 					try
@@ -463,7 +466,7 @@ namespace ColorMyProtoFlux
 		{
 			static void Postfix()
 			{
-				if (!Config.GetValue(MOD_ENABLED)) return;
+				//if (!Config.GetValue(MOD_ENABLED)) return;
 				if (Engine.Current.InputInterface.GetKeyDown(Key.F3))
 				{
 					HotReloader.HotReload(typeof(ColorMyProtoFlux));
@@ -477,37 +480,29 @@ namespace ColorMyProtoFlux
 		{
 			static void Postfix(ProtoFluxNodeVisual __instance, SyncRef<Image> ____bgImage, FieldDrive<colorX> ____overviewBg, FieldDrive<bool> ____overviewVisual)
 			{
+				// should this be here?
 				if (!Config.GetValue(MOD_ENABLED)) return;
 
 				// if this node visual does not belong to LocalUser, skip this patch
 				if (__instance.ReferenceID.User != __instance.LocalUser.AllocationID) return;
 
 				NodeInfo nodeInfo2 = GetNodeInfoForNode(__instance.Node.Target);
-				if (nodeInfo2 != null && __instance.Node.Target?.Group?.Name != nodeInfo2?.LastGroupName)
+				if (!IsNodeInvalid(nodeInfo2) && __instance.Node.Target?.Group?.Name != nodeInfo2?.LastGroupName)
 				{
 					nodeInfo2.LastGroupName = __instance.Node.Target?.Group?.Name;
-					__instance.RunSynchronously(() =>
-					{
-						//if (!__instance.Exists()) return;
-						if (IsNodeInvalid(nodeInfo2))
-						{
-							NodeInfoRemove(nodeInfo2);
-							return;
-						};
-						RefreshNodeColor(nodeInfo2);
-					});
+					RefreshNodeColor(nodeInfo2);
 				}
 
 				//if (__instance.World != Engine.Current.WorldManager.FocusedWorld) return true; // just in case?
 
 				// If the field is not null, don't run this patch
-				if (____bgImage.Target.Exists()) return;
+				if (ElementExists(____bgImage.Target)) return;
 
 				Image bgImage = GetBackgroundImageForNode(__instance.Node.Target);
 				Slot overviewSlot = (Slot)____overviewVisual.Target?.Parent;
 				Image overviewBg = overviewSlot?.GetComponent<Image>();
 
-				if (!overviewSlot.Exists() && ____overviewBg.IsLinked)
+				if (!ElementExists(overviewSlot) && ____overviewBg.IsLinked)
 				{
 					//Debug(____overviewBg.ActiveLink.Parent?.Name);
 					var booleanReferenceDriver = (BooleanReferenceDriver<IField<colorX>>)____overviewBg.ActiveLink.Parent;
@@ -515,11 +510,12 @@ namespace ColorMyProtoFlux
 					overviewSlot = overviewBg?.Slot;
 				}
 
-				if (!bgImage.Exists() && (!overviewSlot.Exists() || !overviewBg.Exists())) return;
+				if (!ElementExists(bgImage) && (!ElementExists(overviewSlot) || !ElementExists(overviewBg))) return;
 
 				//ExtraDebug("UpdateNodeStatus Patch - Colors will change.");
 
 				colorX a;
+
 				bool shouldColorNodeBody = ShouldColorNodeBody(__instance.Node.Target);
 
 				if (shouldColorNodeBody)
@@ -589,7 +585,7 @@ namespace ColorMyProtoFlux
 				}
 				else
 				{
-					if ((bgImage.Exists() && bgImage.Tint.Value == errorColorToSet) || (overviewBg.Exists() && overviewBg.Tint.Value == errorColorToSet))
+					if ((ElementExists(bgImage) && bgImage.Tint.Value == errorColorToSet) || (ElementExists(overviewBg) && overviewBg.Tint.Value == errorColorToSet))
 					{
 						Debug("Node valid after being not valid");
 						// does this work? it is supposed to reset the header color when the node becomes valid after being invalid
@@ -604,11 +600,11 @@ namespace ColorMyProtoFlux
 						}
 					}
 				}
-				if (bgImage.Exists())
+				if (ElementExists(bgImage))
 				{
 					bgImage.Tint.Value = a;
 				}
-				if (overviewBg.Exists())
+				if (ElementExists(overviewBg))
 				{
 					overviewBg.Tint.Value = a;
 				}
@@ -680,6 +676,8 @@ namespace ColorMyProtoFlux
 						else
 						{
 							UpdateConnectPointImageColor(visual.Node.Target, visual, img);
+
+							// nodeInfo could be null here
 							if (invalidNodeInfo)
 							{
 								NodeInfoRemove(nodeInfo);
@@ -701,7 +699,7 @@ namespace ColorMyProtoFlux
 				Slot root = __instance.Slot;
 
 				// only run if the protoflux node visual slot is allocated to the local user
-				if (Config.GetValue(MOD_ENABLED) == true && root.Exists() && root.ReferenceID.User == root.LocalUser.AllocationID)
+				if (Config.GetValue(MOD_ENABLED) == true && ElementExists(root) && root.ReferenceID.User == root.LocalUser.AllocationID)
 				{
 					if (root.Tag != COLOR_SET_TAG)
 					{
@@ -710,7 +708,7 @@ namespace ColorMyProtoFlux
 						{
 							foreach (Slot childSlot in __instance.Slot.Parent.Children)
 							{
-								if (childSlot.Exists() && childSlot.Name == root.Name && childSlot.GetComponent<ProtoFluxNodeVisual>().Exists())
+								if (ElementExists(childSlot) && childSlot.Name == root.Name && ElementExists(childSlot.GetComponent<ProtoFluxNodeVisual>()))
 								{
 									return;
 								}
@@ -740,14 +738,14 @@ namespace ColorMyProtoFlux
 							}
 
 							var headerImage = GetHeaderImageForNode(node);
-							if (headerImage.Exists())
+							if (ElementExists(headerImage))
 							{
 								if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
 								{
 									nodeInfo.headerImageTintField = headerImage.Tint;
 								}
 								UpdateHeaderImageColor(node, __instance, headerImage, colorToSet);
-								Debug("Set header image color");
+								ExtraDebug("Set header image color");
 							}
 
 							if (Config.GetValue(MAKE_CONNECT_POINTS_FULL_ALPHA) || Config.GetValue(RESTORE_ORIGINAL_TYPE_COLORS) || Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
@@ -766,7 +764,7 @@ namespace ColorMyProtoFlux
 								}
 							}
 
-							Debug("Connect point colors done");
+							ExtraDebug("Connect point colors done");
 
 							// set node's text color, there could be multiple text components that need to be colored
 							if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
@@ -788,7 +786,7 @@ namespace ColorMyProtoFlux
 
 									foreach (Text text in GetOtherTextListForNode(node))
 									{
-										if (!text.Exists()) continue;
+										if (!ElementExists(text)) continue;
 
 										UpdateOtherTextColor(node, __instance, text, colorToSet);
 
@@ -798,10 +796,10 @@ namespace ColorMyProtoFlux
 										}
 									}
 
-									Debug("Other text colors done");
+									ExtraDebug("Other text colors done");
 
 									var categoryText = GetCategoryTextForNode(node);
-									if (categoryText.Exists())
+									if (ElementExists(categoryText))
 									{
 										UpdateCategoryTextColor(node, __instance, categoryText, colorToSet);
 
@@ -810,13 +808,13 @@ namespace ColorMyProtoFlux
 											nodeInfo.categoryTextColorField = categoryText.Color;
 										}
 
-										Debug("Category text color done");
+										ExtraDebug("Category text color done");
 									}
 
 									var nodeNameTextList = GetNodeNameTextListForNode(node);
 									foreach (Text t in nodeNameTextList)
 									{
-										if (!t.Exists()) continue;
+										if (!ElementExists(t)) continue;
 
 										UpdateNodeNameTextColor(node, __instance, t, headerImage, colorToSet);
 
@@ -826,14 +824,14 @@ namespace ColorMyProtoFlux
 										}
 									}
 
-									Debug("Node name text colors done");
+									ExtraDebug("Node name text colors done");
 								});
 
-								Debug("Text color action scheduled for later");
+								ExtraDebug("Text color action scheduled for later");
 							}
 
 							// Fix buttons generating behind the type-colored images
-							if (node.Name == "ImpulseDemultiplexer" && ____outputsRoot.Target.Exists())
+							if (node.Name == "ImpulseDemultiplexer" && ElementExists(____outputsRoot.Target))
 							{
 								____outputsRoot.Target.OrderOffset = -1;
 							}
@@ -842,7 +840,7 @@ namespace ColorMyProtoFlux
 							//	____outputsRoot.Target.OrderOffset = -1;
 							//}
 
-							Debug("Demultiplexer button fix applied");
+							ExtraDebug("Demultiplexer button fix applied");
 
 							if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) || ShouldColorNodeBody(__instance.Node.Target))
 							{
@@ -871,7 +869,7 @@ namespace ColorMyProtoFlux
 
 								valueDriver.DriveTarget.Target = booleanValueDriver.State;
 
-								if (____overviewBg.Target.Exists())
+								if (ElementExists(____overviewBg.Target))
 								{
 									var valueMultiDriver = targetSlot.AttachComponent<ValueMultiDriver<bool>>();
 
@@ -906,12 +904,12 @@ namespace ColorMyProtoFlux
 									}
 								}
 
-								Debug("Extra components added to node visual");
+								ExtraDebug("Extra components added to node visual");
 							}
 
 							TrySetSlotTag(root, COLOR_SET_TAG);
 
-							Debug("Color set tag applied to node");
+							ExtraDebug("Color set tag applied to node");
 
 							if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
 							{
@@ -965,7 +963,7 @@ namespace ColorMyProtoFlux
 								});
 							}
 
-							Debug("New node setup complete");
+							ExtraDebug("New node setup complete");
 						});
 					}
 				}
