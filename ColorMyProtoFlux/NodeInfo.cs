@@ -102,7 +102,7 @@ namespace ColorMyProtoFlux
 		{
 			if (nodeInfo == null)
 			{
-				Debug("Tried to remove null from nodeInfoSet");
+				ExtraDebug("Tried to remove null from nodeInfoSet");
 				TryTrimExcessNodeInfo();
 				return;
 			}
@@ -168,8 +168,12 @@ namespace ColorMyProtoFlux
 
 		private static bool IsNodeInvalid(NodeInfo nodeInfo)
 		{
-			return (nodeInfo == null ||
-				   !ElementExists(nodeInfo.node) ||
+			if (nodeInfo == null)
+			{
+				ExtraDebug("nodeInfo is null in IsNodeInvalid");
+				return true;
+			}
+			return (!ElementExists(nodeInfo.node) ||
 				   !ElementExists(nodeInfo.node.Slot) ||
 				   !ElementExists(nodeInfo.visual) ||
 				   !ElementExists(nodeInfo.visual.Slot) ||
@@ -182,6 +186,12 @@ namespace ColorMyProtoFlux
 		{
 			foreach (NodeInfo nodeInfo in nodeInfoSet.ToList())
 			{
+				if (nodeInfo == null)
+				{
+					TryTrimExcessNodeInfo();
+					continue;
+				}
+
 				if (IsNodeInvalid(nodeInfo))
 				{
 					NodeInfoRemove(nodeInfo);
@@ -231,6 +241,8 @@ namespace ColorMyProtoFlux
 			{
 				nodeInfo.node.RunInUpdates(0, () =>
 				{
+					if (nodeInfo == null) return;
+
 					if (IsNodeInvalid(nodeInfo) || nodeInfo.headerImageTintField.IsRemoved)
 					{
 						NodeInfoRemove(nodeInfo);
@@ -256,6 +268,8 @@ namespace ColorMyProtoFlux
 			{
 				nodeInfo.node.RunInUpdates(0, () =>
 				{
+					if (nodeInfo == null) return;
+
 					if (IsNodeInvalid(nodeInfo))
 					{
 						NodeInfoRemove(nodeInfo);

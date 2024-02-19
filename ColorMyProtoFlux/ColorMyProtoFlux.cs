@@ -443,7 +443,7 @@ namespace ColorMyProtoFlux
 			if (!Config.GetValue(MOD_ENABLED)) return;
 			var field = changeable as IField;
 			var conflictingSyncElement = changeable as ConflictingSyncElement;
-			if (field != null && conflictingSyncElement != null && (!field.IsDriven || field.IsHooked) && conflictingSyncElement.LastModifyingUser != field.World.LocalUser)
+			if (ElementExists(field) && ElementExists(conflictingSyncElement) && (!field.IsDriven || field.IsHooked) && conflictingSyncElement.LastModifyingUser != field.World.LocalUser)
 			{
 				ProtoFluxNodeVisual visual = field.FindNearestParent<Slot>().GetComponentInParents<ProtoFluxNodeVisual>();
 				if (ElementExists(visual))
@@ -491,10 +491,19 @@ namespace ColorMyProtoFlux
 				if (__instance.ReferenceID.User != __instance.LocalUser.AllocationID) return;
 
 				NodeInfo nodeInfo2 = GetNodeInfoForNode(__instance.Node.Target);
-				if (!IsNodeInvalid(nodeInfo2) && __instance.Node.Target?.Group?.Name != nodeInfo2?.LastGroupName)
+				if (nodeInfo2 != null && !IsNodeInvalid(nodeInfo2) && __instance.Node.Target?.Group?.Name != nodeInfo2?.LastGroupName)
 				{
 					nodeInfo2.LastGroupName = __instance.Node.Target?.Group?.Name;
 					RefreshNodeColor(nodeInfo2);
+				}
+
+				bool shouldUseCustomColor = ShouldColorNodeBody(__instance.Node.Target);
+
+				ValueStream<bool> stream = GetOrAddOverrideFieldsStream(__instance.LocalUser, dontAdd: true);
+				ValueDriver<bool> valueDriver = __instance.Slot?.GetComponent<ValueDriver<bool>>();
+				if (nodeInfo2 == null && ElementExists(valueDriver) && valueDriver.ValueSource.Target == stream)
+				{
+					shouldUseCustomColor = false;
 				}
 
 				//if (__instance.World != Engine.Current.WorldManager.FocusedWorld) return true; // just in case?
@@ -520,9 +529,9 @@ namespace ColorMyProtoFlux
 
 				colorX a;
 
-				bool shouldColorNodeBody = ShouldColorNodeBody(__instance.Node.Target);
+				//bool shouldColorNodeBody = ShouldColorNodeBody(__instance.Node.Target);
 
-				if (shouldColorNodeBody)
+				if (shouldUseCustomColor)
 				{
 					a = ComputeColorForProtoFluxNode(__instance.Node.Target);
 				}
@@ -536,13 +545,14 @@ namespace ColorMyProtoFlux
 				{
 					// maybe make the selection color a value you can set in the mod config?
 					b = colorX.Cyan;
-					if (!shouldColorNodeBody)
+					if (shouldUseCustomColor)
 					{
-						a = MathX.LerpUnclamped(in a, in b, 0.5f);
+
+						a = colorX.Cyan.MulRGB(0.75f);
 					}
 					else
 					{
-						a = colorX.Cyan.MulRGB(0.75f);
+						a = MathX.LerpUnclamped(in a, in b, 0.5f);
 					}
 
 				}
@@ -550,7 +560,7 @@ namespace ColorMyProtoFlux
 				{
 					// might want to force alpha here in case of the alpha override option being used
 					float lerp;
-					if (shouldColorNodeBody)
+					if (shouldUseCustomColor)
 					{
 						b = GetTextColor(a);
 						lerp = 0.375f;
@@ -563,7 +573,7 @@ namespace ColorMyProtoFlux
 					a = MathX.LerpUnclamped(in a, in b, lerp);
 				}
 
-				if (shouldColorNodeBody)
+				if (shouldUseCustomColor)
 				{
 					b = Config.GetValue(NODE_ERROR_COLOR);
 				}
@@ -578,13 +588,16 @@ namespace ColorMyProtoFlux
 					Debug("Node not valid");
 					a = errorColorToSet;
 					NodeInfo nodeInfo = GetNodeInfoFromVisual(__instance);
-					if (!IsNodeInvalid(nodeInfo))
+					if (nodeInfo != null)
 					{
-						RefreshNodeColor(nodeInfo);
-					}
-					else
-					{
-						NodeInfoRemove(nodeInfo);
+						if (!IsNodeInvalid(nodeInfo))
+						{
+							RefreshNodeColor(nodeInfo);
+						}
+						else
+						{
+							NodeInfoRemove(nodeInfo);
+						}
 					}
 				}
 				else
@@ -594,13 +607,16 @@ namespace ColorMyProtoFlux
 						Debug("Node valid after being not valid");
 						// does this work? it is supposed to reset the header color when the node becomes valid after being invalid
 						NodeInfo nodeInfo = GetNodeInfoFromVisual(__instance);
-						if (!IsNodeInvalid(nodeInfo))
+						if (nodeInfo != null)
 						{
-							RefreshNodeColor(nodeInfo);
-						}
-						else
-						{
-							NodeInfoRemove(nodeInfo);
+							if (!IsNodeInvalid(nodeInfo))
+							{
+								RefreshNodeColor(nodeInfo);
+							}
+							else
+							{
+								NodeInfoRemove(nodeInfo);
+							}
 						}
 					}
 				}
@@ -668,24 +684,24 @@ namespace ColorMyProtoFlux
 					var outputsRoot = (SyncRef<Slot>)visual.TryGetField("_outputsRoot");
 					foreach (Image img in GetNodeConnectionPointImageList(visual.Node.Target, inputsRoot?.Target, outputsRoot?.Target))
 					{
-						bool invalidNodeInfo = IsNodeInvalid(nodeInfo);
-						if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) && !invalidNodeInfo)
+						if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) && nodeInfo != null)
 						{
-							if (!nodeInfo.connectionPointImageTintFields.Contains(img.Tint))
+							if (!IsNodeInvalid(nodeInfo))
 							{
-								nodeInfo.connectionPointImageTintFields.Add(img.Tint);
-								UpdateConnectPointImageColor(visual.Node.Target, visual, img);
+								if (!nodeInfo.connectionPointImageTintFields.Contains(img.Tint))
+								{
+									nodeInfo.connectionPointImageTintFields.Add(img.Tint);
+									UpdateConnectPointImageColor(visual.Node.Target, visual, img);
+								}
+							}
+							else
+							{
+								NodeInfoRemove(nodeInfo);
 							}
 						}
 						else
 						{
 							UpdateConnectPointImageColor(visual.Node.Target, visual, img);
-
-							// nodeInfo could be null here
-							if (invalidNodeInfo)
-							{
-								NodeInfoRemove(nodeInfo);
-							}
 						}
 					}
 				}
@@ -782,11 +798,16 @@ namespace ColorMyProtoFlux
 								// it only needs to do this if the text color should be changed or it should update the node color on config changed
 								__instance.RunSynchronously(() =>
 								{
-									if (IsNodeInvalid(nodeInfo))
-									{
-										NodeInfoRemove(nodeInfo);
-										return;
-									}
+									//if (nodeInfo == null)
+									//{
+									//return;
+									//}
+
+									//if (IsNodeInvalid(nodeInfo))
+									//{
+									//NodeInfoRemove(nodeInfo);
+									//return;
+									//}
 
 									foreach (Text text in GetOtherTextListForNode(node))
 									{
@@ -794,9 +815,16 @@ namespace ColorMyProtoFlux
 
 										UpdateOtherTextColor(node, __instance, text, colorToSet);
 
-										if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
+										if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) && nodeInfo != null)
 										{
-											nodeInfo.otherTextColorFields.Add(text.Color);
+											if (!IsNodeInvalid(nodeInfo))
+											{
+												nodeInfo.otherTextColorFields.Add(text.Color);
+											}
+											else
+											{
+												NodeInfoRemove(nodeInfo);
+											}
 										}
 									}
 
@@ -807,9 +835,16 @@ namespace ColorMyProtoFlux
 									{
 										UpdateCategoryTextColor(node, __instance, categoryText, colorToSet);
 
-										if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
+										if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) && nodeInfo != null)
 										{
-											nodeInfo.categoryTextColorField = categoryText.Color;
+											if (!IsNodeInvalid(nodeInfo))
+											{
+												nodeInfo.categoryTextColorField = categoryText.Color;
+											}
+											else
+											{
+												NodeInfoRemove(nodeInfo);
+											}
 										}
 
 										ExtraDebug("Category text color done");
@@ -822,9 +857,16 @@ namespace ColorMyProtoFlux
 
 										UpdateNodeNameTextColor(node, __instance, t, headerImage, colorToSet);
 
-										if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
+										if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) && nodeInfo != null)
 										{
-											nodeInfo.nodeNameTextColorFields.Add(t.Color);
+											if (!IsNodeInvalid(nodeInfo))
+											{
+												nodeInfo.nodeNameTextColorFields.Add(t.Color);
+											}
+											else
+											{
+												NodeInfoRemove(nodeInfo);
+											}
 										}
 									}
 
@@ -948,14 +990,22 @@ namespace ColorMyProtoFlux
 
 								nodeInfo.node.RunInUpdates(1, () =>
 								{
+									// idk if its worth checking if the nodeInfo is null or invalid here
+									if (nodeInfo == null)
+									{
+										return;
+									}
+
 									if (IsNodeInvalid(nodeInfo))
 									{
 										NodeInfoRemove(nodeInfo);
 										return;
 									};
+
 									foreach (ProtoFluxNode node in node.Group.Nodes.Where((ProtoFluxNode n) => NodeInfoSetContainsNode(n)))
 									{
 										NodeInfo info = GetNodeInfoForNode(node);
+										//if (info == null) continue;
 										if (IsNodeInvalid(info))
 										{
 											NodeInfoRemove(info);
@@ -965,6 +1015,15 @@ namespace ColorMyProtoFlux
 										//RefreshNodeColor(info);
 									}
 								});
+
+								__instance.Destroyed += (destroyable) =>
+								{
+									NodeInfo nodeInfo = GetNodeInfoFromVisual((ProtoFluxNodeVisual)destroyable);
+									if (nodeInfo != null)
+									{
+										NodeInfoRemove(nodeInfo);
+									}
+								};
 							}
 
 							ExtraDebug("New node setup complete");
