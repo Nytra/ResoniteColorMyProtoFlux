@@ -469,7 +469,7 @@ namespace ColorMyProtoFlux
 		{
 			static void Postfix()
 			{
-				//if (!Config.GetValue(MOD_ENABLED)) return;
+				if (!Config.GetValue(MOD_ENABLED)) return;
 				if (Engine.Current.InputInterface.GetKeyDown(Key.F3))
 				{
 					HotReloader.HotReload(typeof(ColorMyProtoFlux));
