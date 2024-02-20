@@ -148,6 +148,60 @@ namespace ColorMyProtoFlux
 		//	}
 		//}
 
+		// Need to be careful with this because small anonymous delegates can get optimized by JIT and break hot-reloading
+		private static void NodeInfoRunInUpdates(NodeInfo info, int updates, Action act)
+		{
+			if (ValidateNodeInfo(info))
+			{
+				info.node.RunInUpdates(updates, () =>
+				{
+					NodeInfoRun(info, act);
+				});
+			}
+		}
+
+		// Need to be careful with this because small anonymous delegates can get optimized by JIT and break hot-reloading
+		private static void NodeInfoRunSynchronously(NodeInfo info, Action act)
+		{
+			if (ValidateNodeInfo(info))
+			{
+				info.node.RunSynchronously(() =>
+				{
+					NodeInfoRun(info, act);
+				});
+			}
+		}
+
+		// Need to be careful with this because small anonymous delegates can get optimized by JIT and break hot-reloading
+		private static void NodeInfoRun(NodeInfo info, Action act)
+		{
+			if (ValidateNodeInfo(info))
+			{
+				act();
+			}
+		}
+
+		private static bool ValidateNodeInfo(NodeInfo info)
+		{
+			if (info == null) return false;
+
+			if (IsNodeInvalid(info))
+			{
+				NodeInfoRemove(info);
+				return false;
+			}
+
+			Slot visualSlot = info.visual.Slot;
+
+			if (visualSlot.ReferenceID.User != info.node.LocalUser.AllocationID)
+			{
+				NodeInfoRemove(info);
+				return false;
+			}
+
+			return true;
+		}
+
 		private static void NodeInfoSetClear()
 		{
 			nodeInfoSet.Clear();
@@ -182,30 +236,17 @@ namespace ColorMyProtoFlux
 				   nodeInfo.node.World.IsDisposed);
 		}
 
-		private static void RemoveInvalidNodeInfos()
+		private static bool ValidateAllNodeInfos()
 		{
+			bool anyInvalid = false;
 			foreach (NodeInfo nodeInfo in nodeInfoSet.ToList())
 			{
-				if (nodeInfo == null)
+				if (!ValidateNodeInfo(nodeInfo))
 				{
-					TryTrimExcessNodeInfo();
-					continue;
-				}
-
-				if (IsNodeInvalid(nodeInfo))
-				{
-					NodeInfoRemove(nodeInfo);
-					continue;
-				}
-
-				Slot visualSlot = nodeInfo.visual.Slot;
-
-				if (visualSlot.ReferenceID.User != nodeInfo.node.LocalUser.AllocationID)
-				{
-					NodeInfoRemove(nodeInfo);
-					continue;
+					anyInvalid = true;
 				}
 			}
+			return anyInvalid;
 		}
 
 		private static void RefreshNodeColor(NodeInfo nodeInfo)

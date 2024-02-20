@@ -11,6 +11,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
+
+
+
 #if HOT_RELOAD
 using ResoniteHotReloadLib;
 #endif //HOT_RELOAD
@@ -339,7 +342,7 @@ namespace ColorMyProtoFlux
 
 				bool runFinalNodeUpdateCopy = runFinalNodeUpdate;
 
-				RemoveInvalidNodeInfos();
+				ValidateAllNodeInfos();
 
 				foreach (NodeInfo nodeInfo in nodeInfoSet.ToList())
 				{
@@ -352,13 +355,19 @@ namespace ColorMyProtoFlux
 					//Msg("Refreshing node color in config changed.");
 
 					// need to wait for the drives on the node visual to update from the override stream value
-					nodeInfo.node.RunInUpdates(1, () =>
+					NodeInfoRunInUpdates(nodeInfo, 1, () =>
 					{
 						GetNodeVisual(nodeInfo.node).UpdateNodeStatus();
 						RefreshNodeColor(nodeInfo);
 						if (runFinalNodeUpdateCopy)
 						{
-							nodeInfo.node.RunInUpdates(0, () =>
+							// remove stream from node visual slot in here
+							var valueDriver = nodeInfo.visual.Slot.GetComponent<ValueDriver<bool>>();
+							if (ElementExists(valueDriver) && valueDriver.ValueSource.Target == GetOrAddOverrideFieldsStream(nodeInfo.visual.LocalUser, dontAdd: true))
+							{
+								valueDriver.ValueSource.Target = null;
+							}
+							NodeInfoRunInUpdates(nodeInfo, 0, () =>
 							{
 								NodeInfoRemove(nodeInfo);
 								Debug("runFinalNodeUpdate: Removed a nodeInfo from nodeInfoSet. New size: " + nodeInfoSet.Count.ToString());
@@ -491,14 +500,18 @@ namespace ColorMyProtoFlux
 				if (__instance.ReferenceID.User != __instance.LocalUser.AllocationID) return;
 
 				NodeInfo nodeInfo2 = GetNodeInfoForNode(__instance.Node.Target);
-				if (nodeInfo2 != null && !IsNodeInvalid(nodeInfo2) && __instance.Node.Target?.Group?.Name != nodeInfo2?.LastGroupName)
+				if (ValidateNodeInfo(nodeInfo2))
 				{
-					nodeInfo2.LastGroupName = __instance.Node.Target?.Group?.Name;
-					RefreshNodeColor(nodeInfo2);
+					if (__instance.Node.Target?.Group?.Name != nodeInfo2.LastGroupName)
+					{
+						nodeInfo2.LastGroupName = __instance.Node.Target?.Group?.Name;
+						RefreshNodeColor(nodeInfo2);
+					}
 				}
 
 				bool shouldUseCustomColor = ShouldColorNodeBody(__instance.Node.Target);
 
+				// not sure if this needs to be here anymore since the ValueDriver source gets nulled on mod disable
 				ValueStream<bool> stream = GetOrAddOverrideFieldsStream(__instance.LocalUser, dontAdd: true);
 				ValueDriver<bool> valueDriver = __instance.Slot?.GetComponent<ValueDriver<bool>>();
 				if (nodeInfo2 == null && ElementExists(valueDriver) && valueDriver.ValueSource.Target == stream)
@@ -590,13 +603,9 @@ namespace ColorMyProtoFlux
 					NodeInfo nodeInfo = GetNodeInfoFromVisual(__instance);
 					if (nodeInfo != null)
 					{
-						if (!IsNodeInvalid(nodeInfo))
+						if (ValidateNodeInfo(nodeInfo))
 						{
 							RefreshNodeColor(nodeInfo);
-						}
-						else
-						{
-							NodeInfoRemove(nodeInfo);
 						}
 					}
 				}
@@ -609,13 +618,9 @@ namespace ColorMyProtoFlux
 						NodeInfo nodeInfo = GetNodeInfoFromVisual(__instance);
 						if (nodeInfo != null)
 						{
-							if (!IsNodeInvalid(nodeInfo))
+							if (ValidateNodeInfo(nodeInfo))
 							{
 								RefreshNodeColor(nodeInfo);
-							}
-							else
-							{
-								NodeInfoRemove(nodeInfo);
 							}
 						}
 					}
@@ -674,6 +679,7 @@ namespace ColorMyProtoFlux
 
 				if (__instance.Visual.Target?.ReferenceID.User != __instance.LocalUser.AllocationID) return;
 
+				// not sure if I need to check the world here
 				//if (__instance.World != Engine.Current.WorldManager.FocusedWorld) return;
 
 				ProtoFluxNodeVisual visual = __instance.Visual.Target;
@@ -686,17 +692,13 @@ namespace ColorMyProtoFlux
 					{
 						if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) && nodeInfo != null)
 						{
-							if (!IsNodeInvalid(nodeInfo))
+							if (ValidateNodeInfo(nodeInfo))
 							{
 								if (!nodeInfo.connectionPointImageTintFields.Contains(img.Tint))
 								{
 									nodeInfo.connectionPointImageTintFields.Add(img.Tint);
 									UpdateConnectPointImageColor(visual.Node.Target, visual, img);
 								}
-							}
-							else
-							{
-								NodeInfoRemove(nodeInfo);
 							}
 						}
 						else
@@ -738,12 +740,12 @@ namespace ColorMyProtoFlux
 						// Does this need to be 3?
 						__instance.RunInUpdates(3, () =>
 						{
-							//if (!__instance.Exists()) return;
+							if (!ElementExists(__instance)) return;
 
 							Debug("New node: " + node.NodeName ?? "NULL");
-							ExtraDebug("Worker category path: " + GetWorkerCategoryPath(node) ?? "NULL");
-							ExtraDebug("Worker category path onlyTopmost: " + GetWorkerCategoryPath(node, onlyTopmost: true) ?? "NULL");
-							ExtraDebug("Worker category file path: " + GetWorkerCategoryFilePath(node) ?? "NULL");
+							Debug("Worker category path: " + GetWorkerCategoryPath(node) ?? "NULL");
+							Debug("Worker category path onlyTopmost: " + GetWorkerCategoryPath(node, onlyTopmost: true) ?? "NULL");
+							Debug("Worker category file path: " + GetWorkerCategoryFilePath(node) ?? "NULL");
 
 							colorX colorToSet = ComputeColorForProtoFluxNode(node);
 
@@ -798,16 +800,7 @@ namespace ColorMyProtoFlux
 								// it only needs to do this if the text color should be changed or it should update the node color on config changed
 								__instance.RunSynchronously(() =>
 								{
-									//if (nodeInfo == null)
-									//{
-									//return;
-									//}
-
-									//if (IsNodeInvalid(nodeInfo))
-									//{
-									//NodeInfoRemove(nodeInfo);
-									//return;
-									//}
+									if (!ElementExists(__instance)) return;
 
 									foreach (Text text in GetOtherTextListForNode(node))
 									{
@@ -817,13 +810,9 @@ namespace ColorMyProtoFlux
 
 										if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) && nodeInfo != null)
 										{
-											if (!IsNodeInvalid(nodeInfo))
+											if (ValidateNodeInfo(nodeInfo))
 											{
 												nodeInfo.otherTextColorFields.Add(text.Color);
-											}
-											else
-											{
-												NodeInfoRemove(nodeInfo);
 											}
 										}
 									}
@@ -837,13 +826,9 @@ namespace ColorMyProtoFlux
 
 										if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) && nodeInfo != null)
 										{
-											if (!IsNodeInvalid(nodeInfo))
+											if (ValidateNodeInfo(nodeInfo))
 											{
 												nodeInfo.categoryTextColorField = categoryText.Color;
-											}
-											else
-											{
-												NodeInfoRemove(nodeInfo);
 											}
 										}
 
@@ -859,13 +844,9 @@ namespace ColorMyProtoFlux
 
 										if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) && nodeInfo != null)
 										{
-											if (!IsNodeInvalid(nodeInfo))
+											if (ValidateNodeInfo(nodeInfo))
 											{
 												nodeInfo.nodeNameTextColorFields.Add(t.Color);
-											}
-											else
-											{
-												NodeInfoRemove(nodeInfo);
 											}
 										}
 									}
@@ -967,54 +948,58 @@ namespace ColorMyProtoFlux
 								{
 									node.NodeInstance.Runtime.Group.ChangeTrackingInvalidated += (nodeGroup) =>
 									{
-										//if (node == null) return;
 										if (Config.GetValue(NODE_COLOR_MODE) != NodeColorModeEnum.NodeGroup) return;
 
 										Debug("Change tracking invalidated for group: " + nodeGroup.Name);
 
-										RemoveInvalidNodeInfos();
+										//ValidateAllNodeInfos();
 
 										foreach (NodeInfo info in nodeInfoSet.ToList())
 										{
-											// I think this needs to be 3 for some reason
-											info.node.RunInUpdates(3, () =>
+
+											// check world? focused world?
+
+											// Don't use NodeInfoRunInUpdates here because it breaks hot-reloaading
+											if (ValidateNodeInfo(info))
 											{
-												info?.visual?.UpdateNodeStatus();
-												//RefreshNodeColor(info);
-											});
+												// I think this needs to be 3 for some reason
+												info.node.RunInUpdates(3, () =>
+												{
+													if (ValidateNodeInfo(info))
+													{
+														info.visual.UpdateNodeStatus();
+														//RefreshNodeColor(info);
+													}
+												});
+											}
 										}
 									};
 									subscribedGroupsSet.Add(node.NodeInstance.Runtime.Group);
 									Debug("Subscribed to node group: " + node.Group.Name);
 								}
 
-								nodeInfo.node.RunInUpdates(1, () =>
+								// Don't use NodeInfoRunInUpdates here because it breaks hot-reloading
+								if (ValidateNodeInfo(nodeInfo))
 								{
-									// idk if its worth checking if the nodeInfo is null or invalid here
-									if (nodeInfo == null)
+									nodeInfo.node.RunInUpdates(1, () =>
 									{
-										return;
-									}
-
-									if (IsNodeInvalid(nodeInfo))
-									{
-										NodeInfoRemove(nodeInfo);
-										return;
-									};
-
-									foreach (ProtoFluxNode node in node.Group.Nodes.Where((ProtoFluxNode n) => NodeInfoSetContainsNode(n)))
-									{
-										NodeInfo info = GetNodeInfoForNode(node);
-										//if (info == null) continue;
-										if (IsNodeInvalid(info))
+										if (ValidateNodeInfo(nodeInfo))
 										{
-											NodeInfoRemove(info);
-											continue;
-										};
-										info.visual?.UpdateNodeStatus();
-										//RefreshNodeColor(info);
-									}
-								});
+											foreach (ProtoFluxNode node in node.Group.Nodes.Where((ProtoFluxNode n) => NodeInfoSetContainsNode(n)))
+											{
+												NodeInfo info = GetNodeInfoForNode(node);
+												if (info == null) continue;
+												if (IsNodeInvalid(info))
+												{
+													NodeInfoRemove(info);
+													continue;
+												};
+												info.visual?.UpdateNodeStatus();
+												//RefreshNodeColor(info);
+											}
+										}
+									});
+								}
 
 								__instance.Destroyed += (destroyable) =>
 								{

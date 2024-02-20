@@ -6,7 +6,7 @@
     <RootNamespace>ColorMyProtoFlux</RootNamespace>
     <AssemblyName>ColorMyProtoFlux</AssemblyName>
     <TargetFramework>net472</TargetFramework>
-    <LangVersion>9.0</LangVersion>
+    <LangVersion>10.0</LangVersion>
     <BuildProjectReferences>false</BuildProjectReferences>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
