@@ -21,7 +21,8 @@ namespace ColorMyProtoFlux
 			public HashSet<IField<colorX>> nodeNameTextColorFields;
 			public colorX modComputedCustomColor;
 			public HashSet<IField<colorX>> connectionPointImageTintFields;
-			public string LastGroupName;
+			public string lastGroupName;
+			public bool isRemoved;
 			//public HashSet<Button> nodeButtons;
 			// dont need to store node background image because the UpdateNodeStatus patch handles coloring of that part
 		}
@@ -43,8 +44,10 @@ namespace ColorMyProtoFlux
 					}
 				}
 			}
+
 			if (!ElementExists(nodeInfo.categoryTextColorField))
 			{
+				// category text should always exist
 				NodeInfoRemove(nodeInfo);
 				return;
 			}
@@ -52,6 +55,7 @@ namespace ColorMyProtoFlux
 			{
 				UpdateCategoryTextColor(nodeInfo.node, nodeInfo.visual, nodeInfo.categoryTextColorField.FindNearestParent<Text>(), nodeInfo.modComputedCustomColor);
 			}
+
 			if (nodeInfo.nodeNameTextColorFields != null)
 			{
 				foreach (IField<colorX> field in nodeInfo.nodeNameTextColorFields.ToList())
@@ -92,7 +96,6 @@ namespace ColorMyProtoFlux
 		//	return false;
 		//}
 
-
 		private static NodeInfo GetNodeInfoForNode(ProtoFluxNode node)
 		{
 			return nodeInfoSet.FirstOrDefault(nodeInfo => nodeInfo.node == node);
@@ -102,7 +105,7 @@ namespace ColorMyProtoFlux
 		{
 			if (nodeInfo == null)
 			{
-				ExtraDebug("Tried to remove null from nodeInfoSet");
+				Debug("Tried to remove null from nodeInfoSet");
 				TryTrimExcessNodeInfo();
 				return;
 			}
@@ -115,6 +118,8 @@ namespace ColorMyProtoFlux
 			{
 				Debug("NodeInfo was not in nodeInfoSet.");
 			}
+
+			nodeInfo.isRemoved = true;
 
 			TryTrimExcessNodeInfo();
 		}
@@ -185,6 +190,12 @@ namespace ColorMyProtoFlux
 		{
 			if (info == null) return false;
 
+			if (info.isRemoved) return false;
+
+			// if it's not in the nodeInfoSet, reject it
+			// this might not be needed since isRemoved should indicate this
+			//if (!nodeInfoSet.Contains(info)) return false;
+
 			if (IsNodeInvalid(info))
 			{
 				NodeInfoRemove(info);
@@ -204,8 +215,12 @@ namespace ColorMyProtoFlux
 
 		private static void NodeInfoSetClear()
 		{
-			nodeInfoSet.Clear();
-			TryTrimExcessNodeInfo();
+			//nodeInfoSet.Clear();
+			foreach (NodeInfo info in nodeInfoSet.ToList())
+			{
+				NodeInfoRemove(info);
+			}
+			//TryTrimExcessNodeInfo();
 		}
 
 		//private static void RefDriverNodeInfoSetClear()
@@ -224,7 +239,7 @@ namespace ColorMyProtoFlux
 		{
 			if (nodeInfo == null)
 			{
-				ExtraDebug("nodeInfo is null in IsNodeInvalid");
+				Debug("nodeInfo is null in IsNodeInvalid");
 				return true;
 			}
 			return (!ElementExists(nodeInfo.node) ||
@@ -255,74 +270,41 @@ namespace ColorMyProtoFlux
 
 			if (nodeInfo.connectionPointImageTintFields != null)
 			{
-				nodeInfo.node.RunInUpdates(0, () =>
+				NodeInfoRunInUpdates(nodeInfo, 0, () =>
 				{
-					if (!ElementExists(nodeInfo.node))
+					foreach (IField<colorX> field in nodeInfo.connectionPointImageTintFields.ToList())
 					{
-						NodeInfoRemove(nodeInfo);
-					}
-					else if (nodeInfoSet.Contains(nodeInfo))
-					{
-						foreach (IField<colorX> field in nodeInfo.connectionPointImageTintFields.ToList())
+						if (!ElementExists(field))
 						{
-							if (!ElementExists(field))
-							{
-								nodeInfo.connectionPointImageTintFields.Remove(field);
-							}
-							else
-							{
-								UpdateConnectPointImageColor(nodeInfo.node, nodeInfo.visual, field.FindNearestParent<Image>());
-							}
+							nodeInfo.connectionPointImageTintFields.Remove(field);
+						}
+						else
+						{
+							UpdateConnectPointImageColor(nodeInfo.node, nodeInfo.visual, field.FindNearestParent<Image>());
 						}
 					}
 				});
 			}
 
-			if (nodeInfo.headerImageTintField != null)
+			if (ElementExists(nodeInfo.headerImageTintField))
 			{
-				nodeInfo.node.RunInUpdates(0, () =>
+				NodeInfoRunInUpdates(nodeInfo, 0, () =>
 				{
-					if (nodeInfo == null) return;
+					ProtoFluxNodeVisual visual = nodeInfo.visual;
 
-					if (IsNodeInvalid(nodeInfo) || nodeInfo.headerImageTintField.IsRemoved)
+					if (ElementExists(nodeInfo.headerImageTintField))
 					{
-						NodeInfoRemove(nodeInfo);
-					}
-					else if (nodeInfoSet.Contains(nodeInfo))
-					{
-						ProtoFluxNodeVisual visual = nodeInfo.visual;
-
-						if (ElementExists(visual))
-						{
-							colorX colorToSet = Config.GetValue(MOD_ENABLED) ? nodeInfo.modComputedCustomColor : RadiantUI_Constants.HEADER;
-							UpdateHeaderImageColor(nodeInfo.node, visual, nodeInfo.headerImageTintField.FindNearestParent<Image>(), colorToSet);
-						}
-						else
-						{
-							NodeInfoRemove(nodeInfo);
-						}
+						colorX colorToSet = Config.GetValue(MOD_ENABLED) ? nodeInfo.modComputedCustomColor : RadiantUI_Constants.HEADER;
+						UpdateHeaderImageColor(nodeInfo.node, visual, nodeInfo.headerImageTintField.FindNearestParent<Image>(), colorToSet);
 					}
 				});
 			}
 
 			if (Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
 			{
-				nodeInfo.node.RunInUpdates(0, () =>
+				NodeInfoRunInUpdates(nodeInfo, 0, () =>
 				{
-					if (nodeInfo == null) return;
-
-					if (IsNodeInvalid(nodeInfo))
-					{
-						NodeInfoRemove(nodeInfo);
-					}
-					else if (nodeInfoSet.Contains(nodeInfo))
-					{
-						// if it didn't already get removed in another thread before this coroutine
-						if (nodeInfoSet.Contains(nodeInfo))
-						{
-							RefreshTextColorsForNode(nodeInfo);
-						}
-					}
+					RefreshTextColorsForNode(nodeInfo);
 				});
 			}
 		}

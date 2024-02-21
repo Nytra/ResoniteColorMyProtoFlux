@@ -175,18 +175,11 @@ namespace ColorMyProtoFlux
 		private static Image GetHeaderImageForNode(ProtoFluxNode node)
 		{
 			NodeInfo nodeInfo = GetNodeInfoForNode(node);
-			if (nodeInfo != null)
+			if (ValidateNodeInfo(nodeInfo))
 			{
-				if (!IsNodeInvalid(nodeInfo))
-				{
-					if (!ElementExists(nodeInfo.headerImageTintField)) return null;
+				if (!ElementExists(nodeInfo.headerImageTintField)) return null;
 
-					return (Image)nodeInfo.headerImageTintField.Parent;
-				}
-				else
-				{
-					NodeInfoRemove(nodeInfo);
-				}
+				return (Image)nodeInfo.headerImageTintField.Parent;
 			}
 
 			ProtoFluxNodeVisual nodeVisual = nodeInfo?.visual ?? GetNodeVisual(node);

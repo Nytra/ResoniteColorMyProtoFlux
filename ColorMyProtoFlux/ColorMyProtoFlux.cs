@@ -11,9 +11,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-
-
-
 #if HOT_RELOAD
 using ResoniteHotReloadLib;
 #endif //HOT_RELOAD
@@ -105,7 +102,7 @@ namespace ColorMyProtoFlux
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_2_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_2_1", $"<color={HEADER_TEXT_COLOR}>[DYNAMIC]</color>", () => new dummy());
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<NodeColorModeEnum> NODE_COLOR_MODE = new ModConfigurationKey<NodeColorModeEnum>("NODE_COLOR_MODE", "Selected Node Factor:", () => NodeColorModeEnum.NodeCategory);
+		private static ModConfigurationKey<NodeColorModeEnum> NODE_COLOR_MODE = new ModConfigurationKey<NodeColorModeEnum>("NODE_COLOR_MODE", "Selected Node Factor:", () => NodeColorModeEnum.Category);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> ALTERNATE_CATEGORY_STRING = new ModConfigurationKey<bool>("ALTERNATE_CATEGORY_STRING", "Use alternate node category string (only uses the part after the final '/'):", () => false, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
@@ -229,10 +226,10 @@ namespace ColorMyProtoFlux
 
 		private enum NodeColorModeEnum
 		{
-			NodeName,
-			NodeCategory,
-			TopmostNodeCategory,
-			NodeGroup,
+			Name,
+			Category,
+			TopmostCategory,
+			Group,
 			FullTypeName,
 			RefID
 		}
@@ -245,7 +242,7 @@ namespace ColorMyProtoFlux
 
 		private static HashSet<NodeInfo> nodeInfoSet = new();
 		//private static HashSet<RefDriverNodeInfo> refDriverNodeInfoSet = new();
-		private static HashSet<NodeGroup> subscribedGroupsSet = new();
+		private static Dictionary<NodeGroup, World> subscribedGroupWorldMap = new();
 
 		private static System.Random rng;
 		private static System.Random rngTimeSeeded = new();
@@ -253,10 +250,6 @@ namespace ColorMyProtoFlux
 		private const string COLOR_SET_TAG = "ColorMyProtoFlux.ColorSet";
 
 		//private static Dictionary<ISyncRef, IWorldElement> syncRefTargetMap = new();
-
-		//private static ManualResetEvent manualResetEvent = new(false);
-
-		//private const int THREAD_INNER_SLEEP_TIME_MILLISECONDS = 0;
 
 		private const int REALTIME_COLOR_CHANGE_INTERVAL_MILLISECONDS = 200;
 
@@ -271,6 +264,7 @@ namespace ColorMyProtoFlux
 		static void OnConfigChanged(ConfigurationChangedEvent configChangedEvent)
 		{
 			//Msg("Configuration changed!");
+
 			bool modEnabled = Config.GetValue(MOD_ENABLED);
 			bool modEnabled_KeyChanged = configChangedEvent.Key == MOD_ENABLED;
 
@@ -405,7 +399,7 @@ namespace ColorMyProtoFlux
 
 			foreach (World world in Engine.Current.WorldManager.Worlds)
 			{
-				ValueStream<bool> overrideFieldsStream = world.LocalUser.GetStream<ValueStream<bool>>((stream) => stream.Name == overrideFieldsStreamName);
+				ValueStream<bool> overrideFieldsStream = GetOrAddOverrideFieldsStream(world.LocalUser, dontAdd: true);
 				if (ElementExists(overrideFieldsStream))
 				{
 					world.RunSynchronously(() =>
@@ -502,9 +496,9 @@ namespace ColorMyProtoFlux
 				NodeInfo nodeInfo2 = GetNodeInfoForNode(__instance.Node.Target);
 				if (ValidateNodeInfo(nodeInfo2))
 				{
-					if (__instance.Node.Target?.Group?.Name != nodeInfo2.LastGroupName)
+					if (__instance.Node.Target?.Group?.Name != nodeInfo2.lastGroupName)
 					{
-						nodeInfo2.LastGroupName = __instance.Node.Target?.Group?.Name;
+						nodeInfo2.lastGroupName = __instance.Node.Target?.Group?.Name;
 						RefreshNodeColor(nodeInfo2);
 					}
 				}
@@ -519,10 +513,11 @@ namespace ColorMyProtoFlux
 					shouldUseCustomColor = false;
 				}
 
-				//if (__instance.World != Engine.Current.WorldManager.FocusedWorld) return true; // just in case?
+				// just in case? although then node highlight and selection wouldn't visually work in other worlds for this user's nodes
+				//if (__instance.World != Engine.Current.WorldManager.FocusedWorld) return true; 
 
-				// If the field is not null, don't run this patch
-				if (ElementExists(____bgImage.Target)) return;
+				// If the field is not null, don't run this patch (this assumes that overviewBg will be the same)
+				if (____bgImage.Target != null) return;
 
 				Image bgImage = GetBackgroundImageForNode(__instance.Node.Target);
 				Slot overviewSlot = (Slot)____overviewVisual.Target?.Parent;
@@ -601,12 +596,9 @@ namespace ColorMyProtoFlux
 					Debug("Node not valid");
 					a = errorColorToSet;
 					NodeInfo nodeInfo = GetNodeInfoFromVisual(__instance);
-					if (nodeInfo != null)
+					if (ValidateNodeInfo(nodeInfo))
 					{
-						if (ValidateNodeInfo(nodeInfo))
-						{
-							RefreshNodeColor(nodeInfo);
-						}
+						RefreshNodeColor(nodeInfo);
 					}
 				}
 				else
@@ -616,20 +608,20 @@ namespace ColorMyProtoFlux
 						Debug("Node valid after being not valid");
 						// does this work? it is supposed to reset the header color when the node becomes valid after being invalid
 						NodeInfo nodeInfo = GetNodeInfoFromVisual(__instance);
-						if (nodeInfo != null)
+						if (ValidateNodeInfo(nodeInfo))
 						{
-							if (ValidateNodeInfo(nodeInfo))
-							{
-								RefreshNodeColor(nodeInfo);
-							}
+							RefreshNodeColor(nodeInfo);
 						}
 					}
 				}
-				if (ElementExists(bgImage))
+
+				// Maybe use TrySetImageTint here?
+				// Although that would undrive it if its driven by something...
+				if (ElementExists(bgImage) && !bgImage.Tint.IsDriven)
 				{
 					bgImage.Tint.Value = a;
 				}
-				if (ElementExists(overviewBg))
+				if (ElementExists(overviewBg) && !overviewBg.Tint.IsDriven)
 				{
 					overviewBg.Tint.Value = a;
 				}
@@ -690,15 +682,12 @@ namespace ColorMyProtoFlux
 					var outputsRoot = (SyncRef<Slot>)visual.TryGetField("_outputsRoot");
 					foreach (Image img in GetNodeConnectionPointImageList(visual.Node.Target, inputsRoot?.Target, outputsRoot?.Target))
 					{
-						if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) && nodeInfo != null)
+						if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) && ValidateNodeInfo(nodeInfo))
 						{
-							if (ValidateNodeInfo(nodeInfo))
+							if (!nodeInfo.connectionPointImageTintFields.Contains(img.Tint))
 							{
-								if (!nodeInfo.connectionPointImageTintFields.Contains(img.Tint))
-								{
-									nodeInfo.connectionPointImageTintFields.Add(img.Tint);
-									UpdateConnectPointImageColor(visual.Node.Target, visual, img);
-								}
+								nodeInfo.connectionPointImageTintFields.Add(img.Tint);
+								UpdateConnectPointImageColor(visual.Node.Target, visual, img);
 							}
 						}
 						else
@@ -757,6 +746,7 @@ namespace ColorMyProtoFlux
 								nodeInfo.node = node;
 								nodeInfo.visual = __instance;
 								nodeInfo.modComputedCustomColor = colorToSet;
+								nodeInfo.isRemoved = false;
 							}
 
 							var headerImage = GetHeaderImageForNode(node);
@@ -808,7 +798,7 @@ namespace ColorMyProtoFlux
 
 										UpdateOtherTextColor(node, __instance, text, colorToSet);
 
-										if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) && nodeInfo != null)
+										if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
 										{
 											if (ValidateNodeInfo(nodeInfo))
 											{
@@ -824,7 +814,7 @@ namespace ColorMyProtoFlux
 									{
 										UpdateCategoryTextColor(node, __instance, categoryText, colorToSet);
 
-										if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) && nodeInfo != null)
+										if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
 										{
 											if (ValidateNodeInfo(nodeInfo))
 											{
@@ -842,7 +832,7 @@ namespace ColorMyProtoFlux
 
 										UpdateNodeNameTextColor(node, __instance, t, headerImage, colorToSet);
 
-										if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) && nodeInfo != null)
+										if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
 										{
 											if (ValidateNodeInfo(nodeInfo))
 											{
@@ -940,15 +930,15 @@ namespace ColorMyProtoFlux
 
 							if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
 							{
-								nodeInfo.LastGroupName = node.Group.Name;
+								nodeInfo.lastGroupName = node.Group.Name;
 								nodeInfoSet.Add(nodeInfo);
 								Debug("NodeInfo added. New size of nodeInfoSet: " + nodeInfoSet.Count.ToString());
 
-								if (!subscribedGroupsSet.Contains(node.NodeInstance.Runtime.Group))
+								if (!subscribedGroupWorldMap.ContainsKey(node.NodeInstance.Runtime.Group))
 								{
 									node.NodeInstance.Runtime.Group.ChangeTrackingInvalidated += (nodeGroup) =>
 									{
-										if (Config.GetValue(NODE_COLOR_MODE) != NodeColorModeEnum.NodeGroup) return;
+										if (Config.GetValue(NODE_COLOR_MODE) != NodeColorModeEnum.Group) return;
 
 										Debug("Change tracking invalidated for group: " + nodeGroup.Name);
 
@@ -956,12 +946,12 @@ namespace ColorMyProtoFlux
 
 										foreach (NodeInfo info in nodeInfoSet.ToList())
 										{
-
-											// check world? focused world?
-
-											// Don't use NodeInfoRunInUpdates here because it breaks hot-reloaading
+											// Don't use NodeInfoRunInUpdates here because it breaks hot-reloading
 											if (ValidateNodeInfo(info))
 											{
+												// check world
+												if (info.node.World != subscribedGroupWorldMap[nodeGroup]) continue;
+
 												// I think this needs to be 3 for some reason
 												info.node.RunInUpdates(3, () =>
 												{
@@ -974,7 +964,8 @@ namespace ColorMyProtoFlux
 											}
 										}
 									};
-									subscribedGroupsSet.Add(node.NodeInstance.Runtime.Group);
+
+									subscribedGroupWorldMap.Add(node.NodeInstance.Runtime.Group, node.World);
 									Debug("Subscribed to node group: " + node.Group.Name);
 								}
 
@@ -983,20 +974,16 @@ namespace ColorMyProtoFlux
 								{
 									nodeInfo.node.RunInUpdates(1, () =>
 									{
-										if (ValidateNodeInfo(nodeInfo))
+										if (!ElementExists(node)) return;
+										foreach (ProtoFluxNode node2 in node.Group.Nodes.Where((ProtoFluxNode n) => NodeInfoSetContainsNode(n)))
 										{
-											foreach (ProtoFluxNode node in node.Group.Nodes.Where((ProtoFluxNode n) => NodeInfoSetContainsNode(n)))
+											NodeInfo info = GetNodeInfoForNode(node2);
+											if (ValidateNodeInfo(info))
 											{
-												NodeInfo info = GetNodeInfoForNode(node);
-												if (info == null) continue;
-												if (IsNodeInvalid(info))
-												{
-													NodeInfoRemove(info);
-													continue;
-												};
 												info.visual?.UpdateNodeStatus();
 												//RefreshNodeColor(info);
 											}
+
 										}
 									});
 								}

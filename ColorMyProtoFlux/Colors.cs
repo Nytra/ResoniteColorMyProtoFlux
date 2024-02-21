@@ -327,20 +327,20 @@ namespace ColorMyProtoFlux
 			string nodeCategoryString;
 			switch (Config.GetValue(NODE_COLOR_MODE))
 			{
-				case NodeColorModeEnum.NodeName:
+				case NodeColorModeEnum.Name:
 					rng = new System.Random(node.GetType().GetNiceName().BeautifyName().GetHashCode() + Config.GetValue(RANDOM_SEED));
 					break;
-				case NodeColorModeEnum.NodeCategory:
+				case NodeColorModeEnum.Category:
 					nodeCategoryString = GetWorkerCategoryPath(node);
 					//ExtraDebug("Node category string: " + nodeCategoryString);
 					rng = new System.Random(nodeCategoryString.GetHashCode() + Config.GetValue(RANDOM_SEED));
 					break;
-				case NodeColorModeEnum.TopmostNodeCategory:
+				case NodeColorModeEnum.TopmostCategory:
 					nodeCategoryString = GetWorkerCategoryPath(node, onlyTopmost: true);
 					//ExtraDebug("Node category string: " + nodeCategoryString);
 					rng = new System.Random(nodeCategoryString.GetHashCode() + Config.GetValue(RANDOM_SEED));
 					break;
-				case NodeColorModeEnum.NodeGroup:
+				case NodeColorModeEnum.Group:
 					rng = new System.Random(node.Group.Name.GetHashCode() + Config.GetValue(RANDOM_SEED));
 					break;
 				case NodeColorModeEnum.FullTypeName:
