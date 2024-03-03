@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Nytra")]
 [assembly: AssemblyProduct("ColorMyProtoFlux")]
-[assembly: AssemblyCopyright("Copyright © Nytra 2023")]
+[assembly: AssemblyCopyright("Copyright © Nytra 2024")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

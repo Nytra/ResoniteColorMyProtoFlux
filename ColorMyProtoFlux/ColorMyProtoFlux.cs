@@ -10,6 +10,13 @@ using ResoniteModLoader;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Collections;
+using System.Diagnostics;
+
+
+
+
+
 
 #if HOT_RELOAD
 using ResoniteHotReloadLib;
@@ -241,6 +248,9 @@ namespace ColorMyProtoFlux
 		}
 
 		private static HashSet<NodeInfo> nodeInfoSet = new();
+		private static Dictionary<ProtoFluxNode, NodeInfo> nodeToNodeInfoMap = new();
+		private static Dictionary<ProtoFluxNodeVisual, NodeInfo> visualToNodeInfoMap = new();
+
 		//private static HashSet<RefDriverNodeInfo> refDriverNodeInfoSet = new();
 		private static Dictionary<NodeGroup, World> subscribedGroupWorldMap = new();
 
@@ -260,6 +270,9 @@ namespace ColorMyProtoFlux
 		private const string overrideFieldsStreamName = "ColorMyProtoFlux.OverrideFields";
 
 		private static bool runFinalNodeUpdate = false;
+
+		[ThreadStatic]
+		private static bool currentlyChangingColorFields = false;
 
 		static void OnConfigChanged(ConfigurationChangedEvent configChangedEvent)
 		{
@@ -295,10 +308,10 @@ namespace ColorMyProtoFlux
 				}
 				else
 				{
-					Debug("nodeInfoSet should already be clear here maybe?");
-					Debug("nodeInfoSet Size before clear: " + nodeInfoSet.Count.ToString());
-					NodeInfoSetClear();
-					Debug("Cleared nodeInfoSet. New size: " + nodeInfoSet.Count.ToString());
+					Debug("nodeInfo should already be clear here maybe?");
+					//Debug("nodeInfoSet Size before clear: " + nodeInfoSet.Count.ToString());
+					NodeInfoClear();
+					//Debug("Cleared nodeInfoSet. New size: " + nodeInfoSet.Count.ToString());
 				}
 			}
 
@@ -341,6 +354,7 @@ namespace ColorMyProtoFlux
 				foreach (NodeInfo nodeInfo in nodeInfoSet.ToList())
 				{
 					// don't change colors of nodes that are in other worlds
+					// node shouldn't be null here because validation happened before the loop
 					if (nodeInfo.node.World != Engine.Current.WorldManager.FocusedWorld)
 					{
 						continue;
@@ -393,7 +407,7 @@ namespace ColorMyProtoFlux
 		static void BeforeHotReload()
 		{
 			Config.OnThisConfigurationChanged -= OnConfigChanged;
-			NodeInfoSetClear();
+			NodeInfoClear();
 			Harmony harmony = new Harmony("owo.Nytra.ColorMyProtoFlux");
 			harmony.UnpatchAll("owo.Nytra.ColorMyProtoFlux");
 
@@ -444,9 +458,10 @@ namespace ColorMyProtoFlux
 		private static void OnNodeBackgroundColorChanged(IChangeable changeable)
 		{
 			if (!Config.GetValue(MOD_ENABLED)) return;
+			if (currentlyChangingColorFields) return;
 			var field = changeable as IField;
 			var conflictingSyncElement = changeable as ConflictingSyncElement;
-			if (ElementExists(field) && ElementExists(conflictingSyncElement) && (!field.IsDriven || field.IsHooked) && conflictingSyncElement.LastModifyingUser != field.World.LocalUser)
+			if (ElementExists(field) && ElementExists(conflictingSyncElement) && (!field.IsDriven || field.IsHooked) && !conflictingSyncElement.WasLastModifiedBy(field.World.LocalUser))
 			{
 				ProtoFluxNodeVisual visual = field.FindNearestParent<Slot>().GetComponentInParents<ProtoFluxNodeVisual>();
 				if (ElementExists(visual))
@@ -490,28 +505,39 @@ namespace ColorMyProtoFlux
 				// should this be here?
 				if (!Config.GetValue(MOD_ENABLED)) return;
 
+				if (!ElementExists(__instance)) return;
+
 				// if this node visual does not belong to LocalUser, skip this patch
 				if (__instance.ReferenceID.User != __instance.LocalUser.AllocationID) return;
 
-				NodeInfo nodeInfo2 = GetNodeInfoForNode(__instance.Node.Target);
-				if (ValidateNodeInfo(nodeInfo2))
+				ValueStream<bool> overrideFieldsStream = GetOrAddOverrideFieldsStream(__instance.LocalUser, dontAdd: true);
+				bool intendedStreamValue = ComputeOverrideStreamValue();
+				if (ElementExists(overrideFieldsStream) && overrideFieldsStream.Value != intendedStreamValue)
 				{
-					if (__instance.Node.Target?.Group?.Name != nodeInfo2.lastGroupName)
-					{
-						nodeInfo2.lastGroupName = __instance.Node.Target?.Group?.Name;
-						RefreshNodeColor(nodeInfo2);
-					}
+					Debug("Override stream value was not the intended value, correcting it.");
+					overrideFieldsStream.Value = intendedStreamValue;
 				}
+
+				NodeInfo nodeInfo = GetNodeInfoForNode(__instance.Node.Target);
+				//if (ValidateNodeInfo(nodeInfo))
+				//{
+				//	if (__instance.Node.Target?.Group?.Name != nodeInfo.lastGroupName)
+				//	{
+				//		Debug($"Node group change detected in UpdateNodeStatus. Last group name: {nodeInfo.lastGroupName ?? "NULL"} Current group name: {__instance.Node.Target?.Group?.Name ?? "NULL"}");
+				//		nodeInfo.lastGroupName = __instance.Node.Target?.Group?.Name;
+				//		RefreshNodeColor(nodeInfo);
+				//	}
+				//}
 
 				bool shouldUseCustomColor = ShouldColorNodeBody(__instance.Node.Target);
 
 				// not sure if this needs to be here anymore since the ValueDriver source gets nulled on mod disable
-				ValueStream<bool> stream = GetOrAddOverrideFieldsStream(__instance.LocalUser, dontAdd: true);
-				ValueDriver<bool> valueDriver = __instance.Slot?.GetComponent<ValueDriver<bool>>();
-				if (nodeInfo2 == null && ElementExists(valueDriver) && valueDriver.ValueSource.Target == stream)
-				{
-					shouldUseCustomColor = false;
-				}
+				//ValueStream<bool> stream = GetOrAddOverrideFieldsStream(__instance.LocalUser, dontAdd: true);
+				//ValueDriver<bool> valueDriver = __instance.Slot?.GetComponent<ValueDriver<bool>>();
+				//if (nodeInfo2 == null && ElementExists(valueDriver) && valueDriver.ValueSource.Target == stream)
+				//{
+				//	shouldUseCustomColor = false;
+				//}
 
 				// just in case? although then node highlight and selection wouldn't visually work in other worlds for this user's nodes
 				//if (__instance.World != Engine.Current.WorldManager.FocusedWorld) return true; 
@@ -595,7 +621,6 @@ namespace ColorMyProtoFlux
 				{
 					Debug("Node not valid");
 					a = errorColorToSet;
-					NodeInfo nodeInfo = GetNodeInfoFromVisual(__instance);
 					if (ValidateNodeInfo(nodeInfo))
 					{
 						RefreshNodeColor(nodeInfo);
@@ -607,7 +632,6 @@ namespace ColorMyProtoFlux
 					{
 						Debug("Node valid after being not valid");
 						// does this work? it is supposed to reset the header color when the node becomes valid after being invalid
-						NodeInfo nodeInfo = GetNodeInfoFromVisual(__instance);
 						if (ValidateNodeInfo(nodeInfo))
 						{
 							RefreshNodeColor(nodeInfo);
@@ -619,11 +643,15 @@ namespace ColorMyProtoFlux
 				// Although that would undrive it if its driven by something...
 				if (ElementExists(bgImage) && !bgImage.Tint.IsDriven)
 				{
+					currentlyChangingColorFields = true;
 					bgImage.Tint.Value = a;
+					currentlyChangingColorFields = false;
 				}
 				if (ElementExists(overviewBg) && !overviewBg.Tint.IsDriven)
 				{
+					currentlyChangingColorFields = true;
 					overviewBg.Tint.Value = a;
+					currentlyChangingColorFields = false;
 				}
 			}
 		}
@@ -675,7 +703,7 @@ namespace ColorMyProtoFlux
 				//if (__instance.World != Engine.Current.WorldManager.FocusedWorld) return;
 
 				ProtoFluxNodeVisual visual = __instance.Visual.Target;
-				NodeInfo nodeInfo = GetNodeInfoFromVisual(visual);
+				NodeInfo nodeInfo = GetNodeInfoForNode(visual.Node.Target);
 				if (Config.GetValue(MAKE_CONNECT_POINTS_FULL_ALPHA) || Config.GetValue(RESTORE_ORIGINAL_TYPE_COLORS) || Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
 				{
 					var inputsRoot = (SyncRef<Slot>)visual.TryGetField("_inputsRoot");
@@ -687,17 +715,281 @@ namespace ColorMyProtoFlux
 							if (!nodeInfo.connectionPointImageTintFields.Contains(img.Tint))
 							{
 								nodeInfo.connectionPointImageTintFields.Add(img.Tint);
-								UpdateConnectPointImageColor(visual.Node.Target, visual, img);
+								UpdateConnectPointImageColor(img);
 							}
 						}
 						else
 						{
-							UpdateConnectPointImageColor(visual.Node.Target, visual, img);
+							UpdateConnectPointImageColor(img);
 						}
 					}
 				}
 			}
 		}
+
+		//private static void PlaySound()
+		//{
+		//	if (!Engine.Current.IsReady) return;
+		//	World focusedWorld = Engine.Current.WorldManager.FocusedWorld;
+		//	string slotName = "RecieveMessageClip.ColorMyProtoFlux";
+		//	Slot s = focusedWorld.RootSlot.FindChild(s => s.Name == slotName);
+		//	StaticAudioClip audio;
+		//	if (!ElementExists(s))
+		//	{
+		//		s = focusedWorld.RootSlot.AddSlot(slotName);
+		//		audio = s.AttachAudioClip(OfficialAssets.Sounds.RadiantUI.User_Recieve_Message);
+		//	}
+		//	else
+		//	{
+		//		audio = s.GetComponent<StaticAudioClip>();
+		//	}
+		//	if (ElementExists(audio))
+		//	{
+		//		focusedWorld.PlayOneShot(float3.Zero, audio, speed: 2f);
+		//	}
+		//}
+
+		//[HarmonyPatch(typeof(NodeGroup))]
+		//[HarmonyPatch("MarkChangeTrackingDirty")]
+		//class Patch_NodeGroup_MarkChangeTrackingDirty
+		//{
+		//	static bool Prefix(NodeGroup __instance)
+		//	{
+		//		Msg("MarkChangeTrackingDirty NodeGroup: " + __instance?.Name);
+		//		PrintStackTrace();
+		//		
+		//		return true;
+		//	}
+		//}
+
+		private static void PrintStackTrace()
+		{
+			var s = new System.Diagnostics.StackTrace();
+			Debug(s.ToString());
+		}
+
+		//[HarmonyPatch(typeof(ProtoFluxNodeGroup))]
+		//[HarmonyPatch("RebuildChangeTracking")]
+		//class Patch_ProtoFluxNodeGroup_RebuildChangeTracking
+		//{
+		//	static bool Prefix(ProtoFluxNodeGroup __instance)
+		//	{
+		//		Msg("RebuildChangeTracking ProtoFluxNodeGroup: " + __instance?.Name);
+		//		PrintStackTrace();
+		//		return true;
+		//	}
+		//}
+
+		//[HarmonyPatch(typeof(ProtoFluxNode))]
+		//[HarmonyPatch("Rebuild")]
+		//class Patch_ProtoFluxNode_Rebuild
+		//{
+		//	static bool Prefix(ProtoFluxNode __instance, out ProtoFluxNodeGroup __state)
+		//	{
+		//		__state = __instance?.Group;
+		//		return true;
+		//	}
+		//	static void Postfix(ProtoFluxNode __instance, ProtoFluxNodeGroup __state)
+		//	{
+		//		if (__state != __instance?.Group)
+		//		{
+		//			Debug($"Node changed group. Original group: {__state?.Name ?? "NULL"} New group: {__instance?.Group?.Name ?? "NULL"}");
+		//			PlaySound();
+		//			__instance.World.RunInUpdates(30, () => 
+		//			{
+		//				if (!ElementExists(__instance)) return;
+		//				NodeInfo nodeInfo = GetNodeInfoForNode(__instance);
+		//				if (ValidateNodeInfo(nodeInfo))
+		//				{
+		//					// what to do here
+		//					nodeInfo.visual.UpdateNodeStatus();
+		//				}
+		//			});
+		//		}
+		//	}
+		//}
+
+		public class NodeRefreshData
+		{
+			public int updatesToWait;
+			public int startUpdateIndex;
+			public ProtoFluxNode node;
+			public NodeRefreshData(int _updatesToWait, ProtoFluxNode _node)
+			{
+				updatesToWait = _updatesToWait;
+				node = _node;
+				startUpdateIndex = 0;
+			}
+			public override string ToString()
+			{
+				return $"NodeRefreshData. updatesToWait: {updatesToWait} startUpdateIndex: {startUpdateIndex} node: {node?.Name ?? "NULL"} {node?.ReferenceID.ToString() ?? "NULL"}";
+			}
+		}
+
+		public class NodeRefreshQueue
+		{
+			private List<NodeRefreshData> queue = new();
+			public void Enqueue(NodeRefreshData item)
+			{
+				item.startUpdateIndex = item.node?.World?.Time?.LocalUpdateIndex ?? 0;
+				queue.Add(item);
+				Sort();
+			}
+			int comparison(NodeRefreshData a, NodeRefreshData b)
+			{
+				return a.updatesToWait.CompareTo(b.updatesToWait);
+			}
+			public void Sort()
+			{
+				queue.Sort(comparison);
+			}
+			public NodeRefreshData Dequeue()
+			{
+				NodeRefreshData val = null;
+				foreach (NodeRefreshData item in queue)
+				{
+					TimeController time = item.node?.World?.Time;
+					if (time.LocalUpdateIndex - item.startUpdateIndex >= item.updatesToWait)
+					{
+						val = item;
+						break;
+					}
+				}
+				if (val != null)
+				{
+					queue.Remove(val);
+				}
+				return val;
+			}
+			public void RunAction()
+			{
+				ProtoFluxNode node = Dequeue()?.node;
+				NodeInfo info = GetNodeInfoForNode(node);
+				if (ValidateNodeInfo(info))
+				{
+					info.visual.UpdateNodeStatus();
+					RefreshNodeColor(info);
+				}
+			}
+		}
+
+		//private static NodePriorityQueue nodePriorityQueue = new();
+
+		private static Dictionary<World, NodeRefreshQueue> worldQueueMap = new();
+		//private static Dictionary<World, Action> worldQueueActionMap = new();
+
+		//static void RefreshNextNode()
+		//{
+		//	ProtoFluxNode node = nodePriorityQueue.Dequeue()?.node;
+		//	NodeInfo info = GetNodeInfoForNode(node);
+		//	if (ValidateNodeInfo(info))
+		//	{
+		//		//info.node.World.UpdateManager.NestCurrentlyUpdating(info.node);
+		//		info.visual.UpdateNodeStatus();
+		//		RefreshNodeColor(info);
+		//		//info.node.World.UpdateManager.PopCurrentlyUpdating(info.node);
+		//	}
+		//}
+
+		// convoluted garbage to make hot reload work
+		//private static Queue<ProtoFluxNode> nodesToRefresh = new();
+		//static void RefreshNextNode()
+		//{
+		//	ProtoFluxNode node = nodesToRefresh.Dequeue();
+		//	NodeInfo info = GetNodeInfoForNode(node);
+		//	if (ValidateNodeInfo(info))
+		//	{
+		//		info.visual.UpdateNodeStatus();
+		//		RefreshNodeColor(info);
+		//	}
+		//}
+
+		static void ScheduleNodeRefresh(int updates, ProtoFluxNode node)
+		{
+			if (!ElementExists(node) || !ElementExists(node.World)) return;
+			if (!worldQueueMap.ContainsKey(node.World))
+			{
+				worldQueueMap.Add(node.World, new NodeRefreshQueue());
+			}
+			NodeRefreshQueue queue = worldQueueMap[node.World];
+			int val = updates >= 0 ? updates : 0;
+			NodeRefreshData data = new NodeRefreshData(val, node);
+			queue.Enqueue(data);
+			node.RunInUpdates(val, queue.RunAction);
+			Debug($"Scheduled refresh in {updates} updates for node {node?.Name ?? "NULL"} {node?.ReferenceID.ToString() ?? "NULL"}");
+		}
+
+		[HarmonyPatch(typeof(ProtoFluxNode))]
+		[HarmonyPatch("Group", MethodType.Setter)]
+		class Patch_ProtoFluxNode_set_Group
+		{
+			static bool Prefix(ProtoFluxNode __instance, ProtoFluxNodeGroup value)
+			{
+				if (!Config.GetValue(MOD_ENABLED)) return true;
+				if (Engine.Current?.IsReady == false) return true;
+				if (Config.GetValue(NODE_COLOR_MODE) != NodeColorModeEnum.Group) return true;
+				if (!ElementExists(__instance)) return true;
+
+				// the node color should only refresh if the new group is not null
+				if (value == null) return true;
+
+				if (__instance.Group != value)
+				{
+					Debug($"Node changed group. Node: {__instance.Name ?? "NULL"} {__instance.ReferenceID.ToString() ?? "NULL"} New group: {value?.Name ?? "NULL"}");
+
+					ScheduleNodeRefresh(0, __instance);
+				}
+				return true;
+			}
+		}
+
+		//[HarmonyPatch(typeof(ProtoFluxNode))]
+		//[HarmonyPatch("MarkForRebuild")]
+		//class Patch_ProtoFluxNode_MarkForRebuild
+		//{
+		//	static bool Prefix(ProtoFluxNode __instance)
+		//	{
+		//		Msg("MarkForRebuild ProtoFluxNode: " + __instance?.Name + " " + __instance?.ReferenceID.ToString());
+		//		PrintStackTrace();
+		//		return true;
+		//	}
+		//}
+
+		//[HarmonyPatch(typeof(ProtoFluxNodeGroup))]
+		//[HarmonyPatch("MarkForRebuild")]
+		//class Patch_ProtoFluxNodeGroup_MarkForRebuild
+		//{
+		//	static bool Prefix(ProtoFluxNodeGroup __instance)
+		//	{
+		//		Msg("MarkForRebuild ProtoFluxNodeGroup: " + __instance?.Name);
+		//		PrintStackTrace();
+		//		return true;
+		//	}
+		//}
+
+		//[HarmonyPatch(typeof(ProtoFluxNodeGroup))]
+		//[HarmonyPatch("MarkNodesForRebuild")]
+		//class Patch_ProtoFluxNodeGroup_MarkNodesForRebuild
+		//{
+		//	static bool Prefix(ProtoFluxNodeGroup __instance)
+		//	{
+		//		Msg("MarkNodesForRebuild ProtoFluxNodeGroup: " + __instance?.Name);
+		//		PrintStackTrace();
+		//		return true;
+		//	}
+		//}
+
+		//[HarmonyPatch(typeof(ProtoFluxNodeGroup))]
+		//[HarmonyPatch("Rebuild")]
+		//class Patch_ProtoFluxNodeGroup_Rebuild
+		//{
+		//	static bool Prefix(ProtoFluxNodeGroup __instance)
+		//	{
+		//		Msg("Rebuild ProtoFluxNodeGroup: " + __instance?.Name);
+		//		PrintStackTrace();
+		//		return true;
+		//	}
+		//}
 
 		[HarmonyPatch(typeof(ProtoFluxNodeVisual))]
 		[HarmonyPatch("BuildUI")]
@@ -756,7 +1048,8 @@ namespace ColorMyProtoFlux
 								{
 									nodeInfo.headerImageTintField = headerImage.Tint;
 								}
-								UpdateHeaderImageColor(node, __instance, headerImage, colorToSet);
+								//UpdateHeaderImageColor(headerImage, colorToSet);
+								TrySetImageTint(headerImage, colorToSet);
 								ExtraDebug("Set header image color");
 							}
 
@@ -772,7 +1065,7 @@ namespace ColorMyProtoFlux
 									{
 										nodeInfo.connectionPointImageTintFields.Add(img.Tint);
 									}
-									UpdateConnectPointImageColor(node, __instance, img);
+									UpdateConnectPointImageColor(img);
 								}
 							}
 
@@ -796,7 +1089,7 @@ namespace ColorMyProtoFlux
 									{
 										if (!ElementExists(text)) continue;
 
-										UpdateOtherTextColor(node, __instance, text, colorToSet);
+										UpdateOtherTextColor(node, text, colorToSet);
 
 										if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
 										{
@@ -812,7 +1105,7 @@ namespace ColorMyProtoFlux
 									var categoryText = GetCategoryTextForNode(node);
 									if (ElementExists(categoryText))
 									{
-										UpdateCategoryTextColor(node, __instance, categoryText, colorToSet);
+										UpdateCategoryTextColor(node, categoryText, colorToSet);
 
 										if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
 										{
@@ -830,7 +1123,7 @@ namespace ColorMyProtoFlux
 									{
 										if (!ElementExists(t)) continue;
 
-										UpdateNodeNameTextColor(node, __instance, t, headerImage, colorToSet);
+										UpdateNodeNameTextColor(node, t, headerImage, colorToSet);
 
 										if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
 										{
@@ -930,67 +1223,68 @@ namespace ColorMyProtoFlux
 
 							if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
 							{
-								nodeInfo.lastGroupName = node.Group.Name;
-								nodeInfoSet.Add(nodeInfo);
-								Debug("NodeInfo added. New size of nodeInfoSet: " + nodeInfoSet.Count.ToString());
+								//nodeInfo.lastGroupName = node.Group?.Name;
 
-								if (!subscribedGroupWorldMap.ContainsKey(node.NodeInstance.Runtime.Group))
-								{
-									node.NodeInstance.Runtime.Group.ChangeTrackingInvalidated += (nodeGroup) =>
-									{
-										if (Config.GetValue(NODE_COLOR_MODE) != NodeColorModeEnum.Group) return;
+								AddNodeInfo(nodeInfo, node, __instance);
 
-										Debug("Change tracking invalidated for group: " + nodeGroup.Name);
+								//if (!subscribedGroupWorldMap.ContainsKey(node.NodeInstance.Runtime.Group))
+								//{
+								//	node.NodeInstance.Runtime.Group.ChangeTrackingInvalidated += (nodeGroup) =>
+								//	{
+								//		if (Config.GetValue(NODE_COLOR_MODE) != NodeColorModeEnum.Group) return;
 
-										//ValidateAllNodeInfos();
+								//		Debug("Change tracking invalidated for group: " + nodeGroup.Name);
 
-										foreach (NodeInfo info in nodeInfoSet.ToList())
-										{
-											// Don't use NodeInfoRunInUpdates here because it breaks hot-reloading
-											if (ValidateNodeInfo(info))
-											{
-												// check world
-												if (info.node.World != subscribedGroupWorldMap[nodeGroup]) continue;
+								//		//ValidateAllNodeInfos();
 
-												// I think this needs to be 3 for some reason
-												info.node.RunInUpdates(3, () =>
-												{
-													if (ValidateNodeInfo(info))
-													{
-														info.visual.UpdateNodeStatus();
-														//RefreshNodeColor(info);
-													}
-												});
-											}
-										}
-									};
+								//		foreach (NodeInfo info in nodeInfoSet.ToList())
+								//		{
+								//			// Don't use NodeInfoRunInUpdates here because it breaks hot-reloading
+								//			if (ValidateNodeInfo(info))
+								//			{
+								//				// check world
+								//				if (info.node.World != subscribedGroupWorldMap[nodeGroup]) continue;
 
-									subscribedGroupWorldMap.Add(node.NodeInstance.Runtime.Group, node.World);
-									Debug("Subscribed to node group: " + node.Group.Name);
-								}
+								//				// I think this needs to be 3 for some reason
+								//				info.node.RunInUpdates(3, () =>
+								//				{
+								//					if (ValidateNodeInfo(info))
+								//					{
+								//						info.visual.UpdateNodeStatus();
+								//						//RefreshNodeColor(info);
+								//					}
+								//				});
+								//			}
+								//		}
+								//	};
 
-								// Don't use NodeInfoRunInUpdates here because it breaks hot-reloading
-								if (ValidateNodeInfo(nodeInfo))
-								{
-									nodeInfo.node.RunInUpdates(1, () =>
-									{
-										if (!ElementExists(node)) return;
-										foreach (ProtoFluxNode node2 in node.Group.Nodes.Where((ProtoFluxNode n) => NodeInfoSetContainsNode(n)))
-										{
-											NodeInfo info = GetNodeInfoForNode(node2);
-											if (ValidateNodeInfo(info))
-											{
-												info.visual?.UpdateNodeStatus();
-												//RefreshNodeColor(info);
-											}
+								//	subscribedGroupWorldMap.Add(node.NodeInstance.Runtime.Group, node.World);
+								//	Debug("Subscribed to node group: " + node.Group.Name);
+								//}
 
-										}
-									});
-								}
+								// might need this?
+								//// Don't use NodeInfoRunInUpdates here because it breaks hot-reloading
+								//if (ValidateNodeInfo(nodeInfo))
+								//{
+								//	nodeInfo.node.RunInUpdates(1, () =>
+								//	{
+								//		if (!ElementExists(node)) return;
+								//		foreach (ProtoFluxNode node2 in node.Group.Nodes.Where((ProtoFluxNode n) => NodeInfoSetContainsNode(n)))
+								//		{
+								//			NodeInfo info = GetNodeInfoForNode(node2);
+								//			if (ValidateNodeInfo(info))
+								//			{
+								//				info.visual.UpdateNodeStatus();
+								//				//RefreshNodeColor(info);
+								//			}
+
+								//		}
+								//	});
+								//}
 
 								__instance.Destroyed += (destroyable) =>
 								{
-									NodeInfo nodeInfo = GetNodeInfoFromVisual((ProtoFluxNodeVisual)destroyable);
+									NodeInfo nodeInfo = GetNodeInfoForVisual(((ProtoFluxNodeVisual)destroyable));
 									if (nodeInfo != null)
 									{
 										NodeInfoRemove(nodeInfo);

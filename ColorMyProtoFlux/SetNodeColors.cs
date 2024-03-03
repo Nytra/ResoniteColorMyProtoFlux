@@ -9,12 +9,12 @@ namespace ColorMyProtoFlux
 {
 	public partial class ColorMyProtoFlux : ResoniteMod
 	{
-		private static void UpdateHeaderImageColor(ProtoFluxNode node, ProtoFluxNodeVisual visual, Image headerImage, colorX color)
-		{
-			TrySetImageTint(headerImage, color);
-		}
+		//private static void UpdateHeaderImageColor(Image headerImage, colorX color)
+		//{
+		//	TrySetImageTint(headerImage, color);
+		//}
 
-		private static void UpdateConnectPointImageColor(ProtoFluxNode node, ProtoFluxNodeVisual visual, Image img)
+		private static void UpdateConnectPointImageColor(Image img)
 		{
 			colorX defaultColor = GetWireColorOfConnectionPointImage(img);
 			colorX colorToSet = defaultColor;
@@ -46,7 +46,7 @@ namespace ColorMyProtoFlux
 			TrySetImageTint(img, colorToSet);
 		}
 
-		private static void UpdateOtherTextColor(ProtoFluxNode node, ProtoFluxNodeVisual visual, Text text, colorX modComputedCustomColor)
+		private static void UpdateOtherTextColor(ProtoFluxNode node, Text text, colorX modComputedCustomColor)
 		{
 			if (Config.GetValue(MOD_ENABLED) && Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
 			{
@@ -73,7 +73,7 @@ namespace ColorMyProtoFlux
 			}
 		}
 
-		private static void UpdateCategoryTextColor(ProtoFluxNode node, ProtoFluxNodeVisual visual, Text text, colorX modComputedCustomColor)
+		private static void UpdateCategoryTextColor(ProtoFluxNode node, Text text, colorX modComputedCustomColor)
 		{
 			if (Config.GetValue(MOD_ENABLED) && Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
 			{
@@ -89,7 +89,7 @@ namespace ColorMyProtoFlux
 			}
 		}
 
-		private static void UpdateNodeNameTextColor(ProtoFluxNode node, ProtoFluxNodeVisual visual, Text text, Image headerImage, colorX modComputedCustomColor)
+		private static void UpdateNodeNameTextColor(ProtoFluxNode node, Text text, Image headerImage, colorX modComputedCustomColor)
 		{
 			if (Config.GetValue(MOD_ENABLED) && Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
 			{

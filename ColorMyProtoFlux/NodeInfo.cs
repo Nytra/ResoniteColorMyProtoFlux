@@ -11,6 +11,7 @@ namespace ColorMyProtoFlux
 {
 	public partial class ColorMyProtoFlux : ResoniteMod
 	{
+		// NodeInfo class stores info about the node, primarily cached color fields for the visual
 		public class NodeInfo
 		{
 			public ProtoFluxNode node;
@@ -21,10 +22,50 @@ namespace ColorMyProtoFlux
 			public HashSet<IField<colorX>> nodeNameTextColorFields;
 			public colorX modComputedCustomColor;
 			public HashSet<IField<colorX>> connectionPointImageTintFields;
-			public string lastGroupName;
+			//public string lastGroupName;
 			public bool isRemoved;
 			//public HashSet<Button> nodeButtons;
 			// dont need to store node background image because the UpdateNodeStatus patch handles coloring of that part
+		}
+
+		private static void AddNodeInfo(NodeInfo nodeInfo, ProtoFluxNode node, ProtoFluxNodeVisual visual)
+		{
+			// nodeInfo could be null here?
+			if (!nodeInfoSet.Contains(nodeInfo))
+			{
+				nodeInfoSet.Add(nodeInfo);
+				Debug("NodeInfo added. New size of nodeInfoSet: " + nodeInfoSet.Count.ToString());
+			}
+			else
+			{
+				// this should never happen (TM)
+				Warn("nodeInfoSet contained nodeInfo when it shouldn't have in AddNodeInfo");
+				// throw exception here?
+			}
+
+			// visual could be null here?
+			if (visualToNodeInfoMap.ContainsKey(visual))
+			{
+				Warn("Visual already exists in visualToNodeInfoMap and will be updated. Size of visualToNodeInfoMap: " + visualToNodeInfoMap.Count.ToString());
+				visualToNodeInfoMap[visual] = nodeInfo;
+			}
+			else
+			{
+				visualToNodeInfoMap.Add(visual, nodeInfo);
+				ExtraDebug("Visual added to visualToNodeInfoMap. New size of visualToNodeInfoMap: " + visualToNodeInfoMap.Count.ToString());
+			}
+
+			// node could be null here?
+			if (nodeToNodeInfoMap.ContainsKey(node))
+			{
+				Debug("Node already exists in nodeToNodeInfoMap and will be updated. Size of nodeToNodeInfoMap: " + nodeToNodeInfoMap.Count.ToString());
+				nodeToNodeInfoMap[node] = nodeInfo;
+			}
+			else
+			{
+				nodeToNodeInfoMap.Add(node, nodeInfo);
+				ExtraDebug("Node added to nodeToNodeInfoMap. New size of nodeToNodeInfoMap: " + nodeToNodeInfoMap.Count.ToString());
+			}
 		}
 
 		private static void RefreshTextColorsForNode(NodeInfo nodeInfo)
@@ -40,7 +81,7 @@ namespace ColorMyProtoFlux
 					}
 					else
 					{
-						UpdateOtherTextColor(nodeInfo.node, nodeInfo.visual, field.FindNearestParent<Text>(), nodeInfo.modComputedCustomColor);
+						UpdateOtherTextColor(nodeInfo.node, field.Parent as Text, nodeInfo.modComputedCustomColor);
 					}
 				}
 			}
@@ -53,7 +94,7 @@ namespace ColorMyProtoFlux
 			}
 			else
 			{
-				UpdateCategoryTextColor(nodeInfo.node, nodeInfo.visual, nodeInfo.categoryTextColorField.FindNearestParent<Text>(), nodeInfo.modComputedCustomColor);
+				UpdateCategoryTextColor(nodeInfo.node, nodeInfo.categoryTextColorField.Parent as Text, nodeInfo.modComputedCustomColor);
 			}
 
 			if (nodeInfo.nodeNameTextColorFields != null)
@@ -67,7 +108,8 @@ namespace ColorMyProtoFlux
 					}
 					else
 					{
-						UpdateNodeNameTextColor(nodeInfo.node, nodeInfo.visual, field.FindNearestParent<Text>(), nodeInfo.headerImageTintField.FindNearestParent<Image>(), nodeInfo.modComputedCustomColor);
+						// there might not be a header image
+						UpdateNodeNameTextColor(nodeInfo.node, field.Parent as Text, nodeInfo.headerImageTintField?.Parent as Image, nodeInfo.modComputedCustomColor);
 					}
 				}
 			}
@@ -75,7 +117,13 @@ namespace ColorMyProtoFlux
 
 		private static bool NodeInfoSetContainsNode(ProtoFluxNode node)
 		{
-			return nodeInfoSet.Any(nodeInfo => nodeInfo.node == node);
+			if (node == null) return false;
+			if (nodeToNodeInfoMap.ContainsKey(node))// && nodeToNodeInfoMap[node] != null)
+			{
+				return true;
+			}
+			return false;
+			//return nodeInfoSet.Any(nodeInfo => nodeInfo.node == node);
 		}
 
 		//private static bool RefDriverNodeInfoSetContainsSyncRef(ISyncRef syncRef)
@@ -98,14 +146,16 @@ namespace ColorMyProtoFlux
 
 		private static NodeInfo GetNodeInfoForNode(ProtoFluxNode node)
 		{
-			return nodeInfoSet.FirstOrDefault(nodeInfo => nodeInfo.node == node);
+			if (node == null) return null;
+			return nodeToNodeInfoMap.TryGetValue(node, out NodeInfo nodeInfo) ? nodeInfo : null;
+			//return nodeInfoSet.FirstOrDefault(nodeInfo => nodeInfo.node == node);
 		}
 
 		private static void NodeInfoRemove(NodeInfo nodeInfo)
 		{
 			if (nodeInfo == null)
 			{
-				Debug("Tried to remove null from nodeInfoSet");
+				Warn("Tried to remove null from nodeInfoSet");
 				TryTrimExcessNodeInfo();
 				return;
 			}
@@ -116,7 +166,25 @@ namespace ColorMyProtoFlux
 			}
 			else
 			{
-				Debug("NodeInfo was not in nodeInfoSet.");
+				Warn("NodeInfo was not in nodeInfoSet.");
+			}
+
+			if (nodeToNodeInfoMap.Remove(nodeInfo.node))
+			{
+				ExtraDebug("Node removed. New size of nodeToNodeInfoMap: " + nodeToNodeInfoMap.Count.ToString());
+			}
+			else
+			{
+				Warn("Node was not in nodeToNodeInfoMap.");
+			}
+
+			if (visualToNodeInfoMap.Remove(nodeInfo.visual))
+			{
+				ExtraDebug("Visual removed. New size of visualToNodeInfoMap: " + visualToNodeInfoMap.Count.ToString());
+			}
+			else
+			{
+				Warn("Visual was not in visualToNodeInfoMap.");
 			}
 
 			nodeInfo.isRemoved = true;
@@ -136,9 +204,22 @@ namespace ColorMyProtoFlux
 			}
 		}
 
-		private static NodeInfo GetNodeInfoFromVisual(ProtoFluxNodeVisual visual)
+		private static NodeInfo GetNodeInfoForVisual(ProtoFluxNodeVisual visual)
 		{
-			return nodeInfoSet.FirstOrDefault(nodeInfo => nodeInfo.visual == visual);
+			if (visual == null) return null;
+			return visualToNodeInfoMap.TryGetValue(visual, out NodeInfo nodeInfo) ? nodeInfo : null;
+			//return nodeInfoSet.FirstOrDefault(nodeInfo => nodeInfo.visual == visual);
+		}
+
+		private static bool NodeInfoSetContainsVisual(ProtoFluxNodeVisual visual)
+		{
+			if (visual == null) return false;
+			if (visualToNodeInfoMap.ContainsKey(visual))// && visualToNodeInfoMap[visual] != null)
+			{
+				return true;
+			}
+			return false;
+			//return nodeInfoSet.Any(nodeInfo => nodeInfo.visual == visual);
 		}
 
 		//private static void TryTrimExcessRefDriverNodeInfo()
@@ -213,14 +294,56 @@ namespace ColorMyProtoFlux
 			return true;
 		}
 
-		private static void NodeInfoSetClear()
+		private static void NodeInfoClear()
 		{
 			//nodeInfoSet.Clear();
+
 			foreach (NodeInfo info in nodeInfoSet.ToList())
 			{
 				NodeInfoRemove(info);
 			}
-			//TryTrimExcessNodeInfo();
+
+			// not sure if its possible for nodeToNodeInfoMap to still contain anything at this point?
+
+			foreach (NodeInfo info in nodeToNodeInfoMap.Values)
+			{
+				if (info == null) continue;
+				if (!info.isRemoved)
+				{
+					info.isRemoved = true;
+					Warn("NodeInfo was not marked as removed in nodeToNodeInfoMap when it should have been.");
+				}
+			}
+
+			// not sure if its possible for visualToNodeInfoMap to still contain anything at this point?
+
+			foreach (NodeInfo info in visualToNodeInfoMap.Values)
+			{
+				if (info == null) continue;
+				if (!info.isRemoved)
+				{
+					info.isRemoved = true;
+					Warn("NodeInfo was not marked as removed in visualToNodeInfoMap when it should have been.");
+				}
+			}
+
+			// not sure if this is necessary, but doing it just to be safe:
+
+			if (nodeInfoSet.Count > 0)
+			{
+				nodeInfoSet.Clear();
+				TryTrimExcessNodeInfo();
+			}
+
+			if (nodeToNodeInfoMap.Count > 0)
+			{
+				nodeToNodeInfoMap.Clear();
+			}
+
+			if (visualToNodeInfoMap.Count > 0)
+			{
+				visualToNodeInfoMap.Clear();
+			}
 		}
 
 		//private static void RefDriverNodeInfoSetClear()
@@ -264,6 +387,7 @@ namespace ColorMyProtoFlux
 			return anyInvalid;
 		}
 
+		// maybe do UpdateNodeStatus in here as well:
 		private static void RefreshNodeColor(NodeInfo nodeInfo)
 		{
 			nodeInfo.modComputedCustomColor = ComputeColorForProtoFluxNode(nodeInfo.node);
@@ -280,7 +404,7 @@ namespace ColorMyProtoFlux
 						}
 						else
 						{
-							UpdateConnectPointImageColor(nodeInfo.node, nodeInfo.visual, field.FindNearestParent<Image>());
+							UpdateConnectPointImageColor(field.Parent as Image);
 						}
 					}
 				});
@@ -295,7 +419,8 @@ namespace ColorMyProtoFlux
 					if (ElementExists(nodeInfo.headerImageTintField))
 					{
 						colorX colorToSet = Config.GetValue(MOD_ENABLED) ? nodeInfo.modComputedCustomColor : RadiantUI_Constants.HEADER;
-						UpdateHeaderImageColor(nodeInfo.node, visual, nodeInfo.headerImageTintField.FindNearestParent<Image>(), colorToSet);
+						//UpdateHeaderImageColor(nodeInfo.headerImageTintField.FindNearestParent<Image>(), colorToSet);
+						TrySetImageTint(nodeInfo.headerImageTintField.Parent as Image, colorToSet);
 					}
 				});
 			}
