@@ -2,15 +2,12 @@
 
 ![20230314204710_1](https://user-images.githubusercontent.com/14206961/230007411-8b7b9387-019b-4918-8974-8b7c8553f367.jpg)
 
-# THIS MOD IS NOT FINISHED
-# IT COULD STILL HAVE BUGS AND UNINTENDED BEHAVIOR
-
 A [ResoniteModLoader](https://github.com/resonite-modding-group/ResoniteModLoader) mod for [Resonite](https://resonite.com/) that allows you to color your ProtoFlux nodes. This makes the ProtoFlux experience *much* more colorful.
 
 ## Installation
 1. Install [ResoniteModLoader](https://github.com/resonite-modding-group/ResoniteModLoader).
-1. Place ColorMyProtoFlux.dll (Add link here once released) into your `rml_mods` folder. This folder should be at `C:\Program Files (x86)\Steam\steamapps\common\Resonite\rml_mods` for a default install. You can create it if it's missing, or if you launch the game once with ResoniteModLoader installed it will create the folder for you.
-1. Start the game. If you want to verify that the mod is working you can check your Resonite logs.
+2. Place ColorMyProtoFlux.dll (Add link here once released) into your `rml_mods` folder. This folder should be at `C:\Program Files (x86)\Steam\steamapps\common\Resonite\rml_mods` for a default install. You can create it if it's missing, or if you launch the game once with ResoniteModLoader installed it will create the folder for you.
+3. Start the game. If you want to verify that the mod is working you can check your Resonite logs.
 
 ## What does this actually do?
 It changes the colors of ProtoFlux nodes that have been newly created or newly unpacked by you. The colors will go back to default if the node gets unpacked by someone else who is not using this mod. Other people's ProtoFlux will not be affected. The way that the nodes get colored can be configured via [ResoniteModSettings](https://github.com/badhaloninja/ResoniteModSettings).
@@ -27,7 +24,7 @@ There are a lot of options here to give you a lot of control over the types of c
 
 The static node color can be used if you just want a single color to be used for all nodes. There is also an option here to use a random range around this color to allow for some variation.
 
-You can select which Node Factor is used to seed the randomness in the dynamic section. It is generally best to go with Node Category for this one. The others will introduce more or less variation. Using FullTypeName for example will cause the color of the node to change when it gets overloaded to another type. Choosing RefID will make every node you create have a different color (essentially random mode). TopmostNodeCategory is like NodeCategory, except it ignores nested categories and only cares about the first one. NodeName uses the name of the node.
+You can select which Node Factor is used to seed the randomness in the dynamic section. It is generally best to go with Node Category for this one. The others will introduce more or less variation. Using FullTypeName for example will cause the color of the node to change when it gets overloaded to another type. Choosing RefID will make every node you create have a different color (essentially random mode). TopmostNodeCategory is like NodeCategory, except it ignores nested categories and only cares about the first one. NodeName uses the name of the node. Group will color the nodes by which group they belong to.
 
 The Seed option in the dynamic section can be used to get a completely different set of colors being generated. It works in addition to the Selected Node Factor. It can be any positive or negative integer.
 
