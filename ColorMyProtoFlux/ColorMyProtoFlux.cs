@@ -251,6 +251,8 @@ namespace ColorMyProtoFlux
 		private static Dictionary<ProtoFluxNode, NodeInfo> nodeToNodeInfoMap = new();
 		private static Dictionary<ProtoFluxNodeVisual, NodeInfo> visualToNodeInfoMap = new();
 
+		private static Dictionary<World, ValueField<bool>> worldOverrideFieldsFieldMap = new();
+
 		//private static HashSet<RefDriverNodeInfo> refDriverNodeInfoSet = new();
 		private static Dictionary<NodeGroup, World> subscribedGroupWorldMap = new();
 
@@ -267,7 +269,7 @@ namespace ColorMyProtoFlux
 
 		private static long lastColorChangeTime = DateTime.UtcNow.Ticks;
 
-		private const string overrideFieldsStreamName = "ColorMyProtoFlux.OverrideFields";
+		private const string overrideFieldsSlotName = "ColorMyProtoFlux.OverrideFields";
 
 		private static bool runFinalNodeUpdate = false;
 
@@ -317,12 +319,12 @@ namespace ColorMyProtoFlux
 
 			foreach (World world in Engine.Current.WorldManager.Worlds)
 			{
-				ValueStream<bool> stream = GetOrAddOverrideFieldsStream(world.LocalUser, dontAdd: true);
-				if (ElementExists(stream))
+				ValueField<bool> field = GetOrAddOverrideFieldsField(world, dontAdd: true);
+				if (ElementExists(field))
 				{
 					world.RunSynchronously(() =>
 					{
-						stream.Value = ComputeOverrideStreamValue();
+						field.Value.Value = ComputeOverrideFieldsValue();
 					});
 				}
 			}
@@ -371,7 +373,7 @@ namespace ColorMyProtoFlux
 						{
 							// remove stream from node visual slot in here
 							var valueDriver = nodeInfo.visual.Slot.GetComponent<ValueDriver<bool>>();
-							if (ElementExists(valueDriver) && valueDriver.ValueSource.Target == GetOrAddOverrideFieldsStream(nodeInfo.visual.LocalUser, dontAdd: true))
+							if (ElementExists(valueDriver) && valueDriver.ValueSource.Target == GetOrAddOverrideFieldsField(nodeInfo.visual.World, dontAdd: true)?.Value)
 							{
 								valueDriver.ValueSource.Target = null;
 							}
@@ -413,12 +415,17 @@ namespace ColorMyProtoFlux
 
 			foreach (World world in Engine.Current.WorldManager.Worlds)
 			{
-				ValueStream<bool> overrideFieldsStream = GetOrAddOverrideFieldsStream(world.LocalUser, dontAdd: true);
-				if (ElementExists(overrideFieldsStream))
+				ValueField<bool> overrideFieldsField = GetOrAddOverrideFieldsField(world, dontAdd: true);
+				if (ElementExists(overrideFieldsField))
 				{
 					world.RunSynchronously(() =>
 					{
-						overrideFieldsStream.Destroy();
+						Slot s = overrideFieldsField.Slot;
+						overrideFieldsField.Destroy();
+						if (s.ComponentCount == 0)
+						{
+							s.Destroy();
+						}
 					});
 				}
 			}
@@ -428,10 +435,10 @@ namespace ColorMyProtoFlux
 		{
 			Config = modInstance.GetConfiguration();
 
-			foreach (ResoniteModBase mod in ModLoader.Mods())
-			{
-				Msg(mod.GetType().Assembly.FullName + " | " + mod.GetType().FullName);
-			}
+			//foreach (ResoniteModBase mod in ModLoader.Mods())
+			//{
+			//	Msg(mod.GetType().Assembly.FullName + " | " + mod.GetType().FullName);
+			//}
 
 			SetupMod();
 		}
@@ -481,21 +488,6 @@ namespace ColorMyProtoFlux
 			}
 		}
 
-#if HOT_RELOAD
-		[HarmonyPatch(typeof(Userspace), "OnCommonUpdate")]
-		class HotReloadPatch
-		{
-			static void Postfix()
-			{
-				if (!Config.GetValue(MOD_ENABLED)) return;
-				if (Engine.Current.InputInterface.GetKeyDown(Key.F3))
-				{
-					HotReloader.HotReload(typeof(ColorMyProtoFlux));
-				}
-			}
-		}
-#endif // HOT_RELOAD
-
 		[HarmonyPatch(typeof(ProtoFluxNodeVisual))]
 		[HarmonyPatch("UpdateNodeStatus")]
 		class Patch_ProtoFluxNodeVisual_UpdateNodeStatus
@@ -510,12 +502,12 @@ namespace ColorMyProtoFlux
 				// if this node visual does not belong to LocalUser, skip this patch
 				if (__instance.ReferenceID.User != __instance.LocalUser.AllocationID) return;
 
-				ValueStream<bool> overrideFieldsStream = GetOrAddOverrideFieldsStream(__instance.LocalUser, dontAdd: true);
-				bool intendedStreamValue = ComputeOverrideStreamValue();
-				if (ElementExists(overrideFieldsStream) && overrideFieldsStream.Value != intendedStreamValue)
+				ValueField<bool> overrideFieldsField = GetOrAddOverrideFieldsField(__instance.World, dontAdd: true);
+				bool intendedValue = ComputeOverrideFieldsValue();
+				if (ElementExists(overrideFieldsField) && overrideFieldsField.Value.Value != intendedValue)
 				{
 					Debug("Override stream value was not the intended value, correcting it.");
-					overrideFieldsStream.Value = intendedStreamValue;
+					overrideFieldsField.Value.Value = intendedValue;
 				}
 
 				NodeInfo nodeInfo = GetNodeInfoForNode(__instance.Node.Target);
@@ -1165,13 +1157,13 @@ namespace ColorMyProtoFlux
 
 								____bgImage.Target.Tint.Changed += OnNodeBackgroundColorChanged;
 
-								var overrideStream = GetOrAddOverrideFieldsStream(targetSlot.LocalUser);
+								var overrideFieldsField = GetOrAddOverrideFieldsField(targetSlot.World);
 
 								BooleanValueDriver<bool> booleanValueDriver = null;
 								ReferenceEqualityDriver<ValueStream<bool>> referenceEqualityDriver = null;
 
 								var valueDriver = targetSlot.AttachComponent<ValueDriver<bool>>();
-								valueDriver.ValueSource.Target = overrideStream;
+								valueDriver.ValueSource.Target = overrideFieldsField.Value;
 
 								booleanValueDriver = targetSlot.AttachComponent<BooleanValueDriver<bool>>();
 								booleanValueDriver.TrueValue.Value = false;

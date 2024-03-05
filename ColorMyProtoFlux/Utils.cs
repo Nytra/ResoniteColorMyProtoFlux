@@ -308,7 +308,7 @@ namespace ColorMyProtoFlux
 
 		// Each node will refer to the ValueStream to know if it should restore the fields on the node visual.
 		// this is generic and not specific to any certain nodes
-		private static bool ComputeOverrideStreamValue()
+		private static bool ComputeOverrideFieldsValue()
 		{
 			if (Config.GetValue(MOD_ENABLED) && (!Config.GetValue(COLOR_HEADER_ONLY) || Config.GetValue(COLOR_NODES_WITHOUT_HEADER)))
 			{
@@ -317,18 +317,52 @@ namespace ColorMyProtoFlux
 			return false;
 		}
 
-		private static ValueStream<bool> GetOrAddOverrideFieldsStream(User user, bool dontAdd = false)
+		private static ValueField<bool> GetOrAddOverrideFieldsField(World world, bool dontAdd = false)
 		{
-			ValueStream<bool> stream = user.GetStream<ValueStream<bool>>((stream) => stream.Name == overrideFieldsStreamName);
-			if (!ElementExists(stream) && dontAdd == false)
+			//ValueField<bool> field = user.GetStream<ValueStream<bool>>((stream) => stream.Name == overrideFieldsStreamName);
+			//ValueField<bool> valueField = root.FindChild(overrideFieldsSlotName)?.GetComponent<ValueField<bool>>();
+
+			Slot root = world?.LocalUser?.Root?.Slot;
+
+			if (!ElementExists(root))
 			{
-				stream = user.AddStream<ValueStream<bool>>();
-				stream.Name = overrideFieldsStreamName;
-				stream.Value = ComputeOverrideStreamValue();
-				stream.Encoding = ValueEncoding.Quantized;
-				stream.SetUpdatePeriod(2, 0); // period means it will only fetch the value every X updates
+				Error("root slot null in GetOrAddOverrideFieldsField");
+				return null;
 			}
-			return stream;
+
+			//ValueField<bool> field = null;
+
+			if (!worldOverrideFieldsFieldMap.ContainsKey(world))
+			{
+				worldOverrideFieldsFieldMap.Add(world, null);
+				if (!dontAdd)
+				{
+					worldOverrideFieldsFieldMap[world] = CreateField();
+				}
+			}
+			else
+			{
+				if (!ElementExists(worldOverrideFieldsFieldMap[world]))
+				{
+					if (!dontAdd)
+					{
+						worldOverrideFieldsFieldMap[world] = CreateField();
+					}
+				}
+				else
+				{
+					return worldOverrideFieldsFieldMap[world];
+				}
+			}
+			return worldOverrideFieldsFieldMap[world];
+			ValueField<bool> CreateField()
+			{
+				Slot s = root.FindChildOrAdd(overrideFieldsSlotName);
+				s.PersistentSelf = false;
+				ValueField<bool> field = s.AttachComponent<ValueField<bool>>();
+				field.Value.Value = ComputeOverrideFieldsValue();
+				return field;
+			}
 		}
 	}
 }
