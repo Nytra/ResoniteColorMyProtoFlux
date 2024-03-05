@@ -9,25 +9,24 @@ using System.Linq;
 
 namespace ColorMyProtoFlux
 {
+	// NodeInfo class stores info about the node, primarily cached color fields for the visual
+	public class NodeInfo
+	{
+		public ProtoFluxNode node;
+		public IField<colorX> headerImageTintField;
+		public HashSet<IField<colorX>> otherTextColorFields;
+		public ProtoFluxNodeVisual visual;
+		public IField<colorX> categoryTextColorField;
+		public HashSet<IField<colorX>> nodeNameTextColorFields;
+		public colorX modComputedCustomColor;
+		public HashSet<IField<colorX>> connectionPointImageTintFields;
+		//public string lastGroupName;
+		public bool isRemoved;
+		//public HashSet<Button> nodeButtons;
+		// dont need to store node background image because the UpdateNodeStatus patch handles coloring of that part
+	}
 	public partial class ColorMyProtoFlux : ResoniteMod
 	{
-		// NodeInfo class stores info about the node, primarily cached color fields for the visual
-		public class NodeInfo
-		{
-			public ProtoFluxNode node;
-			public IField<colorX> headerImageTintField;
-			public HashSet<IField<colorX>> otherTextColorFields;
-			public ProtoFluxNodeVisual visual;
-			public IField<colorX> categoryTextColorField;
-			public HashSet<IField<colorX>> nodeNameTextColorFields;
-			public colorX modComputedCustomColor;
-			public HashSet<IField<colorX>> connectionPointImageTintFields;
-			//public string lastGroupName;
-			public bool isRemoved;
-			//public HashSet<Button> nodeButtons;
-			// dont need to store node background image because the UpdateNodeStatus patch handles coloring of that part
-		}
-
 		private static void AddNodeInfo(NodeInfo nodeInfo, ProtoFluxNode node, ProtoFluxNodeVisual visual)
 		{
 			// nodeInfo could be null here?

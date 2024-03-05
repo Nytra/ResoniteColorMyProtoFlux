@@ -273,11 +273,11 @@ namespace ColorMyProtoFlux
 				colorX textColor = GetTextColor(intendedColor);
 				if (textColor == NODE_TEXT_LIGHT_COLOR)
 				{
-					return new colorX(0.75f);
+					return NODE_CATEGORY_TEXT_LIGHT_COLOR;
 				}
 				else
 				{
-					return new colorX(0.25f);
+					return NODE_CATEGORY_TEXT_DARK_COLOR;
 				}
 			}
 			else
@@ -361,6 +361,7 @@ namespace ColorMyProtoFlux
 				s.PersistentSelf = false;
 				ValueField<bool> field = s.AttachComponent<ValueField<bool>>();
 				field.Value.Value = ComputeOverrideFieldsValue();
+				field.Persistent = false;
 				return field;
 			}
 		}
