@@ -10,8 +10,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-
-
 #if HOT_RELOAD
 using ResoniteHotReloadLib;
 #endif //HOT_RELOAD
