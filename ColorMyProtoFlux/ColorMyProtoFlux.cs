@@ -343,6 +343,101 @@ namespace ColorMyProtoFlux
 			}
 		}
 
+		//static colorX GetNodeVisualStatusColor(ProtoFluxNodeVisual visual)
+		//{
+		//	colorX a;
+		//	NodeInfo nodeInfo = GetNodeInfoForNode(visual.Node.Target);
+		//	bool shouldUseCustomColor = ShouldColorNodeBody(visual.Node.Target);
+		//	Image bgImage = GetBackgroundImageForNode(visual.Node.Target);
+		//	if (shouldUseCustomColor)
+		//	{
+		//		//a = ComputeColorForProtoFluxNode(__instance.Node.Target);
+		//		a = nodeInfo?.modComputedCustomColor ?? ComputeColorForProtoFluxNode(visual.Node.Target);
+		//	}
+		//	else
+		//	{
+		//		a = RadiantUI_Constants.BG_COLOR;
+		//	}
+
+		//	colorX b;
+
+		//	if (visual.IsSelected.Value)
+		//	{
+		//		// maybe make the selection color a value you can set in the mod config?
+		//		b = colorX.Cyan;
+		//		if (shouldUseCustomColor)
+		//		{
+
+		//			a = colorX.Cyan.MulRGB(0.75f);
+		//		}
+		//		else
+		//		{
+		//			a = MathX.LerpUnclamped(in a, in b, 0.5f);
+		//		}
+
+		//	}
+		//	if (visual.IsHighlighted.Value)
+		//	{
+		//		// might want to force alpha here in case of the alpha override option being used
+		//		float lerp;
+		//		if (shouldUseCustomColor)
+		//		{
+		//			b = GetTextColor(a);
+		//			lerp = 0.375f;
+		//		}
+		//		else
+		//		{
+		//			b = colorX.Yellow;
+		//			lerp = 0.1f;
+		//		}
+		//		a = MathX.LerpUnclamped(in a, in b, lerp);
+		//	}
+
+		//	if (shouldUseCustomColor)
+		//	{
+		//		b = Config.GetValue(NODE_ERROR_COLOR);
+		//	}
+		//	else
+		//	{
+		//		b = colorX.Red;
+		//	}
+
+		//	colorX errorColorToSet = b;
+		//	if (!visual.IsNodeValid)
+		//	{
+		//		//Debug("Node not valid");
+		//		//a = errorColorToSet;
+		//		float lerp;
+		//		if (shouldUseCustomColor)
+		//		{
+		//			lerp = 1f;
+		//		}
+		//		else
+		//		{
+		//			lerp = 1f;
+		//		}
+		//		a = MathX.LerpUnclamped(in a, in errorColorToSet, lerp);
+		//		if (ValidateNodeInfo(nodeInfo))
+		//		{
+		//			RefreshNodeColor(nodeInfo);
+		//		}
+		//	}
+		//	else
+		//	{
+		//		if ((ElementExists(bgImage) && bgImage.Tint.Value == errorColorToSet) || (ElementExists(overviewBg) && overviewBg.Tint.Value == errorColorToSet))
+		//		{
+		//			Debug("Node valid after being not valid");
+		//			// does this work? it is supposed to reset the header color when the node becomes valid after being invalid
+		//			if (ValidateNodeInfo(nodeInfo))
+		//			{
+		//				RefreshNodeColor(nodeInfo);
+		//				a = nodeInfo.modComputedCustomColor;
+		//			}
+		//		}
+		//	}
+		//	return a;
+		//}
+
 		[HarmonyPatch(typeof(ProtoFluxNodeVisual))]
 		[HarmonyPatch("UpdateNodeStatus")]
 		class Patch_ProtoFluxNodeVisual_UpdateNodeStatus
@@ -423,7 +518,7 @@ namespace ColorMyProtoFlux
 				if (shouldUseCustomColor)
 				{
 					//a = ComputeColorForProtoFluxNode(__instance.Node.Target);
-					a = nodeInfo.modComputedCustomColor;
+					a = nodeInfo?.modComputedCustomColor ?? ComputeColorForProtoFluxNode(__instance.Node.Target);
 				}
 				else
 				{

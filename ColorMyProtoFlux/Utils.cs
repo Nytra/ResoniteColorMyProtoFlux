@@ -368,6 +368,7 @@ namespace ColorMyProtoFlux
 			IValue<bool> CreateStreamSynced()
 			{
 				var stream = (ValueStream<bool>)CreateStream();
+				stream.DefaultValue.Value = stream.Value;
 				return stream.DefaultValue;
 			}
 		}
