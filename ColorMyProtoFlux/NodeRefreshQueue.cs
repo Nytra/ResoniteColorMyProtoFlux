@@ -69,8 +69,8 @@ namespace ColorMyProtoFlux
 				NodeInfo info = GetNodeInfoForNode(node);
 				if (ValidateNodeInfo(info))
 				{
-					info.visual.UpdateNodeStatus();
 					RefreshNodeColor(info);
+					info.visual.UpdateNodeStatus();
 				}
 			}
 		}

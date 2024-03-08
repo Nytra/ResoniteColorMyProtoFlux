@@ -317,52 +317,58 @@ namespace ColorMyProtoFlux
 			return false;
 		}
 
-		private static ValueField<bool> GetOrAddOverrideFieldsField(World world, bool dontAdd = false)
+		private static IValue<bool> GetOrAddOverrideFieldsIValue(World world, bool dontAdd = false)
 		{
-			//ValueField<bool> field = user.GetStream<ValueStream<bool>>((stream) => stream.Name == overrideFieldsStreamName);
-			//ValueField<bool> valueField = root.FindChild(overrideFieldsSlotName)?.GetComponent<ValueField<bool>>();
+			Func<IValue<bool>> createFunc = CreateStreamSynced;
 
-			Slot root = world?.LocalUser?.Root?.Slot;
-
-			if (!ElementExists(root))
+			if (!worldOverrideFieldsIValueMap.ContainsKey(world))
 			{
-				Error("root slot null in GetOrAddOverrideFieldsField");
-				return null;
-			}
-
-			//ValueField<bool> field = null;
-
-			if (!worldOverrideFieldsFieldMap.ContainsKey(world))
-			{
-				worldOverrideFieldsFieldMap.Add(world, null);
+				worldOverrideFieldsIValueMap.Add(world, null);
 				if (!dontAdd)
 				{
-					worldOverrideFieldsFieldMap[world] = CreateField();
+					worldOverrideFieldsIValueMap[world] = createFunc();
 				}
 			}
 			else
 			{
-				if (!ElementExists(worldOverrideFieldsFieldMap[world]))
+				if (!ElementExists(worldOverrideFieldsIValueMap[world]))
 				{
+					worldOverrideFieldsIValueMap[world] = null;
 					if (!dontAdd)
 					{
-						worldOverrideFieldsFieldMap[world] = CreateField();
+						worldOverrideFieldsIValueMap[world] = createFunc();
 					}
 				}
 				else
 				{
-					return worldOverrideFieldsFieldMap[world];
+					return worldOverrideFieldsIValueMap[world];
 				}
 			}
-			return worldOverrideFieldsFieldMap[world];
-			ValueField<bool> CreateField()
+			return worldOverrideFieldsIValueMap[world];
+			IValue<bool> CreateField()
 			{
-				Slot s = root.FindChildOrAdd(overrideFieldsSlotName);
+				Slot s = world?.LocalUser?.Root?.Slot?.FindChildOrAdd(overrideFieldsSlotName);
 				s.PersistentSelf = false;
 				ValueField<bool> field = s.AttachComponent<ValueField<bool>>();
 				field.Value.Value = ComputeOverrideFieldsValue();
 				field.Persistent = false;
-				return field;
+				return field.Value;
+			}
+			IValue<bool> CreateStream()
+			{
+				var stream = world.LocalUser.AddStream<ValueStream<bool>>();
+				stream.Name = overrideFieldsSlotName;
+				stream.Encoding = ValueEncoding.Quantized;
+				stream.SetUpdatePeriod(2, 0);
+				bool val = ComputeOverrideFieldsValue();
+				stream.Value = val;
+				//stream.DefaultValue.Value = val;
+				return stream;
+			}
+			IValue<bool> CreateStreamSynced()
+			{
+				var stream = (ValueStream<bool>)CreateStream();
+				return stream.DefaultValue;
 			}
 		}
 	}

@@ -418,6 +418,10 @@ namespace ColorMyProtoFlux
 					if (ElementExists(nodeInfo.headerImageTintField))
 					{
 						colorX colorToSet = Config.GetValue(MOD_ENABLED) ? nodeInfo.modComputedCustomColor : RadiantUI_Constants.HEADER;
+						//if (!visual.IsNodeValid && ShouldColorNodeBody(nodeInfo.node))
+						//{
+						//	colorToSet = Config.GetValue(NODE_ERROR_COLOR);
+						//}
 						//UpdateHeaderImageColor(nodeInfo.headerImageTintField.FindNearestParent<Image>(), colorToSet);
 						TrySetImageTint(nodeInfo.headerImageTintField.Parent as Image, colorToSet);
 					}

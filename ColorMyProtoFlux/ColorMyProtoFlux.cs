@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 
+
 #if HOT_RELOAD
 using ResoniteHotReloadLib;
 #endif //HOT_RELOAD
@@ -60,7 +61,7 @@ namespace ColorMyProtoFlux
 		private static Dictionary<ProtoFluxNode, NodeInfo> nodeToNodeInfoMap = new();
 		private static Dictionary<ProtoFluxNodeVisual, NodeInfo> visualToNodeInfoMap = new();
 
-		private static Dictionary<World, ValueField<bool>> worldOverrideFieldsFieldMap = new();
+		private static Dictionary<World, IValue<bool>> worldOverrideFieldsIValueMap = new();
 
 		private static Dictionary<World, NodeRefreshQueue> worldQueueMap = new();
 
@@ -177,12 +178,12 @@ namespace ColorMyProtoFlux
 
 			foreach (World world in Engine.Current.WorldManager.Worlds)
 			{
-				ValueField<bool> field = GetOrAddOverrideFieldsField(world, dontAdd: true);
-				if (ElementExists(field))
+				IValue<bool> overrideFieldsIValue = GetOrAddOverrideFieldsIValue(world, dontAdd: true);
+				if (ElementExists(overrideFieldsIValue))
 				{
 					world.RunSynchronously(() =>
 					{
-						field.Value.Value = ComputeOverrideFieldsValue();
+						overrideFieldsIValue.Value = ComputeOverrideFieldsValue();
 					});
 				}
 			}
@@ -210,13 +211,13 @@ namespace ColorMyProtoFlux
 					// need to wait for the drives on the node visual to update from the override stream value
 					NodeInfoRunInUpdates(nodeInfo, 1, () =>
 					{
-						GetNodeVisual(nodeInfo.node).UpdateNodeStatus();
 						RefreshNodeColor(nodeInfo);
+						GetNodeVisual(nodeInfo.node).UpdateNodeStatus();
 						if (runFinalNodeUpdateCopy)
 						{
 							// remove stream from node visual slot in here
 							var valueDriver = nodeInfo.visual.Slot.GetComponent<ValueDriver<bool>>();
-							if (ElementExists(valueDriver) && valueDriver.ValueSource.Target == GetOrAddOverrideFieldsField(nodeInfo.visual.World, dontAdd: true)?.Value)
+							if (ElementExists(valueDriver) && valueDriver.ValueSource.Target == GetOrAddOverrideFieldsIValue(nodeInfo.visual.World, dontAdd: true))
 							{
 								valueDriver.ValueSource.Target = null;
 							}
@@ -257,16 +258,33 @@ namespace ColorMyProtoFlux
 
 			foreach (World world in Engine.Current.WorldManager.Worlds)
 			{
-				ValueField<bool> overrideFieldsField = GetOrAddOverrideFieldsField(world, dontAdd: true);
-				if (ElementExists(overrideFieldsField))
+				IValue<bool> overrideFieldsIValue = GetOrAddOverrideFieldsIValue(world, dontAdd: true);
+				if (ElementExists(overrideFieldsIValue))
 				{
 					world.RunSynchronously(() =>
 					{
-						Slot s = overrideFieldsField.Slot;
-						overrideFieldsField.Destroy();
-						if (s.ComponentCount == 0)
+						Slot slotToDestroy = null;
+						IDestroyable destroyable = null;
+						if (overrideFieldsIValue is ValueStream<bool> stream)
 						{
-							s.Destroy();
+							destroyable = stream;
+						}
+						else if (overrideFieldsIValue is Sync<bool> && overrideFieldsIValue.Parent is ValueStream<bool> stream2)
+						{
+							destroyable = stream2;
+						}
+						else if (overrideFieldsIValue is Sync<bool> && overrideFieldsIValue.Parent is ValueField<bool> field)
+						{
+							destroyable = field;
+							slotToDestroy = field.Slot;
+						}
+						if (ElementExists(destroyable))
+						{
+							destroyable.Destroy();
+						}
+						if (ElementExists(slotToDestroy) && slotToDestroy.ComponentCount == 0)
+						{
+							slotToDestroy.Destroy();
 						}
 					});
 				}
@@ -341,12 +359,12 @@ namespace ColorMyProtoFlux
 
 				// Check if override field value is correct
 				// This prevents the field from being messed with for example by other users
-				ValueField<bool> overrideFieldsField = GetOrAddOverrideFieldsField(__instance.World, dontAdd: true);
+				IValue<bool> overrideFieldsIValue = GetOrAddOverrideFieldsIValue(__instance.World, dontAdd: true);
 				bool intendedValue = ComputeOverrideFieldsValue();
-				if (ElementExists(overrideFieldsField) && overrideFieldsField.Value.Value != intendedValue)
+				if (ElementExists(overrideFieldsIValue) && overrideFieldsIValue.Value != intendedValue)
 				{
 					Debug("Override stream value was not the intended value, correcting it.");
-					overrideFieldsField.Value.Value = intendedValue;
+					overrideFieldsIValue.Value = intendedValue;
 				}
 
 				NodeInfo nodeInfo = GetNodeInfoForNode(__instance.Node.Target);
@@ -404,7 +422,8 @@ namespace ColorMyProtoFlux
 
 				if (shouldUseCustomColor)
 				{
-					a = ComputeColorForProtoFluxNode(__instance.Node.Target);
+					//a = ComputeColorForProtoFluxNode(__instance.Node.Target);
+					a = nodeInfo.modComputedCustomColor;
 				}
 				else
 				{
@@ -412,6 +431,7 @@ namespace ColorMyProtoFlux
 				}
 
 				colorX b;
+
 				if (__instance.IsSelected.Value)
 				{
 					// maybe make the selection color a value you can set in the mod config?
@@ -456,8 +476,18 @@ namespace ColorMyProtoFlux
 				colorX errorColorToSet = b;
 				if (!__instance.IsNodeValid)
 				{
-					Debug("Node not valid");
-					a = errorColorToSet;
+					//Debug("Node not valid");
+					//a = errorColorToSet;
+					float lerp;
+					if (shouldUseCustomColor)
+					{
+						lerp = 1f;
+					}
+					else
+					{
+						lerp = 1f;
+					}
+					a = MathX.LerpUnclamped(in a, in errorColorToSet, lerp);
 					if (ValidateNodeInfo(nodeInfo))
 					{
 						RefreshNodeColor(nodeInfo);
@@ -472,6 +502,7 @@ namespace ColorMyProtoFlux
 						if (ValidateNodeInfo(nodeInfo))
 						{
 							RefreshNodeColor(nodeInfo);
+							a = nodeInfo.modComputedCustomColor;
 						}
 					}
 				}
@@ -777,13 +808,13 @@ namespace ColorMyProtoFlux
 
 								____bgImage.Target.Tint.Changed += OnNodeBackgroundColorChanged;
 
-								var overrideFieldsField = GetOrAddOverrideFieldsField(targetSlot.World);
+								var overrideFieldsIValue = GetOrAddOverrideFieldsIValue(targetSlot.World);
 
 								BooleanValueDriver<bool> booleanValueDriver = null;
 								ReferenceEqualityDriver<ValueStream<bool>> referenceEqualityDriver = null;
 
 								var valueDriver = targetSlot.AttachComponent<ValueDriver<bool>>();
-								valueDriver.ValueSource.Target = overrideFieldsField.Value;
+								valueDriver.ValueSource.Target = overrideFieldsIValue;
 
 								booleanValueDriver = targetSlot.AttachComponent<BooleanValueDriver<bool>>();
 								booleanValueDriver.TrueValue.Value = false;
