@@ -9,11 +9,6 @@ namespace ColorMyProtoFlux
 {
 	public partial class ColorMyProtoFlux : ResoniteMod
 	{
-		//private static void UpdateHeaderImageColor(Image headerImage, colorX color)
-		//{
-		//	TrySetImageTint(headerImage, color);
-		//}
-
 		private static void UpdateConnectPointImageColor(Image img)
 		{
 			colorX defaultColor = GetWireColorOfConnectionPointImage(img);

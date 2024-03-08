@@ -38,11 +38,11 @@ namespace ColorMyProtoFlux
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_0_5 = new ModConfigurationKey<dummy>("DUMMY_SEP_0_5", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> COLOR_HEADER_ONLY = new ModConfigurationKey<bool>("COLOR_HEADER_ONLY", "Only color the node header (If the node has one):", () => false);
+		private static ModConfigurationKey<bool> COLOR_HEADER_ONLY = new ModConfigurationKey<bool>("COLOR_HEADER_ONLY", "Only color the node header:", () => false);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> COLOR_NODES_WITHOUT_HEADER = new ModConfigurationKey<bool>("COLOR_NODES_WITHOUT_HEADER", "Color nodes that don't have a header:", () => false);
+		private static ModConfigurationKey<bool> COLOR_NODES_WITHOUT_HEADER = new ModConfigurationKey<bool>("COLOR_NODES_WITHOUT_HEADER", "Color nodes that don't have a header:", () => true);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> ENHANCE_TYPE_COLORS = new ModConfigurationKey<bool>("ENHANCE_TYPE_COLORS", "Make type colors more visible (Helps if you are coloring the full node):", () => true);
+		private static ModConfigurationKey<bool> ENHANCE_TYPE_COLORS = new ModConfigurationKey<bool>("ENHANCE_TYPE_COLORS", "Enhance type color visibility (Helps if you are coloring the full node):", () => true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> MAKE_CONNECT_POINTS_FULL_ALPHA = new ModConfigurationKey<bool>("MAKE_CONNECT_POINTS_FULL_ALPHA", "[Enhance type colors] Make type-colored images on nodes have full alpha:", () => true, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
@@ -55,7 +55,7 @@ namespace ColorMyProtoFlux
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_1_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_1_1", $"<color={HEADER_TEXT_COLOR}>[STATIC]</color>", () => new dummy());
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> USE_STATIC_COLOR = new ModConfigurationKey<bool>("USE_STATIC_COLOR", "Use Static Node Color (Overrides the dynamic section):", () => false);
+		private static ModConfigurationKey<bool> USE_STATIC_COLOR = new ModConfigurationKey<bool>("USE_STATIC_COLOR", "Use Static Node Color (Disables the dynamic section):", () => false);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<colorX> NODE_COLOR = new ModConfigurationKey<colorX>("NODE_COLOR", "Static Node Color:", () => RadiantUI_Constants.BG_COLOR);
 		[AutoRegisterConfigKey]
@@ -80,7 +80,7 @@ namespace ColorMyProtoFlux
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<NodeColorModeEnum> NODE_COLOR_MODE = new ModConfigurationKey<NodeColorModeEnum>("NODE_COLOR_MODE", "Selected Node Factor:", () => NodeColorModeEnum.Category);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> ALTERNATE_CATEGORY_STRING = new ModConfigurationKey<bool>("ALTERNATE_CATEGORY_STRING", "Use alternate node category string (only uses the part after the final '/'):", () => false, internalAccessOnly: true);
+		private static ModConfigurationKey<bool> ALTERNATE_CATEGORY_STRING = new ModConfigurationKey<bool>("ALTERNATE_CATEGORY_STRING", "Use node category file path (The string after the final '/' in the path):", () => false, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<int> RANDOM_SEED = new ModConfigurationKey<int>("RANDOM_SEED", "Seed:", () => 0);
 		[AutoRegisterConfigKey]
@@ -129,7 +129,7 @@ namespace ColorMyProtoFlux
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_5_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_5_1", $"<color={HEADER_TEXT_COLOR}>[EXTRA FEATURES]</color>", () => new dummy());
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> UPDATE_NODES_ON_CONFIG_CHANGED = new ModConfigurationKey<bool>("UPDATE_NODES_ON_CONFIG_CHANGED", "Automatically update the color of nodes when your mod config changes:", () => false);
+		private static ModConfigurationKey<bool> UPDATE_NODES_ON_CONFIG_CHANGED = new ModConfigurationKey<bool>("UPDATE_NODES_ON_CONFIG_CHANGED", "Automatically update the color of nodes when your mod config changes:", () => true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_5_1_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_5_1_1", $"<color={DETAIL_TEXT_COLOR}><i>Uses some extra memory for every node</i></color>", () => new dummy());
 		[AutoRegisterConfigKey]

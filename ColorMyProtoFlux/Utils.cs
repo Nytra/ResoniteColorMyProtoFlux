@@ -152,17 +152,23 @@ namespace ColorMyProtoFlux
 
 		private static ProtoFluxNodeVisual GetNodeVisual(ProtoFluxNode node)
 		{
+			// validate nodeInfo here?
+			// ToDo: verify this works?
 			NodeInfo nodeInfo = GetNodeInfoForNode(node);
-			ProtoFluxNodeVisual visual = nodeInfo?.visual;
-			if (ElementExists(visual))
+			ProtoFluxNodeVisual visual = null;
+			if (ValidateNodeInfo(nodeInfo))
 			{
-				return visual;
+				return nodeInfo.visual;
 			}
+
 			visual = node.Slot.GetComponentInChildren<ProtoFluxNodeVisual>();
-			if (nodeInfo != null)
-			{
-				nodeInfo.visual = visual;
-			}
+			// useless to update the nodeInfo here
+			// because it will not be in the nodeInfoSet since it is not valid, and
+			// if the visual was not in the nodeInfo then it has been destroyed so the nodeInfo should be fully recreated for this node anyway
+			//if (nodeInfo != null)
+			//{
+			//	nodeInfo.visual = visual;
+			//}
 			return visual;
 		}
 
@@ -182,7 +188,8 @@ namespace ColorMyProtoFlux
 				return (Image)nodeInfo.headerImageTintField.Parent;
 			}
 
-			ProtoFluxNodeVisual nodeVisual = nodeInfo?.visual ?? GetNodeVisual(node);
+			//ProtoFluxNodeVisual nodeVisual = nodeInfo?.visual ?? GetNodeVisual(node);
+			ProtoFluxNodeVisual nodeVisual = GetNodeVisual(node);
 
 			if (ElementExists(nodeVisual) && nodeVisual.Slot.ChildrenCount > 1)
 			{

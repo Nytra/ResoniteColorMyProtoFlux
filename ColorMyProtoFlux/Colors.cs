@@ -104,6 +104,7 @@ namespace ColorMyProtoFlux
 
 		private static float GetRandomColorChannelValue(int index, Random rand)
 		{
+			// probably should clamp the config values so they cant go too high or low
 			float3 mins = Config.GetValue(COLOR_CHANNELS_MIN);
 			float3 maxs = Config.GetValue(COLOR_CHANNELS_MAX);
 			float3 random_strength = MathX.Abs(maxs - mins);
