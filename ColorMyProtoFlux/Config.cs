@@ -81,8 +81,11 @@ namespace ColorMyProtoFlux
 		private static ModConfigurationKey<NodeColorModeEnum> NODE_COLOR_MODE = new ModConfigurationKey<NodeColorModeEnum>("NODE_COLOR_MODE", "Selected Node Factor:", () => NodeColorModeEnum.Category);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> ALTERNATE_CATEGORY_STRING = new ModConfigurationKey<bool>("ALTERNATE_CATEGORY_STRING", "Use node category file path (The string after the final '/' in the path):", () => false, internalAccessOnly: true);
+
+		[Range(0, 100)]
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<int> RANDOM_SEED = new ModConfigurationKey<int>("RANDOM_SEED", "Seed:", () => 0);
+
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_2_3 = new ModConfigurationKey<dummy>("DUMMY_SEP_2_3", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
@@ -95,8 +98,11 @@ namespace ColorMyProtoFlux
 		private static ModConfigurationKey<dummy> DUMMY_SEP_3_3 = new ModConfigurationKey<dummy>("DUMMY_SEP_3_3", SEP_STRING, () => new dummy(), internalAccessOnly: true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> USE_NODE_ALPHA = new ModConfigurationKey<bool>("USE_NODE_ALPHA", "Override node alpha:", () => false, internalAccessOnly: true);
+
+		[Range(0, 1)]
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<float> NODE_ALPHA = new ModConfigurationKey<float>("NODE_ALPHA", "Node alpha [0 to 1]:", () => 1f, internalAccessOnly: true);
+
 		//[AutoRegisterConfigKey]
 		//private static ModConfigurationKey<dummy> DUMMY_SEP_2_4_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_2_4_1", SEP_STRING, () => new dummy());
 		//[AutoRegisterConfigKey]
@@ -192,5 +198,11 @@ namespace ColorMyProtoFlux
 		private static ModConfigurationKey<bool> ALLOW_NEGATIVE_AND_EMISSIVE_COLORS = new ModConfigurationKey<bool>("ALLOW_NEGATIVE_AND_EMISSIVE_COLORS", "Allow negative and emissive colors:", () => false, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> EXTRA_DEBUG_LOGGING = new ModConfigurationKey<bool>("EXTRA_DEBUG_LOGGING", "Enable extra debug logging (NML must be in debug mode, warning! may spam logs):", () => false, internalAccessOnly: true);
+
+		//[AutoRegisterConfigKey]
+		//private static ModConfigurationKey<bool> USE_WORLD_SAVE_DEBUG = new ModConfigurationKey<bool>("USE_WORLD_SAVE_DEBUG", "USE_WORLD_SAVE_DEBUG:", () => false);
+
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<bool> USE_COLOR_CHANGED_EVENT = new ModConfigurationKey<bool>("USE_COLOR_CHANGED_EVENT", "USE_COLOR_CHANGED_EVENT:", () => false);
 	}
 }

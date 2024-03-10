@@ -9,6 +9,10 @@ using ResoniteModLoader;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
+using System.Threading.Tasks;
+
+
 
 #if HOT_RELOAD
 using ResoniteHotReloadLib;
@@ -75,6 +79,7 @@ namespace ColorMyProtoFlux
 		//private static Dictionary<ISyncRef, IWorldElement> syncRefTargetMap = new();
 
 		// stuff for making sure the colors don't change too fast
+		// maybe schedule a delayed update after the change interval elapses
 		private const int REALTIME_CONFIG_COLOR_CHANGE_INTERVAL_MILLISECONDS = 200;
 		private const int REALTIME_NODE_VISUAL_COLOR_CHANGE_INTERVAL_MILLISECONDS = 200;
 		private const bool ALWAYS_THROTTLE_REALTIME_COLOR_CHANGE = true;
@@ -87,6 +92,8 @@ namespace ColorMyProtoFlux
 		//[ThreadStatic]
 		//private static bool currentlyChangingColorFields = false;
 
+		//private static bool delayedConfigChangeUpdateScheduled = false;
+
 		static bool CheckRealtimeConfigColorChangeAllowed()
 		{
 			if (ALWAYS_THROTTLE_REALTIME_COLOR_CHANGE || (Config.GetValue(USE_STATIC_COLOR) && Config.GetValue(USE_STATIC_RANGES) && Config.GetValue(STATIC_RANGE_MODE) == StaticRangeModeEnum.SystemTime))
@@ -94,6 +101,25 @@ namespace ColorMyProtoFlux
 				// color can change exactly N times per second when this config is used. it strobes very quickly without this check.
 				if (DateTime.UtcNow.Ticks - lastConfigColorChangeTime < 10000 * REALTIME_CONFIG_COLOR_CHANGE_INTERVAL_MILLISECONDS)
 				{
+					//if (!delayedConfigChangeUpdateScheduled)
+					//{
+					//	// schedule here
+
+					//	Engine.Current.WorldManager.FocusedWorld.RunInSeconds(10000 * REALTIME_CONFIG_COLOR_CHANGE_INTERVAL_MILLISECONDS, () =>
+					//	{
+					//		foreach (NodeInfo info in nodeInfoSet.ToList().Where(nodeInfo => nodeInfo?.node?.World == Engine.Current.WorldManager.FocusedWorld))
+					//		{
+					//			if (ValidateNodeInfo(info))
+					//			{
+					//				RefreshNodeColor(info);
+					//				info.visual.UpdateNodeStatus();
+					//			}
+					//		}
+					//		delayedConfigChangeUpdateScheduled = false;
+					//	});
+
+					//	delayedConfigChangeUpdateScheduled = true;
+					//}
 					return false;
 				}
 				else
@@ -108,30 +134,30 @@ namespace ColorMyProtoFlux
 			return true;
 		}
 
-		static bool CheckRealtimeNodeVisualColorChangeAllowed(ProtoFluxNodeVisual visual)
-		{
-			if (!nodeVisualLastStatusUpdateTimes.ContainsKey(visual))
-			{
-				nodeVisualLastStatusUpdateTimes.Add(visual, DateTime.MinValue.Ticks);
-			}
-			if (ALWAYS_THROTTLE_REALTIME_COLOR_CHANGE || (Config.GetValue(USE_STATIC_COLOR) && Config.GetValue(USE_STATIC_RANGES) && Config.GetValue(STATIC_RANGE_MODE) == StaticRangeModeEnum.SystemTime))
-			{
-				// color can change exactly N times per second when this config is used. it strobes very quickly without this check.
-				if (DateTime.UtcNow.Ticks - nodeVisualLastStatusUpdateTimes[visual] < 10000 * REALTIME_NODE_VISUAL_COLOR_CHANGE_INTERVAL_MILLISECONDS)
-				{
-					return false;
-				}
-				else
-				{
-					nodeVisualLastStatusUpdateTimes[visual] = DateTime.UtcNow.Ticks;
-				}
-			}
-			else
-			{
-				nodeVisualLastStatusUpdateTimes[visual] = 10000 * REALTIME_NODE_VISUAL_COLOR_CHANGE_INTERVAL_MILLISECONDS;
-			}
-			return true;
-		}
+		//static bool CheckRealtimeNodeVisualColorChangeAllowed(ProtoFluxNodeVisual visual)
+		//{
+		//	if (!nodeVisualLastStatusUpdateTimes.ContainsKey(visual))
+		//	{
+		//		nodeVisualLastStatusUpdateTimes.Add(visual, DateTime.MinValue.Ticks);
+		//	}
+		//	if (ALWAYS_THROTTLE_REALTIME_COLOR_CHANGE || (Config.GetValue(USE_STATIC_COLOR) && Config.GetValue(USE_STATIC_RANGES) && Config.GetValue(STATIC_RANGE_MODE) == StaticRangeModeEnum.SystemTime))
+		//	{
+		//		// color can change exactly N times per second when this config is used. it strobes very quickly without this check.
+		//		if (DateTime.UtcNow.Ticks - nodeVisualLastStatusUpdateTimes[visual] < 10000 * REALTIME_NODE_VISUAL_COLOR_CHANGE_INTERVAL_MILLISECONDS)
+		//		{
+		//			return false;
+		//		}
+		//		else
+		//		{
+		//			nodeVisualLastStatusUpdateTimes[visual] = DateTime.UtcNow.Ticks;
+		//		}
+		//	}
+		//	else
+		//	{
+		//		nodeVisualLastStatusUpdateTimes[visual] = 10000 * REALTIME_NODE_VISUAL_COLOR_CHANGE_INTERVAL_MILLISECONDS;
+		//	}
+		//	return true;
+		//}
 
 		static void OnConfigChanged(ConfigurationChangedEvent configChangedEvent)
 		{
@@ -318,6 +344,7 @@ namespace ColorMyProtoFlux
 		private static void OnNodeBackgroundColorChanged(IChangeable changeable)
 		{
 			if (!Config.GetValue(MOD_ENABLED)) return;
+			if (!Config.GetValue(USE_COLOR_CHANGED_EVENT)) return;
 			//if (currentlyChangingColorFields) return;
 			var field = changeable as IField;
 			var conflictingSyncElement = changeable as ConflictingSyncElement;
@@ -327,114 +354,26 @@ namespace ColorMyProtoFlux
 				if (ElementExists(visual))
 				{
 					if (!ShouldColorNodeBody(visual.Node.Target)) return;
-					try
+
+					// not sure exactly how many updates to wait, 0 might be fine, but 1 seems to work well
+					visual.RunInUpdates(1, () => 
 					{
-						visual.UpdateNodeStatus();
-					}
-					catch (Exception ex)
-					{
-						// The modification of the color fields is probably blocked, this can happen if the LocalUser changes the field and then
-						// tries to change it again too quickly (Change loop)
-						Warn("Exception while updating node status in changed event for color field.\n" + ex.ToString());
-					}
+						try
+						{
+							visual.UpdateNodeStatus();
+						}
+						catch (Exception ex)
+						{
+							// The modification of the color fields is probably blocked, this can happen if the LocalUser changes the field and then
+							// tries to change it again too quickly (Change loop)
+							// or something idk
+							Warn("Exception while updating node status in changed event for color field.\n" + ex.ToString());
+						}
+					});
+					
 				}
 			}
 		}
-
-		//static colorX GetNodeVisualStatusColor(ProtoFluxNodeVisual visual)
-		//{
-		//	colorX a;
-		//	NodeInfo nodeInfo = GetNodeInfoForNode(visual.Node.Target);
-		//	bool shouldUseCustomColor = ShouldColorNodeBody(visual.Node.Target);
-		//	Image bgImage = GetBackgroundImageForNode(visual.Node.Target);
-		//	if (shouldUseCustomColor)
-		//	{
-		//		//a = ComputeColorForProtoFluxNode(__instance.Node.Target);
-		//		a = nodeInfo?.modComputedCustomColor ?? ComputeColorForProtoFluxNode(visual.Node.Target);
-		//	}
-		//	else
-		//	{
-		//		a = RadiantUI_Constants.BG_COLOR;
-		//	}
-
-		//	colorX b;
-
-		//	if (visual.IsSelected.Value)
-		//	{
-		//		// maybe make the selection color a value you can set in the mod config?
-		//		b = colorX.Cyan;
-		//		if (shouldUseCustomColor)
-		//		{
-
-		//			a = colorX.Cyan.MulRGB(0.75f);
-		//		}
-		//		else
-		//		{
-		//			a = MathX.LerpUnclamped(in a, in b, 0.5f);
-		//		}
-
-		//	}
-		//	if (visual.IsHighlighted.Value)
-		//	{
-		//		// might want to force alpha here in case of the alpha override option being used
-		//		float lerp;
-		//		if (shouldUseCustomColor)
-		//		{
-		//			b = GetTextColor(a);
-		//			lerp = 0.375f;
-		//		}
-		//		else
-		//		{
-		//			b = colorX.Yellow;
-		//			lerp = 0.1f;
-		//		}
-		//		a = MathX.LerpUnclamped(in a, in b, lerp);
-		//	}
-
-		//	if (shouldUseCustomColor)
-		//	{
-		//		b = Config.GetValue(NODE_ERROR_COLOR);
-		//	}
-		//	else
-		//	{
-		//		b = colorX.Red;
-		//	}
-
-		//	colorX errorColorToSet = b;
-		//	if (!visual.IsNodeValid)
-		//	{
-		//		//Debug("Node not valid");
-		//		//a = errorColorToSet;
-		//		float lerp;
-		//		if (shouldUseCustomColor)
-		//		{
-		//			lerp = 1f;
-		//		}
-		//		else
-		//		{
-		//			lerp = 1f;
-		//		}
-		//		a = MathX.LerpUnclamped(in a, in errorColorToSet, lerp);
-		//		if (ValidateNodeInfo(nodeInfo))
-		//		{
-		//			RefreshNodeColor(nodeInfo);
-		//		}
-		//	}
-		//	else
-		//	{
-		//		if ((ElementExists(bgImage) && bgImage.Tint.Value == errorColorToSet) || (ElementExists(overviewBg) && overviewBg.Tint.Value == errorColorToSet))
-		//		{
-		//			Debug("Node valid after being not valid");
-		//			// does this work? it is supposed to reset the header color when the node becomes valid after being invalid
-		//			if (ValidateNodeInfo(nodeInfo))
-		//			{
-		//				RefreshNodeColor(nodeInfo);
-		//				a = nodeInfo.modComputedCustomColor;
-		//			}
-		//		}
-		//	}
-		//	return a;
-		//}
 
 		[HarmonyPatch(typeof(ProtoFluxNodeVisual))]
 		[HarmonyPatch("UpdateNodeStatus")]
@@ -461,15 +400,6 @@ namespace ColorMyProtoFlux
 				}
 
 				NodeInfo nodeInfo = GetNodeInfoForNode(__instance.Node.Target);
-				//if (ValidateNodeInfo(nodeInfo))
-				//{
-				//	if (__instance.Node.Target?.Group?.Name != nodeInfo.lastGroupName)
-				//	{
-				//		Debug($"Node group change detected in UpdateNodeStatus. Last group name: {nodeInfo.lastGroupName ?? "NULL"} Current group name: {__instance.Node.Target?.Group?.Name ?? "NULL"}");
-				//		nodeInfo.lastGroupName = __instance.Node.Target?.Group?.Name;
-				//		RefreshNodeColor(nodeInfo);
-				//	}
-				//}
 
 				bool shouldUseCustomColor = ShouldColorNodeBody(__instance.Node.Target);
 
@@ -504,8 +434,6 @@ namespace ColorMyProtoFlux
 				//ExtraDebug("UpdateNodeStatus Patch - Colors will change.");
 
 				colorX a;
-
-				//bool shouldColorNodeBody = ShouldColorNodeBody(__instance.Node.Target);
 
 				//if (!CheckRealtimeNodeVisualColorChangeAllowed(__instance))
 				//{
@@ -647,6 +575,12 @@ namespace ColorMyProtoFlux
 		//	}
 		//}
 
+		private static void PrintStackTrace()
+		{
+			var s = new System.Diagnostics.StackTrace();
+			Debug(s.ToString());
+		}
+
 		[HarmonyPatch(typeof(ProtoFluxDynamicElementManager))]
 		[HarmonyPatch("OnChanges")]
 		class Patch_ProtoFluxDynamicElementManager_OnChanges
@@ -690,7 +624,7 @@ namespace ColorMyProtoFlux
 
 		static void ScheduleNodeRefresh(int updates, ProtoFluxNode node)
 		{
-			if (!ElementExists(node) || !ElementExists(node.World)) return;
+			if (!ElementExists(node) || !ElementExists(node.Slot) || !ElementExists(node.World)) return;
 			if (!worldQueueMap.ContainsKey(node.World))
 			{
 				worldQueueMap.Add(node.World, new NodeRefreshQueue());
@@ -709,21 +643,32 @@ namespace ColorMyProtoFlux
 		{
 			static bool Prefix(ProtoFluxNode __instance, ProtoFluxNodeGroup value)
 			{
-				if (!Config.GetValue(MOD_ENABLED)) return true;
-				if (Engine.Current?.IsReady == false) return true;
-				if (Config.GetValue(NODE_COLOR_MODE) != NodeColorModeEnum.Group) return true;
-				if (!ElementExists(__instance)) return true;
-
-				// the node color should only refresh if the new group is not null
-				if (value == null) return true;
-
-				if (__instance.Group != value)
+				try
 				{
-					Debug($"Node changed group. Node: {__instance.Name ?? "NULL"} {__instance.ReferenceID.ToString() ?? "NULL"} New group: {value?.Name ?? "NULL"}");
+					if (!Config.GetValue(MOD_ENABLED)) return true;
+					if (Engine.Current?.IsReady == false) return true;
+					if (Config.GetValue(NODE_COLOR_MODE) != NodeColorModeEnum.Group) return true;
+					if (!ElementExists(__instance) || !ElementExists(__instance.Slot)) return true;
+					if (__instance.Slot.ChildrenCount == 0) return true;
 
-					ScheduleNodeRefresh(0, __instance);
+					var visual = __instance.GetVisual();
+					if (!ElementExists(visual) || visual.ReferenceID.User != visual.LocalUser.AllocationID) return true;
+
+					// the node color should only refresh if the new group is not null
+					if (value == null) return true;
+
+					if (__instance.Group != value)
+					{
+						Debug($"Node changed group. Node: {__instance.Name ?? "NULL"} {__instance.ReferenceID.ToString() ?? "NULL"} New group: {value?.Name ?? "NULL"}");
+
+						ScheduleNodeRefresh(0, __instance);
+					}
+					return true;
 				}
-				return true;
+				catch (Exception e) {
+					Warn($"Error in ProtoFluxNode.Group setter patch:\n{e}");
+					return true;
+				}
 			}
 		}
 
@@ -784,7 +729,6 @@ namespace ColorMyProtoFlux
 								{
 									nodeInfo.headerImageTintField = headerImage.Tint;
 								}
-								//UpdateHeaderImageColor(headerImage, colorToSet);
 								TrySetImageTint(headerImage, colorToSet);
 								ExtraDebug("Set header image color");
 							}
@@ -959,64 +903,7 @@ namespace ColorMyProtoFlux
 
 							if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
 							{
-								//nodeInfo.lastGroupName = node.Group?.Name;
-
 								AddNodeInfo(nodeInfo, node, __instance);
-
-								//if (!subscribedGroupWorldMap.ContainsKey(node.NodeInstance.Runtime.Group))
-								//{
-								//	node.NodeInstance.Runtime.Group.ChangeTrackingInvalidated += (nodeGroup) =>
-								//	{
-								//		if (Config.GetValue(NODE_COLOR_MODE) != NodeColorModeEnum.Group) return;
-
-								//		Debug("Change tracking invalidated for group: " + nodeGroup.Name);
-
-								//		//ValidateAllNodeInfos();
-
-								//		foreach (NodeInfo info in nodeInfoSet.ToList())
-								//		{
-								//			// Don't use NodeInfoRunInUpdates here because it breaks hot-reloading
-								//			if (ValidateNodeInfo(info))
-								//			{
-								//				// check world
-								//				if (info.node.World != subscribedGroupWorldMap[nodeGroup]) continue;
-
-								//				// I think this needs to be 3 for some reason
-								//				info.node.RunInUpdates(3, () =>
-								//				{
-								//					if (ValidateNodeInfo(info))
-								//					{
-								//						info.visual.UpdateNodeStatus();
-								//						//RefreshNodeColor(info);
-								//					}
-								//				});
-								//			}
-								//		}
-								//	};
-
-								//	subscribedGroupWorldMap.Add(node.NodeInstance.Runtime.Group, node.World);
-								//	Debug("Subscribed to node group: " + node.Group.Name);
-								//}
-
-								// might need this?
-								//// Don't use NodeInfoRunInUpdates here because it breaks hot-reloading
-								//if (ValidateNodeInfo(nodeInfo))
-								//{
-								//	nodeInfo.node.RunInUpdates(1, () =>
-								//	{
-								//		if (!ElementExists(node)) return;
-								//		foreach (ProtoFluxNode node2 in node.Group.Nodes.Where((ProtoFluxNode n) => NodeInfoSetContainsNode(n)))
-								//		{
-								//			NodeInfo info = GetNodeInfoForNode(node2);
-								//			if (ValidateNodeInfo(info))
-								//			{
-								//				info.visual.UpdateNodeStatus();
-								//				//RefreshNodeColor(info);
-								//			}
-
-								//		}
-								//	});
-								//}
 
 								__instance.Destroyed += (destroyable) =>
 								{
