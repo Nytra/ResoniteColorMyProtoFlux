@@ -212,8 +212,9 @@ namespace ColorMyProtoFlux
 
 		private static List<Text> GetOtherTextListForNode(ProtoFluxNode node)
 		{
-			string category = GetWorkerCategoryFilePath(node);
-			return GetNodeVisual(node)?.Slot.GetComponentsInChildren<Text>((Text text) => text.Content != category && (text.Content != node.NodeName || text.Content.IsDriven) && text.Slot.Parent?.Name != "Button");
+			//string category = GetWorkerCategoryFilePath(node);
+			var visual = GetNodeVisual(node);
+			return visual?.Slot.GetComponentsInChildren<Text>((Text text) => text.Slot.Parent != visual.Slot && (text.Content != node.NodeName || text.Content.IsDriven) && text.Slot.Parent?.Name != "Button");
 		}
 
 		private static Text GetCategoryTextForNode(ProtoFluxNode node)

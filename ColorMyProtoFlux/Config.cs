@@ -203,6 +203,6 @@ namespace ColorMyProtoFlux
 		//private static ModConfigurationKey<bool> USE_WORLD_SAVE_DEBUG = new ModConfigurationKey<bool>("USE_WORLD_SAVE_DEBUG", "USE_WORLD_SAVE_DEBUG:", () => false);
 
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> USE_COLOR_CHANGED_EVENT = new ModConfigurationKey<bool>("USE_COLOR_CHANGED_EVENT", "USE_COLOR_CHANGED_EVENT:", () => false);
+		private static ModConfigurationKey<bool> USE_COLOR_CHANGED_EVENT = new ModConfigurationKey<bool>("USE_COLOR_CHANGED_EVENT", "USE_COLOR_CHANGED_EVENT:", () => true, internalAccessOnly: true);
 	}
 }

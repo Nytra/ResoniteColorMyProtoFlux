@@ -9,10 +9,6 @@ using ResoniteModLoader;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
-using System.Threading.Tasks;
-
-
 
 #if HOT_RELOAD
 using ResoniteHotReloadLib;
@@ -67,7 +63,7 @@ namespace ColorMyProtoFlux
 
 		private static Dictionary<World, NodeRefreshQueue> worldQueueMap = new();
 
-		private static Dictionary<ProtoFluxNodeVisual, long> nodeVisualLastStatusUpdateTimes = new();
+		//private static Dictionary<ProtoFluxNodeVisual, long> nodeVisualLastStatusUpdateTimes = new();
 
 		//private static HashSet<RefDriverNodeInfo> refDriverNodeInfoSet = new();
 
@@ -356,7 +352,7 @@ namespace ColorMyProtoFlux
 					if (!ShouldColorNodeBody(visual.Node.Target)) return;
 
 					// not sure exactly how many updates to wait, 0 might be fine, but 1 seems to work well
-					visual.RunInUpdates(1, () => 
+					visual.RunInUpdates(1, () =>
 					{
 						try
 						{
@@ -370,7 +366,7 @@ namespace ColorMyProtoFlux
 							Warn("Exception while updating node status in changed event for color field.\n" + ex.ToString());
 						}
 					});
-					
+
 				}
 			}
 		}
@@ -665,7 +661,8 @@ namespace ColorMyProtoFlux
 					}
 					return true;
 				}
-				catch (Exception e) {
+				catch (Exception e)
+				{
 					Warn($"Error in ProtoFluxNode.Group setter patch:\n{e}");
 					return true;
 				}
@@ -769,6 +766,8 @@ namespace ColorMyProtoFlux
 									{
 										if (!ElementExists(text)) continue;
 
+										//ExtraDebug($"Other text: {text} Slot name: {text.Slot.Name} RefID: {text.ReferenceID}");
+
 										UpdateOtherTextColor(node, text, colorToSet);
 
 										if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
@@ -785,6 +784,7 @@ namespace ColorMyProtoFlux
 									var categoryText = GetCategoryTextForNode(node);
 									if (ElementExists(categoryText))
 									{
+										//ExtraDebug($"Category text: {categoryText} Slot name: {categoryText.Slot.Name} RefID: {categoryText.ReferenceID}");
 										UpdateCategoryTextColor(node, categoryText, colorToSet);
 
 										if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
