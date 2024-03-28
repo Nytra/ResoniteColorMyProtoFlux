@@ -355,7 +355,7 @@ namespace ColorMyProtoFlux
 			return worldOverrideFieldsIValueMap[world];
 			IValue<bool> CreateField()
 			{
-				Slot s = world?.LocalUser?.Root?.Slot?.FindChildOrAdd(overrideFieldsSlotName);
+				Slot s = world?.LocalUser?.Root?.Slot?.FindChildOrAdd(overrideFieldsIValueName);
 				s.PersistentSelf = false;
 				ValueField<bool> field = s.AttachComponent<ValueField<bool>>();
 				field.Value.Value = ComputeOverrideFieldsValue();
@@ -365,7 +365,7 @@ namespace ColorMyProtoFlux
 			IValue<bool> CreateStream()
 			{
 				var stream = world.LocalUser.AddStream<ValueStream<bool>>();
-				stream.Name = overrideFieldsSlotName;
+				stream.Name = overrideFieldsIValueName;
 				stream.Encoding = ValueEncoding.Quantized;
 				stream.SetUpdatePeriod(2, 0);
 				bool val = ComputeOverrideFieldsValue();

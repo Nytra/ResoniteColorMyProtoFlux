@@ -1,4 +1,4 @@
-﻿#define HOT_RELOAD
+﻿//#define HOT_RELOAD
 
 using Elements.Core;
 using FrooxEngine;
@@ -20,7 +20,7 @@ namespace ColorMyProtoFlux
 	{
 		public override string Name => "ColorMyProtoFlux";
 		public override string Author => "Nytra";
-		public override string Version => "1.0.0";
+		public override string Version => "1.0.0-pre1";
 		public override string Link => "https://github.com/Nytra/ResoniteColorMyProtoFlux";
 
 		// Used for dynamic text contrast
@@ -76,12 +76,12 @@ namespace ColorMyProtoFlux
 
 		// stuff for making sure the colors don't change too fast
 		// maybe schedule a delayed update after the change interval elapses
-		private const int REALTIME_CONFIG_COLOR_CHANGE_INTERVAL_MILLISECONDS = 200;
-		private const int REALTIME_NODE_VISUAL_COLOR_CHANGE_INTERVAL_MILLISECONDS = 200;
-		private const bool ALWAYS_THROTTLE_REALTIME_COLOR_CHANGE = true;
+		private const int REALTIME_CONFIG_COLOR_CHANGE_INTERVAL_MILLISECONDS = 100;
+		//private const int REALTIME_NODE_VISUAL_COLOR_CHANGE_INTERVAL_MILLISECONDS = 100;
+		private const bool ALWAYS_THROTTLE_REALTIME_COLOR_CHANGE = false;
 		private static long lastConfigColorChangeTime = DateTime.UtcNow.Ticks;
 
-		private const string overrideFieldsSlotName = "ColorMyProtoFlux.OverrideFields";
+		private const string overrideFieldsIValueName = "ColorMyProtoFlux.OverrideFields";
 
 		private static bool runFinalNodeUpdate = false;
 
@@ -335,8 +335,6 @@ namespace ColorMyProtoFlux
 
 		// This ideally runs when another user other than LocalUser changes the field
 		// The reason for checking LastModifyingUser is to try to ensure this
-		// Although I'm not sure if it works correctly
-		// Might need to improve this somehow
 		private static void OnNodeBackgroundColorChanged(IChangeable changeable)
 		{
 			if (!Config.GetValue(MOD_ENABLED)) return;
@@ -366,7 +364,6 @@ namespace ColorMyProtoFlux
 							Warn("Exception while updating node status in changed event for color field.\n" + ex.ToString());
 						}
 					});
-
 				}
 			}
 		}
@@ -391,6 +388,7 @@ namespace ColorMyProtoFlux
 				bool intendedValue = ComputeOverrideFieldsValue();
 				if (ElementExists(overrideFieldsIValue) && overrideFieldsIValue.Value != intendedValue)
 				{
+					// This can happen if someone else is tampering with the synced value, which shouldn't happen most of the time
 					Debug("Override stream value was not the intended value, correcting it.");
 					overrideFieldsIValue.Value = intendedValue;
 				}
@@ -502,7 +500,7 @@ namespace ColorMyProtoFlux
 					}
 					else
 					{
-						lerp = 1f;
+						lerp = 0.5f;
 					}
 					a = MathX.LerpUnclamped(in a, in errorColorToSet, lerp);
 					if (ValidateNodeInfo(nodeInfo))
@@ -526,13 +524,13 @@ namespace ColorMyProtoFlux
 
 				// Maybe use TrySetImageTint here?
 				// Although that would undrive it if its driven by something...
-				if (ElementExists(bgImage) && !bgImage.Tint.IsDriven)
+				if (ElementExists(bgImage) && (!bgImage.Tint.IsDriven || bgImage.Tint.IsHooked))
 				{
 					//currentlyChangingColorFields = true;
 					bgImage.Tint.Value = a;
 					//currentlyChangingColorFields = false;
 				}
-				if (ElementExists(overviewBg) && !overviewBg.Tint.IsDriven)
+				if (ElementExists(overviewBg) && (!overviewBg.Tint.IsDriven || overviewBg.Tint.IsHooked))
 				{
 					//currentlyChangingColorFields = true;
 					overviewBg.Tint.Value = a;
