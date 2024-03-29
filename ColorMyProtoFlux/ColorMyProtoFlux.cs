@@ -905,7 +905,7 @@ namespace ColorMyProtoFlux
 
 								__instance.Destroyed += (destroyable) =>
 								{
-									NodeInfo nodeInfo = GetNodeInfoForVisual(((ProtoFluxNodeVisual)destroyable));
+									NodeInfo nodeInfo = GetNodeInfoForVisual((ProtoFluxNodeVisual)destroyable);
 									if (nodeInfo != null)
 									{
 										NodeInfoRemove(nodeInfo);
