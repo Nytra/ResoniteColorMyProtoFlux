@@ -89,7 +89,7 @@ namespace ColorMyProtoFlux
 			if (Config.GetValue(MOD_ENABLED) && Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
 			{
 				// idk what this is doing but it seems to work lol
-				if (text.Slot.Parent?.Name == "Overview" || (!ElementExists(headerImage) && Config.GetValue(COLOR_HEADER_ONLY)))
+				if (text.Slot.Parent?.Name == "Overview" || (!ElementExists(headerImage) && !Config.GetValue(COLOR_FULL_NODE)))
 				{
 					TrySetTextColor(text, GetTextColor(GetIntendedBackgroundColorForNode(node, modComputedCustomColor)));
 				}

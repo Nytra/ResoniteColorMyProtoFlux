@@ -250,7 +250,7 @@ namespace ColorMyProtoFlux
 		private static bool ShouldColorNodeBody(ProtoFluxNode node)
 		{
 			Image headerImage = GetHeaderImageForNode(node);
-			return (!Config.GetValue(COLOR_HEADER_ONLY) && ElementExists(headerImage)) || (Config.GetValue(COLOR_NODES_WITHOUT_HEADER) && !ElementExists(headerImage));
+			return (Config.GetValue(COLOR_FULL_NODE) && ElementExists(headerImage)) || (Config.GetValue(COLOR_NODES_WITHOUT_HEADER) && !ElementExists(headerImage));
 		}
 
 		private static List<Image> GetNodeConnectionPointImageList(ProtoFluxNode node, Slot inputsRoot, Slot outputsRoot)
@@ -318,7 +318,7 @@ namespace ColorMyProtoFlux
 		// this is generic and not specific to any certain nodes
 		private static bool ComputeOverrideFieldsValue()
 		{
-			if (Config.GetValue(MOD_ENABLED) && (!Config.GetValue(COLOR_HEADER_ONLY) || Config.GetValue(COLOR_NODES_WITHOUT_HEADER)))
+			if (Config.GetValue(MOD_ENABLED) && (Config.GetValue(COLOR_FULL_NODE) || Config.GetValue(COLOR_NODES_WITHOUT_HEADER)))
 			{
 				return true;
 			}

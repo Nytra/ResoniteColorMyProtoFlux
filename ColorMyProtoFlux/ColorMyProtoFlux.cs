@@ -20,7 +20,7 @@ namespace ColorMyProtoFlux
 	{
 		public override string Name => "ColorMyProtoFlux";
 		public override string Author => "Nytra";
-		public override string Version => "1.0.0-pre1";
+		public override string Version => "1.0.0-pre2";
 		public override string Link => "https://github.com/Nytra/ResoniteColorMyProtoFlux";
 
 		// Used for dynamic text contrast
@@ -211,7 +211,7 @@ namespace ColorMyProtoFlux
 			if ((modEnabled && updateNodesOnConfigChanged) || runFinalNodeUpdate)
 			{
 				// anti-photosensitivity check
-				if (!CheckRealtimeConfigColorChangeAllowed()) return;
+				if (!CheckRealtimeConfigColorChangeAllowed() && !runFinalNodeUpdate) return;
 
 				bool runFinalNodeUpdateCopy = runFinalNodeUpdate;
 
@@ -221,6 +221,7 @@ namespace ColorMyProtoFlux
 				{
 					// don't change colors of nodes that are in other worlds
 					// node shouldn't be null here because validation happened before the loop
+					// skip this check if runFinalNodeUpdate?
 					if (nodeInfo.node.World != Engine.Current.WorldManager.FocusedWorld)
 					{
 						continue;
@@ -338,7 +339,6 @@ namespace ColorMyProtoFlux
 		private static void OnNodeBackgroundColorChanged(IChangeable changeable)
 		{
 			if (!Config.GetValue(MOD_ENABLED)) return;
-			if (!Config.GetValue(USE_COLOR_CHANGED_EVENT)) return;
 			//if (currentlyChangingColorFields) return;
 			var field = changeable as IField;
 			var conflictingSyncElement = changeable as ConflictingSyncElement;
@@ -350,7 +350,8 @@ namespace ColorMyProtoFlux
 					if (!ShouldColorNodeBody(visual.Node.Target)) return;
 
 					// not sure exactly how many updates to wait, 0 might be fine, but 1 seems to work well
-					visual.RunInUpdates(1, () =>
+					// this may need to be higher? 3 maybe
+					visual.RunInUpdates(3, () =>
 					{
 						try
 						{
@@ -361,7 +362,7 @@ namespace ColorMyProtoFlux
 							// The modification of the color fields is probably blocked, this can happen if the LocalUser changes the field and then
 							// tries to change it again too quickly (Change loop)
 							// or something idk
-							Warn("Exception while updating node status in changed event for color field.\n" + ex.ToString());
+							Error("Exception while updating node status in changed event for color field.\n" + ex.ToString());
 						}
 					});
 				}
@@ -464,7 +465,7 @@ namespace ColorMyProtoFlux
 				}
 				if (__instance.IsHighlighted.Value)
 				{
-					// might want to force alpha here in case of the alpha override option being used
+					// might want to force alpha here in case of the alpha override option being used?
 					float lerp;
 					if (shouldUseCustomColor)
 					{
@@ -513,7 +514,6 @@ namespace ColorMyProtoFlux
 					if ((ElementExists(bgImage) && bgImage.Tint.Value == errorColorToSet) || (ElementExists(overviewBg) && overviewBg.Tint.Value == errorColorToSet))
 					{
 						Debug("Node valid after being not valid");
-						// does this work? it is supposed to reset the header color when the node becomes valid after being invalid
 						if (ValidateNodeInfo(nodeInfo))
 						{
 							RefreshNodeColor(nodeInfo);
@@ -661,7 +661,7 @@ namespace ColorMyProtoFlux
 				}
 				catch (Exception e)
 				{
-					Warn($"Error in ProtoFluxNode.Group setter patch:\n{e}");
+					Error($"Error in ProtoFluxNode.Group setter patch:\n{e}");
 					return true;
 				}
 			}
@@ -841,6 +841,7 @@ namespace ColorMyProtoFlux
 								booleanReferenceDriver1.FalseTarget.Target = null;
 								booleanReferenceDriver1.TargetReference.Target = ____bgImage;
 
+								// could use OnValueChanged instead of Changed
 								____bgImage.Target.Tint.Changed += OnNodeBackgroundColorChanged;
 
 								var overrideFieldsIValue = GetOrAddOverrideFieldsIValue(targetSlot.World);

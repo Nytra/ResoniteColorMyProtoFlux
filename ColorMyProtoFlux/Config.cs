@@ -38,11 +38,11 @@ namespace ColorMyProtoFlux
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> DUMMY_SEP_0_5 = new ModConfigurationKey<dummy>("DUMMY_SEP_0_5", SEP_STRING, () => new dummy());
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> COLOR_HEADER_ONLY = new ModConfigurationKey<bool>("COLOR_HEADER_ONLY", "Only color the node header:", () => false);
+		private static ModConfigurationKey<bool> COLOR_FULL_NODE = new ModConfigurationKey<bool>("COLOR_FULL_NODE", "Color the full node, instead of just the header:", () => false);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> COLOR_NODES_WITHOUT_HEADER = new ModConfigurationKey<bool>("COLOR_NODES_WITHOUT_HEADER", "Color nodes that don't have a header:", () => true);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> ENHANCE_TYPE_COLORS = new ModConfigurationKey<bool>("ENHANCE_TYPE_COLORS", "Enhance type color visibility (Helps if you are coloring the full node):", () => true);
+		private static ModConfigurationKey<bool> ENHANCE_TYPE_COLORS = new ModConfigurationKey<bool>("ENHANCE_TYPE_COLORS", "Enhance type color visibility (Helps if you are coloring the full node):", () => false);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> MAKE_CONNECT_POINTS_FULL_ALPHA = new ModConfigurationKey<bool>("MAKE_CONNECT_POINTS_FULL_ALPHA", "[Enhance type colors] Make type-colored images on nodes have full alpha:", () => true, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
@@ -198,11 +198,5 @@ namespace ColorMyProtoFlux
 		private static ModConfigurationKey<bool> ALLOW_NEGATIVE_AND_EMISSIVE_COLORS = new ModConfigurationKey<bool>("ALLOW_NEGATIVE_AND_EMISSIVE_COLORS", "Allow negative and emissive colors:", () => false, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> EXTRA_DEBUG_LOGGING = new ModConfigurationKey<bool>("EXTRA_DEBUG_LOGGING", "Enable extra debug logging (NML must be in debug mode, warning! may spam logs):", () => false, internalAccessOnly: true);
-
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<bool> USE_WORLD_SAVE_DEBUG = new ModConfigurationKey<bool>("USE_WORLD_SAVE_DEBUG", "USE_WORLD_SAVE_DEBUG:", () => false);
-
-		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> USE_COLOR_CHANGED_EVENT = new ModConfigurationKey<bool>("USE_COLOR_CHANGED_EVENT", "USE_COLOR_CHANGED_EVENT:", () => true, internalAccessOnly: true);
 	}
 }
