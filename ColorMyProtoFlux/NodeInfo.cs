@@ -428,13 +428,10 @@ namespace ColorMyProtoFlux
 				});
 			}
 
-			if (Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
+			NodeInfoRunInUpdates(nodeInfo, 0, () =>
 			{
-				NodeInfoRunInUpdates(nodeInfo, 0, () =>
-				{
-					RefreshTextColorsForNode(nodeInfo);
-				});
-			}
+				RefreshTextColorsForNode(nodeInfo);
+			});
 		}
 	}
 }

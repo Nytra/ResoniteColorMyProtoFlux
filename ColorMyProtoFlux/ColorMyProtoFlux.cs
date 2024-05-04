@@ -39,7 +39,7 @@ namespace ColorMyProtoFlux
 			RGB
 		}
 
-		private enum NodeColorModeEnum
+		private enum NodeFactorEnum
 		{
 			Name,
 			Category,
@@ -85,14 +85,11 @@ namespace ColorMyProtoFlux
 
 		private static bool runFinalNodeUpdate = false;
 
-		//[ThreadStatic]
-		//private static bool currentlyChangingColorFields = false;
-
 		//private static bool delayedConfigChangeUpdateScheduled = false;
 
 		static bool CheckRealtimeConfigColorChangeAllowed()
 		{
-			if (ALWAYS_THROTTLE_REALTIME_COLOR_CHANGE || (Config.GetValue(USE_STATIC_COLOR) && Config.GetValue(USE_STATIC_RANGES) && Config.GetValue(STATIC_RANGE_MODE) == StaticRangeModeEnum.SystemTime))
+			if (ALWAYS_THROTTLE_REALTIME_COLOR_CHANGE || (Config.GetValue(USE_STATIC_NODE_COLOR) && Config.GetValue(USE_STATIC_RANGES) && Config.GetValue(STATIC_RANGE_MODE) == StaticRangeModeEnum.SystemTime))
 			{
 				// color can change exactly N times per second when this config is used. it strobes very quickly without this check.
 				if (DateTime.UtcNow.Ticks - lastConfigColorChangeTime < 10000 * REALTIME_CONFIG_COLOR_CHANGE_INTERVAL_MILLISECONDS)
@@ -155,6 +152,17 @@ namespace ColorMyProtoFlux
 		//	return true;
 		//}
 
+		//static void KeyChangedTest(object? newValue)
+		//{
+		//	Debug("New key value: " + newValue?.ToString() ?? "NULL");
+		//}
+
+		//static void AnyConfigChangedTest(ConfigurationChangedEvent configChangedEvent)
+		//{
+		//	Debug("Any config changed");
+		//	Debug(configChangedEvent.Config.Owner.Name);
+		//}
+
 		static void OnConfigChanged(ConfigurationChangedEvent configChangedEvent)
 		{
 			//Msg("Configuration changed!");
@@ -165,8 +173,8 @@ namespace ColorMyProtoFlux
 			//bool autoUpdateRefDriverNodes = Config.GetValue(AUTO_UPDATE_REF_AND_DRIVER_NODES);
 			//bool autoUpdateRefDriverNodes_KeyChanged = configChangedEvent.Key == AUTO_UPDATE_REF_AND_DRIVER_NODES;
 
-			bool updateNodesOnConfigChanged = Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED);
-			bool updateNodesOnConfigChanged_KeyChanged = configChangedEvent.Key == UPDATE_NODES_ON_CONFIG_CHANGED;
+			bool updateNodesOnConfigChanged = Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGE);
+			bool updateNodesOnConfigChanged_KeyChanged = configChangedEvent.Key == UPDATE_NODES_ON_CONFIG_CHANGE;
 
 			bool makeConnectPointsFullAlpha = Config.GetValue(MAKE_CONNECT_POINTS_FULL_ALPHA);
 			bool makeConnectPointsFullAlpha_KeyChanged = configChangedEvent.Key == MAKE_CONNECT_POINTS_FULL_ALPHA;
@@ -242,7 +250,8 @@ namespace ColorMyProtoFlux
 							{
 								valueDriver.ValueSource.Target = null;
 							}
-							NodeInfoRunInUpdates(nodeInfo, 0, () =>
+							// Used to be 0
+							NodeInfoRunInUpdates(nodeInfo, 1, () =>
 							{
 								NodeInfoRemove(nodeInfo);
 								Debug("runFinalNodeUpdate: Removed a nodeInfo from nodeInfoSet. New size: " + nodeInfoSet.Count.ToString());
@@ -266,6 +275,11 @@ namespace ColorMyProtoFlux
 			HotReloader.RegisterForHotReload(this);
 #endif // HOT_RELOAD
 			Config = GetConfiguration();
+
+			//COLOR_FULL_NODE.OnChanged += KeyChangedTest;
+
+			//ModConfiguration.OnAnyConfigurationChanged += AnyConfigChangedTest;
+
 			SetupMod();
 		}
 
@@ -339,7 +353,6 @@ namespace ColorMyProtoFlux
 		private static void OnNodeBackgroundColorChanged(IChangeable changeable)
 		{
 			if (!Config.GetValue(MOD_ENABLED)) return;
-			//if (currentlyChangingColorFields) return;
 			var field = changeable as IField;
 			var conflictingSyncElement = changeable as ConflictingSyncElement;
 			if (ElementExists(field) && ElementExists(conflictingSyncElement) && (!field.IsDriven || field.IsHooked) && !conflictingSyncElement.WasLastModifiedBy(field.World.LocalUser))
@@ -397,14 +410,6 @@ namespace ColorMyProtoFlux
 				NodeInfo nodeInfo = GetNodeInfoForNode(__instance.Node.Target);
 
 				bool shouldUseCustomColor = ShouldColorNodeBody(__instance.Node.Target);
-
-				// not sure if this needs to be here anymore since the ValueDriver source gets nulled on mod disable
-				//ValueStream<bool> stream = GetOrAddOverrideFieldsStream(__instance.LocalUser, dontAdd: true);
-				//ValueDriver<bool> valueDriver = __instance.Slot?.GetComponent<ValueDriver<bool>>();
-				//if (nodeInfo2 == null && ElementExists(valueDriver) && valueDriver.ValueSource.Target == stream)
-				//{
-				//	shouldUseCustomColor = false;
-				//}
 
 				// just in case? although then node highlight and selection wouldn't visually work in other worlds for this user's nodes
 				//if (__instance.World != Engine.Current.WorldManager.FocusedWorld) return true; 
@@ -593,13 +598,13 @@ namespace ColorMyProtoFlux
 
 				ProtoFluxNodeVisual visual = __instance.Visual.Target;
 				NodeInfo nodeInfo = GetNodeInfoForNode(visual.Node.Target);
-				if (Config.GetValue(MAKE_CONNECT_POINTS_FULL_ALPHA) || Config.GetValue(RESTORE_ORIGINAL_TYPE_COLORS) || Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
+				if (Config.GetValue(MAKE_CONNECT_POINTS_FULL_ALPHA) || Config.GetValue(RESTORE_ORIGINAL_TYPE_COLORS) || Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGE))
 				{
 					var inputsRoot = (SyncRef<Slot>)visual.TryGetField("_inputsRoot");
 					var outputsRoot = (SyncRef<Slot>)visual.TryGetField("_outputsRoot");
 					foreach (Image img in GetNodeConnectionPointImageList(visual.Node.Target, inputsRoot?.Target, outputsRoot?.Target))
 					{
-						if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) && ValidateNodeInfo(nodeInfo))
+						if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGE) && ValidateNodeInfo(nodeInfo))
 						{
 							if (!nodeInfo.connectionPointImageTintFields.Contains(img.Tint))
 							{
@@ -641,7 +646,7 @@ namespace ColorMyProtoFlux
 				{
 					if (!Config.GetValue(MOD_ENABLED)) return true;
 					if (Engine.Current?.IsReady == false) return true;
-					if (Config.GetValue(NODE_COLOR_MODE) != NodeColorModeEnum.Group) return true;
+					if (Config.GetValue(NODE_FACTOR) != NodeFactorEnum.Group) return true;
 					if (!ElementExists(__instance) || !ElementExists(__instance.Slot)) return true;
 					if (__instance.Slot.ChildrenCount == 0) return true;
 
@@ -704,11 +709,15 @@ namespace ColorMyProtoFlux
 							Debug("Worker category path onlyTopmost: " + GetWorkerCategoryPath(node, onlyTopmost: true) ?? "NULL");
 							Debug("Worker category file path: " + GetWorkerCategoryFilePath(node) ?? "NULL");
 
+							//Config.Unset(COLOR_FULL_NODE);
+							//Config.Set(COLOR_FULL_NODE, true);
+							//Config.Set(COLOR_FULL_NODE, false);
+
 							colorX colorToSet = ComputeColorForProtoFluxNode(node);
 
 							NodeInfo nodeInfo = null;
 
-							if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
+							if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGE))
 							{
 								nodeInfo = new();
 								nodeInfo.node = node;
@@ -720,7 +729,7 @@ namespace ColorMyProtoFlux
 							var headerImage = GetHeaderImageForNode(node);
 							if (ElementExists(headerImage))
 							{
-								if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
+								if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGE))
 								{
 									nodeInfo.headerImageTintField = headerImage.Tint;
 								}
@@ -728,15 +737,15 @@ namespace ColorMyProtoFlux
 								ExtraDebug("Set header image color");
 							}
 
-							if (Config.GetValue(MAKE_CONNECT_POINTS_FULL_ALPHA) || Config.GetValue(RESTORE_ORIGINAL_TYPE_COLORS) || Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
+							if (Config.GetValue(MAKE_CONNECT_POINTS_FULL_ALPHA) || Config.GetValue(RESTORE_ORIGINAL_TYPE_COLORS) || Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGE))
 							{
-								if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
+								if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGE))
 								{
 									nodeInfo.connectionPointImageTintFields = new();
 								}
 								foreach (Image img in GetNodeConnectionPointImageList(node, ____inputsRoot.Target, ____outputsRoot.Target))
 								{
-									if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
+									if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGE))
 									{
 										nodeInfo.connectionPointImageTintFields.Add(img.Tint);
 									}
@@ -747,13 +756,13 @@ namespace ColorMyProtoFlux
 							ExtraDebug("Connect point colors done");
 
 							// set node's text color, there could be multiple text components that need to be colored
-							if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
+							if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGE))
 							{
 								nodeInfo.otherTextColorFields = new();
 								nodeInfo.nodeNameTextColorFields = new();
 							}
 
-							if ((Config.GetValue(ENABLE_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR)) || Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
+							if ((Config.GetValue(USE_AUTOMATIC_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR)) || Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGE))
 							{
 								// it only needs to do this if the text color should be changed or it should update the node color on config changed
 								__instance.RunSynchronously(() =>
@@ -768,7 +777,7 @@ namespace ColorMyProtoFlux
 
 										UpdateOtherTextColor(node, text, colorToSet);
 
-										if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
+										if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGE))
 										{
 											if (ValidateNodeInfo(nodeInfo))
 											{
@@ -785,7 +794,7 @@ namespace ColorMyProtoFlux
 										//ExtraDebug($"Category text: {categoryText} Slot name: {categoryText.Slot.Name} RefID: {categoryText.ReferenceID}");
 										UpdateCategoryTextColor(node, categoryText, colorToSet);
 
-										if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
+										if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGE))
 										{
 											if (ValidateNodeInfo(nodeInfo))
 											{
@@ -803,7 +812,7 @@ namespace ColorMyProtoFlux
 
 										UpdateNodeNameTextColor(node, t, headerImage, colorToSet);
 
-										if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
+										if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGE))
 										{
 											if (ValidateNodeInfo(nodeInfo))
 											{
@@ -830,7 +839,7 @@ namespace ColorMyProtoFlux
 
 							ExtraDebug("Demultiplexer button fix applied");
 
-							if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED) || ShouldColorNodeBody(__instance.Node.Target))
+							if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGE) || ShouldColorNodeBody(__instance.Node.Target))
 							{
 								// Nulling the node visual fields stops other users from running UpdateNodeStatus on this node, which prevents the custom colors from being reset
 
@@ -900,7 +909,7 @@ namespace ColorMyProtoFlux
 
 							ExtraDebug("Color set tag applied to node");
 
-							if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGED))
+							if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGE))
 							{
 								AddNodeInfo(nodeInfo, node, __instance);
 

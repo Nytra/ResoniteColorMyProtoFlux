@@ -275,7 +275,7 @@ namespace ColorMyProtoFlux
 			{
 				return Config.GetValue(STATIC_TEXT_COLOR);
 			}
-			else if (Config.GetValue(ENABLE_TEXT_CONTRAST) && ShouldColorNodeBody(node))
+			else if (Config.GetValue(USE_AUTOMATIC_TEXT_CONTRAST) && ShouldColorNodeBody(node))
 			{
 				colorX intendedColor = GetIntendedBackgroundColorForNode(node, modComputedCustomColor);
 				colorX textColor = GetTextColor(intendedColor);

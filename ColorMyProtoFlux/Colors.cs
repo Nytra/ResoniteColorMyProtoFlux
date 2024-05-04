@@ -14,7 +14,7 @@ namespace ColorMyProtoFlux
 			switch (model)
 			{
 				case ColorModelEnum.HSV:
-					ColorHSV colorHSV = new ColorHSV(Config.GetValue(NODE_COLOR));
+					ColorHSV colorHSV = new ColorHSV(Config.GetValue(STATIC_NODE_COLOR));
 					switch (index)
 					{
 						case 0:
@@ -31,7 +31,7 @@ namespace ColorMyProtoFlux
 					}
 					break;
 				case ColorModelEnum.HSL:
-					ColorHSL colorHSL = new ColorHSL(Config.GetValue(NODE_COLOR));
+					ColorHSL colorHSL = new ColorHSL(Config.GetValue(STATIC_NODE_COLOR));
 					switch (index)
 					{
 						case 0:
@@ -48,7 +48,7 @@ namespace ColorMyProtoFlux
 					}
 					break;
 				case ColorModelEnum.RGB:
-					colorX colorRGB = Config.GetValue(NODE_COLOR);
+					colorX colorRGB = Config.GetValue(STATIC_NODE_COLOR);
 					switch (index)
 					{
 						case 0:
@@ -69,7 +69,7 @@ namespace ColorMyProtoFlux
 			}
 			if (Config.GetValue(USE_STATIC_RANGES))
 			{
-				float range = Config.GetValue(RANDOM_RANGES_AROUND_STATIC_VALUES)[index];
+				float range = Config.GetValue(STATIC_RANGES)[index];
 				if (range >= 0)
 				{
 					switch (Config.GetValue(STATIC_RANGE_MODE))
@@ -122,7 +122,7 @@ namespace ColorMyProtoFlux
 		private static float GetColorChannelValue(int index, Random rand, ColorModelEnum model)
 		{
 			float val;
-			if (Config.GetValue(USE_STATIC_COLOR))
+			if (Config.GetValue(USE_STATIC_NODE_COLOR))
 			{
 				val = GetStaticColorChannelValue(index, model, rand);
 			}
@@ -200,12 +200,12 @@ namespace ColorMyProtoFlux
 			sat = GetColorChannelValue(1, rand, Config.GetValue(COLOR_MODEL));
 			val_lightness = GetColorChannelValue(2, rand, Config.GetValue(COLOR_MODEL));
 
-			if (Config.GetValue(USE_STATIC_COLOR))
+			if (Config.GetValue(USE_STATIC_NODE_COLOR))
 			{
-				alpha = Config.GetValue(NODE_COLOR).a;
+				alpha = Config.GetValue(STATIC_NODE_COLOR).a;
 			}
 
-			colorX c = Config.GetValue(NODE_COLOR);
+			colorX c = Config.GetValue(STATIC_NODE_COLOR);
 			switch (Config.GetValue(COLOR_MODEL))
 			{
 				case ColorModelEnum.HSV:
@@ -240,9 +240,9 @@ namespace ColorMyProtoFlux
 			sat = GetColorChannelValue(1, rand, Config.GetValue(COLOR_MODEL));
 			val_lightness = GetColorChannelValue(2, rand, Config.GetValue(COLOR_MODEL));
 
-			if (Config.GetValue(USE_STATIC_COLOR))
+			if (Config.GetValue(USE_STATIC_NODE_COLOR))
 			{
-				alpha = Config.GetValue(NODE_COLOR).a;
+				alpha = Config.GetValue(STATIC_NODE_COLOR).a;
 			}
 
 			switch (Config.GetValue(COLOR_MODEL))
@@ -254,7 +254,7 @@ namespace ColorMyProtoFlux
 				case ColorModelEnum.RGB:
 					return new colorX(hue, sat, val_lightness, alpha);
 				default:
-					return Config.GetValue(NODE_COLOR);
+					return Config.GetValue(STATIC_NODE_COLOR);
 			}
 		}
 
@@ -318,7 +318,7 @@ namespace ColorMyProtoFlux
 
 		private static colorX ComputeColorForProtoFluxNode(ProtoFluxNode node)
 		{
-			colorX colorToSet = Config.GetValue(NODE_COLOR);
+			colorX colorToSet = Config.GetValue(STATIC_NODE_COLOR);
 			rng = null;
 
 			//ExtraDebug("WorkerCategoryPath: " + GetWorkerCategoryPath(node));
@@ -326,36 +326,36 @@ namespace ColorMyProtoFlux
 			//ExtraDebug("WorkerCategoryFilePath: " + GetWorkerCategoryFilePath(node));
 
 			string nodeCategoryString;
-			switch (Config.GetValue(NODE_COLOR_MODE))
+			switch (Config.GetValue(NODE_FACTOR))
 			{
-				case NodeColorModeEnum.Name:
-					rng = new System.Random(node.GetType().GetNiceName().BeautifyName().GetHashCode() + Config.GetValue(RANDOM_SEED));
+				case NodeFactorEnum.Name:
+					rng = new System.Random(node.GetType().GetNiceName().BeautifyName().GetHashCode() + Config.GetValue(NODE_FACTOR_SEED));
 					break;
-				case NodeColorModeEnum.Category:
+				case NodeFactorEnum.Category:
 					nodeCategoryString = GetWorkerCategoryPath(node);
 					//ExtraDebug("Node category string: " + nodeCategoryString);
-					rng = new System.Random(nodeCategoryString.GetHashCode() + Config.GetValue(RANDOM_SEED));
+					rng = new System.Random(nodeCategoryString.GetHashCode() + Config.GetValue(NODE_FACTOR_SEED));
 					break;
-				case NodeColorModeEnum.TopmostCategory:
+				case NodeFactorEnum.TopmostCategory:
 					nodeCategoryString = GetWorkerCategoryPath(node, onlyTopmost: true);
 					//ExtraDebug("Node category string: " + nodeCategoryString);
-					rng = new System.Random(nodeCategoryString.GetHashCode() + Config.GetValue(RANDOM_SEED));
+					rng = new System.Random(nodeCategoryString.GetHashCode() + Config.GetValue(NODE_FACTOR_SEED));
 					break;
-				case NodeColorModeEnum.Group:
-					rng = new System.Random(node.Group.Name.GetHashCode() + Config.GetValue(RANDOM_SEED));
+				case NodeFactorEnum.Group:
+					rng = new System.Random(node.Group.Name.GetHashCode() + Config.GetValue(NODE_FACTOR_SEED));
 					break;
-				case NodeColorModeEnum.FullTypeName:
-					rng = new System.Random(node.GetType().FullName.GetHashCode() + Config.GetValue(RANDOM_SEED));
+				case NodeFactorEnum.FullTypeName:
+					rng = new System.Random(node.GetType().FullName.GetHashCode() + Config.GetValue(NODE_FACTOR_SEED));
 					break;
-				case NodeColorModeEnum.RefID:
-					rng = new System.Random(node.Slot.ReferenceID.GetHashCode() + Config.GetValue(RANDOM_SEED));
+				case NodeFactorEnum.RefID:
+					rng = new System.Random(node.Slot.ReferenceID.GetHashCode() + Config.GetValue(NODE_FACTOR_SEED));
 					//Msg($"RefID Position: {root.Parent.ReferenceID.Position.ToString()}");
 					break;
 				default:
 					break;
 			}
 
-			if (Config.GetValue(ENABLE_NON_RANDOM_REFID))
+			if (Config.GetValue(USE_HUE_SHIFT_MODE))
 			{
 				int refidModDivisor = Config.GetValue(REFID_MOD_DIVISOR);
 
@@ -387,7 +387,7 @@ namespace ColorMyProtoFlux
 				}
 			}
 
-			if (Config.GetValue(MULTIPLY_OUTPUT_BY_RGB))
+			if (Config.GetValue(USE_RBG_CHANNEL_MULTIPLIER))
 			{
 				float3 multiplier = Config.GetValue(RGB_CHANNEL_MULTIPLIER);
 				colorToSet = colorToSet.MulR(multiplier.x);
