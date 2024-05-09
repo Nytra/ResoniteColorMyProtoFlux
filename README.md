@@ -26,6 +26,8 @@ The default config is quite basic: only the header of the node will be colored, 
 
 There are a lot of options to give you a lot of control over the colors that get generated. If you want dark mode or grayscale, rainbow, pastel or shades of green/blue, you can make that happen with a bit of configuration.
 
+The nice thing is that when you change these options, any nodes you have already spawned out will update their color and style automatically.
+
 The style section includes options to color the full node (instead of just the header), an option to color node's without a header, and an option to boost type color visibility (this helps if you are coloring the full node).
 
 The static node color can be used if you just want a single color to be used for all nodes. There is also an option here to use a random range around this color to allow for some variation.
