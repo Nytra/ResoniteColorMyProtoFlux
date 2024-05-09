@@ -22,6 +22,8 @@ Due to the complexity of ProtoFlux the mod will add additional components to eac
 
 ![Screenshot 2024-05-09 235407](https://github.com/Nytra/ResoniteColorMyProtoFlux/assets/14206961/f7d1f9b3-6f66-4830-8650-4ff73df89671)
 
+You need [ResoniteModSettings](https://github.com/badhaloninja/ResoniteModSettings) to be able to change these options in-game.
+
 The default config is quite basic: only the header of the node will be colored, if the node doesn't have a header it will be colored fully, and the color will be based on the node's category. Type colors on the node will be left alone.
 
 There are a lot of options to give you a lot of control over the colors that get generated. If you want dark mode or grayscale, rainbow, pastel or shades of green/blue, you can make that happen with a bit of configuration.
