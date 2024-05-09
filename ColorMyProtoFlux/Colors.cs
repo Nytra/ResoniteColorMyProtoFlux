@@ -321,12 +321,8 @@ namespace ColorMyProtoFlux
 			colorX colorToSet = Config.GetValue(STATIC_NODE_COLOR);
 			rng = null;
 
-			//ExtraDebug("WorkerCategoryPath: " + GetWorkerCategoryPath(node));
-			//ExtraDebug("WorkerCategoryPath onlyTopmost: " + GetWorkerCategoryPath(node, onlyTopmost: true));
-			//ExtraDebug("WorkerCategoryFilePath: " + GetWorkerCategoryFilePath(node));
-
 			string nodeCategoryString;
-			switch (Config.GetValue(NODE_FACTOR))
+			switch (Config.GetValue(SELECTED_NODE_FACTOR))
 			{
 				case NodeFactorEnum.Name:
 					rng = new System.Random(node.GetType().GetNiceName().BeautifyName().GetHashCode() + Config.GetValue(NODE_FACTOR_SEED));

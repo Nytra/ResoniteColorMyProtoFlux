@@ -5,6 +5,9 @@ using System.Collections.Generic;
 
 namespace ColorMyProtoFlux
 {
+	// The only reason this exists is because hot reload didn't work without it
+	// But then hot reload stopped working anyway...
+	// So this could probably be removed
 	public class NodeRefreshData
 	{
 		public int updatesToWait;

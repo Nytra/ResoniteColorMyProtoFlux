@@ -17,7 +17,7 @@ namespace ColorMyProtoFlux
 			{
 				colorToSet = colorToSet.SetA(0.3f);
 			}
-			if (Config.GetValue(MOD_ENABLED) && Config.GetValue(ENHANCE_TYPE_COLORS))
+			if (Config.GetValue(MOD_ENABLED) && Config.GetValue(BOOST_TYPE_COLOR_VISIBILITY))
 			{
 				if (Config.GetValue(RESTORE_ORIGINAL_TYPE_COLORS))
 				{
@@ -43,7 +43,7 @@ namespace ColorMyProtoFlux
 
 		private static void UpdateOtherTextColor(ProtoFluxNode node, Text text, colorX modComputedCustomColor)
 		{
-			if (Config.GetValue(MOD_ENABLED) && Config.GetValue(USE_AUTOMATIC_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
+			if (Config.GetValue(MOD_ENABLED) && (Config.GetValue(USE_AUTOMATIC_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR)))
 			{
 				Button button = text.Slot.GetComponent<Button>();
 				Component proxy = text.Slot.GetComponent((Component c) => c.Name.Contains("Proxy"));
@@ -70,7 +70,7 @@ namespace ColorMyProtoFlux
 
 		private static void UpdateCategoryTextColor(ProtoFluxNode node, Text text, colorX modComputedCustomColor)
 		{
-			if (Config.GetValue(MOD_ENABLED) && Config.GetValue(USE_AUTOMATIC_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
+			if (Config.GetValue(MOD_ENABLED) && (Config.GetValue(USE_AUTOMATIC_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR)))
 			{
 				TrySetTextColor(text, ComputeCategoryTextColor(node, modComputedCustomColor));
 			}
@@ -86,7 +86,7 @@ namespace ColorMyProtoFlux
 
 		private static void UpdateNodeNameTextColor(ProtoFluxNode node, Text text, Image headerImage, colorX modComputedCustomColor)
 		{
-			if (Config.GetValue(MOD_ENABLED) && Config.GetValue(USE_AUTOMATIC_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR))
+			if (Config.GetValue(MOD_ENABLED) && (Config.GetValue(USE_AUTOMATIC_TEXT_CONTRAST) || Config.GetValue(USE_STATIC_TEXT_COLOR)))
 			{
 				// idk what this is doing but it seems to work lol
 				if (text.Slot.Parent?.Name == "Overview" || (!ElementExists(headerImage) && !Config.GetValue(COLOR_FULL_NODE)))

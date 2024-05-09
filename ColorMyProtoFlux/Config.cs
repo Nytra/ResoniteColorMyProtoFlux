@@ -66,11 +66,13 @@ namespace ColorMyProtoFlux
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> _SPACER_1 = new ModConfigurationKey<dummy>(SpacerText(), SpacerText(), () => new dummy());
 		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<dummy> _STYLE_SECTION_HEADER = new ModConfigurationKey<dummy>(SectionHeaderText("STYLE"), SectionHeaderText("STYLE"), () => new dummy());
+		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> COLOR_FULL_NODE = new ModConfigurationKey<bool>("Color Full Node", "Color the full node, instead of just the header:", () => false);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> COLOR_NODES_WITHOUT_HEADER = new ModConfigurationKey<bool>("Color Nodes Without Header", "Color nodes that don't have a header:", () => true);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> ENHANCE_TYPE_COLORS = new ModConfigurationKey<bool>("Enhance Type Colors", "Enhance type color visibility (Helps if you are coloring the full node):", () => false);
+		private static ModConfigurationKey<bool> BOOST_TYPE_COLOR_VISIBILITY = new ModConfigurationKey<bool>("Boost Type Color Visibility", "Boost type color visibility (Helps if you are coloring the full node):", () => false);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> MAKE_CONNECT_POINTS_FULL_ALPHA = new ModConfigurationKey<bool>("MAKE_CONNECT_POINTS_FULL_ALPHA", "[Enhance type colors] Make type-colored images on nodes have full alpha:", () => true, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
@@ -85,7 +87,7 @@ namespace ColorMyProtoFlux
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> USE_STATIC_NODE_COLOR = new ModConfigurationKey<bool>("Use Static Node Color", "Use Static Node Color (Disables the dynamic section):", () => false);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<colorX> STATIC_NODE_COLOR = new ModConfigurationKey<colorX>("Static Node Color", "Static Node Color:", () => RadiantUI_Constants.BG_COLOR);
+		private static ModConfigurationKey<colorX> STATIC_NODE_COLOR = new ModConfigurationKey<colorX>("Static Node Color", "Static Node Color:", () => RadiantUI_Constants.HEADER);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> _SPACER_3 = new ModConfigurationKey<dummy>(SpacerText(), SpacerText(), () => new dummy());
 		[AutoRegisterConfigKey]
@@ -106,7 +108,7 @@ namespace ColorMyProtoFlux
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> _DYNAMIC_SECTION_HEADER = new ModConfigurationKey<dummy>(SectionHeaderText("DYNAMIC"), SectionHeaderText("DYNAMIC"), () => new dummy());
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<NodeFactorEnum> NODE_FACTOR = new ModConfigurationKey<NodeFactorEnum>("Node Factor", "Selected Node Factor:", () => NodeFactorEnum.Category);
+		private static ModConfigurationKey<NodeFactorEnum> SELECTED_NODE_FACTOR = new ModConfigurationKey<NodeFactorEnum>("Selected Node Factor", "Selected Node Factor:", () => NodeFactorEnum.Category);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> ALTERNATE_CATEGORY_STRING = new ModConfigurationKey<bool>("ALTERNATE_CATEGORY_STRING", "Use node category file path (The string after the final '/' in the path):", () => false, internalAccessOnly: true);
 

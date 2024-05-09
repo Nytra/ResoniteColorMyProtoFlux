@@ -152,8 +152,6 @@ namespace ColorMyProtoFlux
 
 		private static ProtoFluxNodeVisual GetNodeVisual(ProtoFluxNode node)
 		{
-			// validate nodeInfo here?
-			// ToDo: verify this works?
 			NodeInfo nodeInfo = GetNodeInfoForNode(node);
 			ProtoFluxNodeVisual visual = null;
 			if (ValidateNodeInfo(nodeInfo))
@@ -162,13 +160,7 @@ namespace ColorMyProtoFlux
 			}
 
 			visual = node.Slot.GetComponentInChildren<ProtoFluxNodeVisual>();
-			// useless to update the nodeInfo here
-			// because it will not be in the nodeInfoSet since it is not valid, and
-			// if the visual was not in the nodeInfo then it has been destroyed so the nodeInfo should be fully recreated for this node anyway
-			//if (nodeInfo != null)
-			//{
-			//	nodeInfo.visual = visual;
-			//}
+
 			return visual;
 		}
 
@@ -188,7 +180,6 @@ namespace ColorMyProtoFlux
 				return (Image)nodeInfo.headerImageTintField.Parent;
 			}
 
-			//ProtoFluxNodeVisual nodeVisual = nodeInfo?.visual ?? GetNodeVisual(node);
 			ProtoFluxNodeVisual nodeVisual = GetNodeVisual(node);
 
 			if (ElementExists(nodeVisual) && nodeVisual.Slot.ChildrenCount > 1)
@@ -212,21 +203,20 @@ namespace ColorMyProtoFlux
 
 		private static List<Text> GetOtherTextListForNode(ProtoFluxNode node)
 		{
-			//string category = GetWorkerCategoryFilePath(node);
 			var visual = GetNodeVisual(node);
-			return visual?.Slot.GetComponentsInChildren<Text>((Text text) => text.Slot.Parent != visual.Slot && (text.Content != node.NodeName || text.Content.IsDriven) && text.Slot.Parent?.Name != "Button");
+			return visual?.Slot.GetComponentsInChildren((Text text) => text.Slot.Parent != visual.Slot && (text.Content != node.NodeName || text.Content.IsDriven) && text.Slot.Parent?.Name != "Button");
 		}
 
 		private static Text GetCategoryTextForNode(ProtoFluxNode node)
 		{
 			string category = GetWorkerCategoryFilePath(node);
 			var visual = GetNodeVisual(node);
-			return visual?.Slot.GetComponentInChildren<Text>((Text text) => text.Content == category && text.Slot?.Parent == visual?.Slot);
+			return visual?.Slot.GetComponentInChildren((Text text) => text.Content == category && text.Slot?.Parent == visual?.Slot);
 		}
 
 		private static List<Text> GetNodeNameTextListForNode(ProtoFluxNode node)
 		{
-			List<Text> textList = GetNodeVisual(node)?.Slot.GetComponentsInChildren<Text>((Text t) => t.Content == node.NodeName && t.Slot.Name == "Text" && !t.Content.IsDriven && t.Slot.Parent?.Name != "Button");
+			List<Text> textList = GetNodeVisual(node)?.Slot.GetComponentsInChildren((Text t) => t.Content == node.NodeName && t.Slot.Name == "Text" && !t.Content.IsDriven && t.Slot.Parent?.Name != "Button");
 			return textList;
 		}
 
@@ -370,7 +360,6 @@ namespace ColorMyProtoFlux
 				stream.SetUpdatePeriod(2, 0);
 				bool val = ComputeOverrideFieldsValue();
 				stream.Value = val;
-				//stream.DefaultValue.Value = val;
 				return stream;
 			}
 			IValue<bool> CreateStreamSynced()

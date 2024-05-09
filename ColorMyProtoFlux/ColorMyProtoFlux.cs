@@ -20,7 +20,7 @@ namespace ColorMyProtoFlux
 	{
 		public override string Name => "ColorMyProtoFlux";
 		public override string Author => "Nytra";
-		public override string Version => "1.0.0-pre2";
+		public override string Version => "1.0.0";
 		public override string Link => "https://github.com/Nytra/ResoniteColorMyProtoFlux";
 
 		// Used for dynamic text contrast
@@ -75,7 +75,6 @@ namespace ColorMyProtoFlux
 		//private static Dictionary<ISyncRef, IWorldElement> syncRefTargetMap = new();
 
 		// stuff for making sure the colors don't change too fast
-		// maybe schedule a delayed update after the change interval elapses
 		private const int REALTIME_CONFIG_COLOR_CHANGE_INTERVAL_MILLISECONDS = 100;
 		//private const int REALTIME_NODE_VISUAL_COLOR_CHANGE_INTERVAL_MILLISECONDS = 100;
 		private const bool ALWAYS_THROTTLE_REALTIME_COLOR_CHANGE = false;
@@ -152,17 +151,6 @@ namespace ColorMyProtoFlux
 		//	return true;
 		//}
 
-		//static void KeyChangedTest(object? newValue)
-		//{
-		//	Debug("New key value: " + newValue?.ToString() ?? "NULL");
-		//}
-
-		//static void AnyConfigChangedTest(ConfigurationChangedEvent configChangedEvent)
-		//{
-		//	Debug("Any config changed");
-		//	Debug(configChangedEvent.Config.Owner.Name);
-		//}
-
 		static void OnConfigChanged(ConfigurationChangedEvent configChangedEvent)
 		{
 			//Msg("Configuration changed!");
@@ -182,8 +170,8 @@ namespace ColorMyProtoFlux
 			bool restoreOriginalTypeColors = Config.GetValue(RESTORE_ORIGINAL_TYPE_COLORS);
 			bool restoreOriginalTypeColors_KeyChanged = configChangedEvent.Key == RESTORE_ORIGINAL_TYPE_COLORS;
 
-			bool enhanceTypeColors = Config.GetValue(ENHANCE_TYPE_COLORS);
-			bool enhanceTypeColors_KeyChanged = configChangedEvent.Key == ENHANCE_TYPE_COLORS;
+			bool enhanceTypeColors = Config.GetValue(BOOST_TYPE_COLOR_VISIBILITY);
+			bool enhanceTypeColors_KeyChanged = configChangedEvent.Key == BOOST_TYPE_COLOR_VISIBILITY;
 
 			bool runFinalUpdateOnModDisable = Config.GetValue(RUN_FINAL_UPDATE_ON_MOD_DISABLE);
 
@@ -218,7 +206,7 @@ namespace ColorMyProtoFlux
 
 			if ((modEnabled && updateNodesOnConfigChanged) || runFinalNodeUpdate)
 			{
-				// anti-photosensitivity check
+				// photosensitivity check
 				if (!CheckRealtimeConfigColorChangeAllowed() && !runFinalNodeUpdate) return;
 
 				bool runFinalNodeUpdateCopy = runFinalNodeUpdate;
@@ -244,7 +232,6 @@ namespace ColorMyProtoFlux
 						GetNodeVisual(nodeInfo.node).UpdateNodeStatus();
 						if (runFinalNodeUpdateCopy)
 						{
-							// remove stream from node visual slot in here
 							var valueDriver = nodeInfo.visual.Slot.GetComponent<ValueDriver<bool>>();
 							if (ElementExists(valueDriver) && valueDriver.ValueSource.Target == GetOrAddOverrideFieldsIValue(nodeInfo.visual.World, dontAdd: true))
 							{
@@ -275,10 +262,6 @@ namespace ColorMyProtoFlux
 			HotReloader.RegisterForHotReload(this);
 #endif // HOT_RELOAD
 			Config = GetConfiguration();
-
-			//COLOR_FULL_NODE.OnChanged += KeyChangedTest;
-
-			//ModConfiguration.OnAnyConfigurationChanged += AnyConfigChangedTest;
 
 			SetupMod();
 		}
@@ -362,8 +345,8 @@ namespace ColorMyProtoFlux
 				{
 					if (!ShouldColorNodeBody(visual.Node.Target)) return;
 
-					// not sure exactly how many updates to wait, 0 might be fine, but 1 seems to work well
-					// this may need to be higher? 3 maybe
+					// not sure exactly how many updates to wait here, 0 might be fine, 1 seems to work well
+					// this was changed to 3 to try to fix a desync problem, but it may be causing some visible delay in changing the color now...
 					visual.RunInUpdates(3, () =>
 					{
 						try
@@ -374,7 +357,6 @@ namespace ColorMyProtoFlux
 						{
 							// The modification of the color fields is probably blocked, this can happen if the LocalUser changes the field and then
 							// tries to change it again too quickly (Change loop)
-							// or something idk
 							Error("Exception while updating node status in changed event for color field.\n" + ex.ToString());
 						}
 					});
@@ -431,8 +413,6 @@ namespace ColorMyProtoFlux
 
 				if (!ElementExists(bgImage) && (!ElementExists(overviewSlot) || !ElementExists(overviewBg))) return;
 
-				//ExtraDebug("UpdateNodeStatus Patch - Colors will change.");
-
 				colorX a;
 
 				//if (!CheckRealtimeNodeVisualColorChangeAllowed(__instance))
@@ -443,7 +423,6 @@ namespace ColorMyProtoFlux
 
 				if (shouldUseCustomColor)
 				{
-					//a = ComputeColorForProtoFluxNode(__instance.Node.Target);
 					a = nodeInfo?.modComputedCustomColor ?? ComputeColorForProtoFluxNode(__instance.Node.Target);
 				}
 				else
@@ -470,7 +449,6 @@ namespace ColorMyProtoFlux
 				}
 				if (__instance.IsHighlighted.Value)
 				{
-					// might want to force alpha here in case of the alpha override option being used?
 					float lerp;
 					if (shouldUseCustomColor)
 					{
@@ -531,15 +509,11 @@ namespace ColorMyProtoFlux
 				// Although that would undrive it if its driven by something...
 				if (ElementExists(bgImage) && (!bgImage.Tint.IsDriven || bgImage.Tint.IsHooked))
 				{
-					//currentlyChangingColorFields = true;
 					bgImage.Tint.Value = a;
-					//currentlyChangingColorFields = false;
 				}
 				if (ElementExists(overviewBg) && (!overviewBg.Tint.IsDriven || overviewBg.Tint.IsHooked))
 				{
-					//currentlyChangingColorFields = true;
 					overviewBg.Tint.Value = a;
-					//currentlyChangingColorFields = false;
 				}
 			}
 		}
@@ -574,11 +548,11 @@ namespace ColorMyProtoFlux
 		//	}
 		//}
 
-		private static void PrintStackTrace()
-		{
-			var s = new System.Diagnostics.StackTrace();
-			Debug(s.ToString());
-		}
+		//private static void PrintStackTrace()
+		//{
+		//	var s = new System.Diagnostics.StackTrace();
+		//	Debug(s.ToString());
+		//}
 
 		[HarmonyPatch(typeof(ProtoFluxDynamicElementManager))]
 		[HarmonyPatch("OnChanges")]
@@ -621,6 +595,7 @@ namespace ColorMyProtoFlux
 			}
 		}
 
+		// This can probably be simpler...
 		static void ScheduleNodeRefresh(int updates, ProtoFluxNode node)
 		{
 			if (!ElementExists(node) || !ElementExists(node.Slot) || !ElementExists(node.World)) return;
@@ -646,7 +621,7 @@ namespace ColorMyProtoFlux
 				{
 					if (!Config.GetValue(MOD_ENABLED)) return true;
 					if (Engine.Current?.IsReady == false) return true;
-					if (Config.GetValue(NODE_FACTOR) != NodeFactorEnum.Group) return true;
+					if (Config.GetValue(SELECTED_NODE_FACTOR) != NodeFactorEnum.Group) return true;
 					if (!ElementExists(__instance) || !ElementExists(__instance.Slot)) return true;
 					if (__instance.Slot.ChildrenCount == 0) return true;
 
@@ -688,6 +663,7 @@ namespace ColorMyProtoFlux
 					if (root.Tag != COLOR_SET_TAG)
 					{
 						// Check if multiple visuals have accidentally been generated for this node (It's a bug that I've seen happen sometimes)
+						// In reality this check doesn't really help much
 						if (__instance.Slot.Parent.Children.Count() > 1)
 						{
 							foreach (Slot childSlot in __instance.Slot.Parent.Children)
@@ -708,10 +684,6 @@ namespace ColorMyProtoFlux
 							Debug("Worker category path: " + GetWorkerCategoryPath(node) ?? "NULL");
 							Debug("Worker category path onlyTopmost: " + GetWorkerCategoryPath(node, onlyTopmost: true) ?? "NULL");
 							Debug("Worker category file path: " + GetWorkerCategoryFilePath(node) ?? "NULL");
-
-							//Config.Unset(COLOR_FULL_NODE);
-							//Config.Set(COLOR_FULL_NODE, true);
-							//Config.Set(COLOR_FULL_NODE, false);
 
 							colorX colorToSet = ComputeColorForProtoFluxNode(node);
 
@@ -850,7 +822,6 @@ namespace ColorMyProtoFlux
 								booleanReferenceDriver1.FalseTarget.Target = null;
 								booleanReferenceDriver1.TargetReference.Target = ____bgImage;
 
-								// could use OnValueChanged instead of Changed
 								____bgImage.Target.Tint.Changed += OnNodeBackgroundColorChanged;
 
 								var overrideFieldsIValue = GetOrAddOverrideFieldsIValue(targetSlot.World);
