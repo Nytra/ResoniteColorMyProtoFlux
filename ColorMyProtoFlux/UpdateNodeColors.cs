@@ -92,20 +92,20 @@ namespace ColorMyProtoFlux
 				if (text.Slot.Parent?.Name == "Overview" || (!ElementExists(headerImage) && !Config.GetValue(COLOR_FULL_NODE)))
 				{
 					var color = GetTextColor(GetIntendedBackgroundColorForNode(node, modComputedCustomColor));
-					if (color == NODE_TEXT_DARK_COLOR)
-					{
-						color = color.MulRGB(0.9f);
-					}
+					//if (color == NODE_TEXT_DARK_COLOR)
+					//{
+					//	color = color.MulRGB(0.9f);
+					//}
 					TrySetTextColor(text, color);
 				}
 				else
 				{
-					var color = GetTextColor(GetIntendedBackgroundColorForNode(node, modComputedCustomColor));
-					if (color == NODE_TEXT_DARK_COLOR)
-					{
-						color = color.MulRGB(0.9f);
-					}
-					TrySetTextColor(text, GetTextColor(modComputedCustomColor));
+					var color = GetTextColor(modComputedCustomColor);
+					//if (color == NODE_TEXT_DARK_COLOR)
+					//{
+					//	color = color.MulRGB(0.9f);
+					//}
+					TrySetTextColor(text, color);
 				}
 			}
 			else

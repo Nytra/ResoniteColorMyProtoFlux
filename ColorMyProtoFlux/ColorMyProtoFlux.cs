@@ -6,7 +6,6 @@ using FrooxEngine;
 using FrooxEngine.ProtoFlux;
 using FrooxEngine.UIX;
 using HarmonyLib;
-using ProtoFlux.Core;
 using ResoniteModLoader;
 using System;
 using System.Collections.Generic;
@@ -62,6 +61,8 @@ namespace ColorMyProtoFlux
 		private static Dictionary<ProtoFluxNodeVisual, NodeInfo> visualToNodeInfoMap = new();
 
 		private static Dictionary<World, IValue<bool>> worldOverrideFieldsIValueMap = new();
+
+		private static HashSet<ProtoFluxNodeGroup> unpackedGroups = new();
 
 		//private static Dictionary<ProtoFluxNodeVisual, long> nodeVisualLastStatusUpdateTimes = new();
 
@@ -678,6 +679,27 @@ namespace ColorMyProtoFlux
 			}
 		}
 
+		[HarmonyPatch(typeof(ProtoFluxVisualHelper))]
+		[HarmonyPatch("UnpackNodes")]
+		class Patch_ProtoFluxTool_OnUnpack
+		{
+			static void Postfix(Slot root)
+			{
+				if (!ElementExists(root)) return;
+				var nodeGroup = root.GetComponentInChildren<ProtoFluxNode>()?.Group;
+				if (nodeGroup != null)
+				{
+					Debug($"Adding group to unpacked groups: {nodeGroup.Name}");
+					unpackedGroups.Add(nodeGroup);
+					root.World.RunInUpdates(15, () => 
+					{
+						Debug($"Removing group from unpacked groups: {nodeGroup.Name}");
+						unpackedGroups.Remove(nodeGroup);
+					});
+				}
+			}
+		}
+
 		[HarmonyPatch(typeof(ProtoFluxNodeVisual))]
 		[HarmonyPatch("BuildUI")]
 		class Patch_ProtoFluxNodeVisual_BuildUI
@@ -689,7 +711,7 @@ namespace ColorMyProtoFlux
 				Slot root = __instance.Slot;
 
 				// only run if the protoflux node visual slot is allocated to the local user
-				if (Config.GetValue(MOD_ENABLED) == true && ElementExists(root) && WorkerBelongsToLocalUser(root, logging: true))
+				if (Config.GetValue(MOD_ENABLED) == true && ElementExists(root) && WorkerBelongsToLocalUser(root))
 				{
 					if (root.Tag != COLOR_SET_TAG)
 					{
@@ -704,38 +726,52 @@ namespace ColorMyProtoFlux
 
 								// Check if multiple visuals have accidentally been generated for this node (It's a bug that I've seen happen sometimes)
 
-								// Find the node that only has one visual, then delete all visuals not owned by the user that created the lone visual
-
 								if (__instance.Slot.Parent.ChildrenCount > 1)
 								{
 									IEnumerable<Slot> GetVisuals(ProtoFluxNode node)
 									{
-										return node.Slot.Children.Where(childSlot => childSlot.Name == "<NODE_UI>" && childSlot.GetComponent<ProtoFluxNodeVisual>() is ProtoFluxNodeVisual visual && visual.Node.Target == node && childSlot.ChildrenCount > 0 );
+										return node.Slot.Children.Where(childSlot => childSlot.Name == "<NODE_UI>"
+											&& childSlot.GetComponent<ProtoFluxNodeVisual>() is ProtoFluxNodeVisual visual
+											&& visual.Node.Target == node
+											&& childSlot.ChildrenCount > 0 );
 									}
 									Debug("More than one slot under the node root");
 									if (node.Group == null) return;
-									User originalUnpackingUser = null;
+									bool localUserUnpackedGroup = false;
+									if (unpackedGroups.Contains(node.Group))
+									{
+										localUserUnpackedGroup = true;
+									}
 									bool visualStackBugHappened = false;
+
+									// If local user unpacked the group, destroy all other visuals
+									// Otherwise destroy local user visuals only
+
 									foreach (var node in node.Group.Nodes)
 									{
 										var visuals = GetVisuals(node);
-										if (visuals.Count() == 1)
-										{
-											originalUnpackingUser = node.World.GetUserByAllocationID(visuals.First().ReferenceID.User);
-										}
-										else if (visuals.Count() > 1)
+										// Isn't always correct
+										//if (visualsOwner == null && visuals.Count() == 1 && node.NodeInstance is IExecutionNode)
+										//{
+										//	visualsOwner = node.World.GetUserByAllocationID(visuals.First().ReferenceID.User);
+										//}
+										if (visuals.Count() > 1)
 										{
 											visualStackBugHappened = true;
-										}
-										if (originalUnpackingUser != null && visualStackBugHappened)
-										{
 											break;
 										}
 									}
-									if (originalUnpackingUser != null && visualStackBugHappened)
+									if (visualStackBugHappened)
 									{
 										Debug("Visual stack bug happened");
-										Debug($"Original unpacking user: {originalUnpackingUser.UserName}");
+										if (localUserUnpackedGroup)
+										{
+											Debug("Local user unpacked this group.");
+										}
+										else
+										{
+											Debug("Local user did not unpack this group.");
+										}
 										foreach (var node in node.Group.Nodes)
 										{
 											var visuals = GetVisuals(node);
@@ -744,10 +780,18 @@ namespace ColorMyProtoFlux
 												foreach (var visual in visuals.ToArray())
 												{
 													var allocatingUser = visual.World.GetUserByAllocationID(visual.ReferenceID.User);
-													if (allocatingUser != null && allocatingUser != originalUnpackingUser)
+													if (allocatingUser != null)
 													{
-														Debug($"Destroying visual belonging to user: {allocatingUser.UserName}");
-														visual.Destroy();
+														if (localUserUnpackedGroup && allocatingUser != visual.LocalUser)
+														{
+															Debug($"Destroying visual belonging to user: {allocatingUser.UserName}");
+															visual.Destroy();
+														}
+														else if (!localUserUnpackedGroup && allocatingUser == visual.LocalUser)
+														{
+															Debug($"Destroying visual belonging to local user: {visual.LocalUser.UserName}");
+															visual.Destroy();
+														}
 													}
 												}
 											}
@@ -768,9 +812,9 @@ namespace ColorMyProtoFlux
 							});
 
 							Debug("New node: " + node.NodeName ?? "NULL");
-							Debug("Worker category path: " + GetWorkerCategoryPath(node) ?? "NULL");
-							Debug("Worker category path onlyTopmost: " + GetWorkerCategoryPath(node, onlyTopmost: true) ?? "NULL");
-							Debug("Worker category file path: " + GetWorkerCategoryFilePath(node) ?? "NULL");
+							ExtraDebug("Worker category path: " + GetWorkerCategoryPath(node) ?? "NULL");
+							ExtraDebug("Worker category path onlyTopmost: " + GetWorkerCategoryPath(node, onlyTopmost: true) ?? "NULL");
+							ExtraDebug("Worker category file path: " + GetWorkerCategoryFilePath(node) ?? "NULL");
 
 							colorX colorToSet = ComputeColorForProtoFluxNode(node);
 
