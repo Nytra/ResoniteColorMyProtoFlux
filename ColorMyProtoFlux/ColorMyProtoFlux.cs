@@ -1,10 +1,12 @@
-﻿//#define HOT_RELOAD
+﻿// Hot reload doesn't work for this mod anymore for some reason :(
+//#define HOT_RELOAD
 
 using Elements.Core;
 using FrooxEngine;
 using FrooxEngine.ProtoFlux;
 using FrooxEngine.UIX;
 using HarmonyLib;
+using ProtoFlux.Core;
 using ResoniteModLoader;
 using System;
 using System.Collections.Generic;
@@ -20,7 +22,7 @@ namespace ColorMyProtoFlux
 	{
 		public override string Name => "ColorMyProtoFlux";
 		public override string Author => "Nytra";
-		public override string Version => "1.0.0";
+		public override string Version => "1.1.0";
 		public override string Link => "https://github.com/Nytra/ResoniteColorMyProtoFlux";
 
 		// Used for dynamic text contrast
@@ -60,8 +62,6 @@ namespace ColorMyProtoFlux
 		private static Dictionary<ProtoFluxNodeVisual, NodeInfo> visualToNodeInfoMap = new();
 
 		private static Dictionary<World, IValue<bool>> worldOverrideFieldsIValueMap = new();
-
-		private static Dictionary<World, NodeRefreshQueue> worldQueueMap = new();
 
 		//private static Dictionary<ProtoFluxNodeVisual, long> nodeVisualLastStatusUpdateTimes = new();
 
@@ -376,7 +376,7 @@ namespace ColorMyProtoFlux
 				if (!ElementExists(__instance)) return;
 
 				// if this node visual does not belong to LocalUser, skip this patch
-				if (__instance.ReferenceID.User != __instance.LocalUser.AllocationID) return;
+				if (!WorkerBelongsToLocalUser(__instance)) return;
 
 				// Check if override field value is correct
 				// This prevents the field from being messed with for example by other users
@@ -565,7 +565,9 @@ namespace ColorMyProtoFlux
 			{
 				if (!Config.GetValue(MOD_ENABLED)) return;
 
-				if (__instance.Visual.Target?.ReferenceID.User != __instance.LocalUser.AllocationID) return;
+				if (__instance.Visual.Target == null) return;
+
+				if (!WorkerBelongsToLocalUser(__instance.Visual.Target)) return;
 
 				// not sure if I need to check the world here
 				//if (__instance.World != Engine.Current.WorldManager.FocusedWorld) return;
@@ -595,20 +597,40 @@ namespace ColorMyProtoFlux
 			}
 		}
 
-		// This can probably be simpler...
-		static void ScheduleNodeRefresh(int updates, ProtoFluxNode node)
+		private static bool WorkerBelongsToLocalUser(Worker worker, bool logging = false)
 		{
-			if (!ElementExists(node) || !ElementExists(node.Slot) || !ElementExists(node.World)) return;
-			if (!worldQueueMap.ContainsKey(node.World))
+			var allocatingUser = worker.World.GetUserByAllocationID(worker.ReferenceID.User);
+			MaybeLog($"allocatingUser: {allocatingUser}");
+			if (allocatingUser == null) return false;
+			MaybeLog($"allocatingUser UserID: {allocatingUser.UserID}");
+			MaybeLog($"LocalUser UserID: {worker.LocalUser.UserID}");
+			MaybeLog($"allocatingUser UserName: {allocatingUser.UserName}");
+			MaybeLog($"LocalUser UserName: {worker.LocalUser.UserName}");
+			if (allocatingUser.UserID == null && worker.LocalUser.UserID == null)
 			{
-				worldQueueMap.Add(node.World, new NodeRefreshQueue());
+				if (allocatingUser.UserName == worker.LocalUser.UserName)
+				{
+					MaybeLog("True for usernames");
+					return true;
+				}
+				MaybeLog("False for usernames");
+				return false;
 			}
-			NodeRefreshQueue queue = worldQueueMap[node.World];
-			int val = updates >= 0 ? updates : 0;
-			NodeRefreshData data = new NodeRefreshData(val, node);
-			queue.Enqueue(data);
-			node.RunInUpdates(val, queue.RunAction);
-			Debug($"Scheduled refresh in {updates} updates for node {node?.Name ?? "NULL"} {node?.ReferenceID.ToString() ?? "NULL"}");
+			else if (allocatingUser.UserID == worker.LocalUser.UserID)
+			{
+				MaybeLog("True for userIds");
+				return true;
+			}
+			MaybeLog("False for userIds");
+			return false;
+
+			void MaybeLog(string str)
+			{
+				if (logging)
+				{
+					Debug(str);
+				}
+			}
 		}
 
 		[HarmonyPatch(typeof(ProtoFluxNode))]
@@ -626,7 +648,7 @@ namespace ColorMyProtoFlux
 					if (__instance.Slot.ChildrenCount == 0) return true;
 
 					var visual = __instance.GetVisual();
-					if (!ElementExists(visual) || visual.ReferenceID.User != visual.LocalUser.AllocationID) return true;
+					if (!ElementExists(visual) || !WorkerBelongsToLocalUser(visual)) return true;
 
 					// the node color should only refresh if the new group is not null
 					if (value == null) return true;
@@ -635,7 +657,16 @@ namespace ColorMyProtoFlux
 					{
 						Debug($"Node changed group. Node: {__instance.Name ?? "NULL"} {__instance.ReferenceID.ToString() ?? "NULL"} New group: {value?.Name ?? "NULL"}");
 
-						ScheduleNodeRefresh(0, __instance);
+						//ScheduleNodeRefresh(0, __instance);
+						__instance.RunInUpdates(0, () => 
+						{
+							NodeInfo info = GetNodeInfoForNode(__instance);
+							if (ValidateNodeInfo(info))
+							{
+								RefreshNodeColor(info);
+								info.visual.UpdateNodeStatus();
+							}
+						});
 					}
 					return true;
 				}
@@ -658,27 +689,83 @@ namespace ColorMyProtoFlux
 				Slot root = __instance.Slot;
 
 				// only run if the protoflux node visual slot is allocated to the local user
-				if (Config.GetValue(MOD_ENABLED) == true && ElementExists(root) && root.ReferenceID.User == root.LocalUser.AllocationID)
+				if (Config.GetValue(MOD_ENABLED) == true && ElementExists(root) && WorkerBelongsToLocalUser(root, logging: true))
 				{
 					if (root.Tag != COLOR_SET_TAG)
 					{
-						// Check if multiple visuals have accidentally been generated for this node (It's a bug that I've seen happen sometimes)
-						// In reality this check doesn't really help much
-						if (__instance.Slot.Parent.Children.Count() > 1)
-						{
-							foreach (Slot childSlot in __instance.Slot.Parent.Children)
-							{
-								if (ElementExists(childSlot) && childSlot.Name == root.Name && ElementExists(childSlot.GetComponent<ProtoFluxNodeVisual>()))
-								{
-									return;
-								}
-							}
-						}
-
 						// Does this need to be 3?
 						__instance.RunInUpdates(3, () =>
 						{
 							if (!ElementExists(__instance)) return;
+
+							__instance.RunInUpdates(7, () => 
+							{
+								if (!ElementExists(__instance)) return;
+
+								// Check if multiple visuals have accidentally been generated for this node (It's a bug that I've seen happen sometimes)
+
+								// Find the node that only has one visual, then delete all visuals not owned by the user that created the lone visual
+
+								if (__instance.Slot.Parent.ChildrenCount > 1)
+								{
+									IEnumerable<Slot> GetVisuals(ProtoFluxNode node)
+									{
+										return node.Slot.Children.Where(childSlot => childSlot.Name == "<NODE_UI>" && childSlot.GetComponent<ProtoFluxNodeVisual>() is ProtoFluxNodeVisual visual && visual.Node.Target == node && childSlot.ChildrenCount > 0 );
+									}
+									Debug("More than one slot under the node root");
+									if (node.Group == null) return;
+									User originalUnpackingUser = null;
+									bool visualStackBugHappened = false;
+									foreach (var node in node.Group.Nodes)
+									{
+										var visuals = GetVisuals(node);
+										if (visuals.Count() == 1)
+										{
+											originalUnpackingUser = node.World.GetUserByAllocationID(visuals.First().ReferenceID.User);
+										}
+										else if (visuals.Count() > 1)
+										{
+											visualStackBugHappened = true;
+										}
+										if (originalUnpackingUser != null && visualStackBugHappened)
+										{
+											break;
+										}
+									}
+									if (originalUnpackingUser != null && visualStackBugHappened)
+									{
+										Debug("Visual stack bug happened");
+										Debug($"Original unpacking user: {originalUnpackingUser.UserName}");
+										foreach (var node in node.Group.Nodes)
+										{
+											var visuals = GetVisuals(node);
+											if (visuals.Count() > 1)
+											{
+												foreach (var visual in visuals.ToArray())
+												{
+													var allocatingUser = visual.World.GetUserByAllocationID(visual.ReferenceID.User);
+													if (allocatingUser != null && allocatingUser != originalUnpackingUser)
+													{
+														Debug($"Destroying visual belonging to user: {allocatingUser.UserName}");
+														visual.Destroy();
+													}
+												}
+											}
+										}
+									}
+
+									//foreach (Slot childSlot in __instance.Slot.Parent.Children.ToArray())
+									//{
+									//	if (childSlot == __instance.Slot) continue;
+									//	if (childSlot.Name == __instance.Slot.Name && childSlot.GetComponent<ProtoFluxNodeVisual>() != null)
+									//	{
+									//		Debug($"Destroying node visual {__instance.ReferenceID} Tag: {__instance.Slot.Tag}");
+									//		__instance.Slot.Destroy();
+									//		return;
+									//	}
+									//}
+								}
+							});
 
 							Debug("New node: " + node.NodeName ?? "NULL");
 							Debug("Worker category path: " + GetWorkerCategoryPath(node) ?? "NULL");
@@ -817,12 +904,14 @@ namespace ColorMyProtoFlux
 
 								Slot targetSlot = root;
 
+								var bgTargetTintCopy = ____bgImage.Target.Tint;
+
 								var booleanReferenceDriver1 = targetSlot.AttachComponent<BooleanReferenceDriver<Image>>();
 								booleanReferenceDriver1.TrueTarget.Target = ____bgImage.Target;
 								booleanReferenceDriver1.FalseTarget.Target = null;
 								booleanReferenceDriver1.TargetReference.Target = ____bgImage;
 
-								____bgImage.Target.Tint.Changed += OnNodeBackgroundColorChanged;
+								bgTargetTintCopy.Changed += OnNodeBackgroundColorChanged;
 
 								var overrideFieldsIValue = GetOrAddOverrideFieldsIValue(targetSlot.World);
 
@@ -840,6 +929,8 @@ namespace ColorMyProtoFlux
 
 								if (ElementExists(____overviewBg.Target))
 								{
+									var overviewTargetCopy = ____overviewBg.Target;
+
 									var valueMultiDriver = targetSlot.AttachComponent<ValueMultiDriver<bool>>();
 
 									valueMultiDriver.Drives.Add().Target = booleanReferenceDriver1.State;
@@ -859,7 +950,12 @@ namespace ColorMyProtoFlux
 										referenceEqualityDriver.Target.Target = valueMultiDriver.Value;
 									}
 
-									____overviewBg.Target.Changed += OnNodeBackgroundColorChanged;
+									overviewTargetCopy.Changed += OnNodeBackgroundColorChanged;
+
+									__instance.RunInUpdates(3, () => 
+									{
+										overviewTargetCopy.Value = bgTargetTintCopy.Value;
+									});
 								}
 								else
 								{

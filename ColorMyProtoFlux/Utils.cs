@@ -153,15 +153,27 @@ namespace ColorMyProtoFlux
 		private static ProtoFluxNodeVisual GetNodeVisual(ProtoFluxNode node)
 		{
 			NodeInfo nodeInfo = GetNodeInfoForNode(node);
-			ProtoFluxNodeVisual visual = null;
+			//ProtoFluxNodeVisual visual = null;
 			if (ValidateNodeInfo(nodeInfo))
 			{
 				return nodeInfo.visual;
 			}
 
-			visual = node.Slot.GetComponentInChildren<ProtoFluxNodeVisual>();
+			//visual = node.Slot.GetComponentInChildren<ProtoFluxNodeVisual>(visual => WorkerBelongsToLocalUser(visual));
 
-			return visual;
+			foreach (var childSlot in node.Slot.Children)
+			{
+				if (WorkerBelongsToLocalUser(childSlot))
+				{
+					var visual = childSlot.GetComponent<ProtoFluxNodeVisual>();
+					if (visual != null && WorkerBelongsToLocalUser(visual))
+					{
+						return visual;
+					}
+				}
+			}
+
+			return null;
 		}
 
 		private static Image GetOverviewImageForNode(ProtoFluxNode node)

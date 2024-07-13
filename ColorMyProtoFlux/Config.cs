@@ -68,11 +68,11 @@ namespace ColorMyProtoFlux
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> _STYLE_SECTION_HEADER = new ModConfigurationKey<dummy>(SectionHeaderText("STYLE"), SectionHeaderText("STYLE"), () => new dummy());
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> COLOR_FULL_NODE = new ModConfigurationKey<bool>("Color Full Node", "Color the full node, instead of just the header:", () => false);
+		private static ModConfigurationKey<bool> COLOR_FULL_NODE = new ModConfigurationKey<bool>("Color Full Node", "Color the full node, instead of just the header:", () => true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> COLOR_NODES_WITHOUT_HEADER = new ModConfigurationKey<bool>("Color Nodes Without Header", "Color nodes that don't have a header:", () => true);
 		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> BOOST_TYPE_COLOR_VISIBILITY = new ModConfigurationKey<bool>("Boost Type Color Visibility", "Boost type color visibility (Helps if you are coloring the full node):", () => false);
+		private static ModConfigurationKey<bool> BOOST_TYPE_COLOR_VISIBILITY = new ModConfigurationKey<bool>("Boost Type Color Visibility", "Boost type color visibility (Helps if you are coloring the full node):", () => true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> MAKE_CONNECT_POINTS_FULL_ALPHA = new ModConfigurationKey<bool>("MAKE_CONNECT_POINTS_FULL_ALPHA", "[Enhance type colors] Make type-colored images on nodes have full alpha:", () => true, internalAccessOnly: true);
 		[AutoRegisterConfigKey]

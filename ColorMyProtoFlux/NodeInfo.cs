@@ -20,7 +20,6 @@ namespace ColorMyProtoFlux
 		public HashSet<IField<colorX>> nodeNameTextColorFields;
 		public colorX modComputedCustomColor;
 		public HashSet<IField<colorX>> connectionPointImageTintFields;
-		//public string lastGroupName;
 		public bool isRemoved;
 		//public HashSet<Button> nodeButtons;
 		// dont need to store node background image because the UpdateNodeStatus patch handles coloring of that part
@@ -284,7 +283,7 @@ namespace ColorMyProtoFlux
 
 			Slot visualSlot = info.visual.Slot;
 
-			if (visualSlot.ReferenceID.User != info.node.LocalUser.AllocationID)
+			if (!WorkerBelongsToLocalUser(visualSlot))
 			{
 				NodeInfoRemove(info);
 				return false;
