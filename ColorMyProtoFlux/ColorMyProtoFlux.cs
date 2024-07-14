@@ -685,18 +685,33 @@ namespace ColorMyProtoFlux
 		{
 			static void Postfix(Slot root)
 			{
+				if (!Config.GetValue(MOD_ENABLED)) return;
 				if (!ElementExists(root)) return;
-				var nodeGroup = root.GetComponentInChildren<ProtoFluxNode>()?.Group;
-				if (nodeGroup != null)
+				foreach (var node in root.GetComponentsInChildren<ProtoFluxNode>())
 				{
-					Debug($"Adding group to unpacked groups: {nodeGroup.Name}");
-					unpackedGroups.Add(nodeGroup);
-					root.World.RunInUpdates(15, () => 
+					var nodeGroup = node.Group;
+					if (nodeGroup != null && !unpackedGroups.Contains(nodeGroup))
 					{
-						Debug($"Removing group from unpacked groups: {nodeGroup.Name}");
-						unpackedGroups.Remove(nodeGroup);
-					});
+						Debug($"Adding group to unpacked groups: {nodeGroup.Name}");
+						unpackedGroups.Add(nodeGroup);
+						root.World.RunInUpdates(60, () =>
+						{
+							Debug($"Removing group from unpacked groups: {nodeGroup.Name}");
+							unpackedGroups.Remove(nodeGroup);
+						});
+					}
 				}
+				//var nodeGroup = root.GetComponentInChildren<ProtoFluxNode>()?.Group;
+				//if (nodeGroup != null)
+				//{
+				//	Debug($"Adding group to unpacked groups: {nodeGroup.Name}");
+				//	unpackedGroups.Add(nodeGroup);
+				//	root.World.RunInUpdates(15, () => 
+				//	{
+				//		Debug($"Removing group from unpacked groups: {nodeGroup.Name}");
+				//		unpackedGroups.Remove(nodeGroup);\
+				//	});
+				//}
 			}
 		}
 
@@ -720,7 +735,7 @@ namespace ColorMyProtoFlux
 						{
 							if (!ElementExists(__instance)) return;
 
-							__instance.RunInUpdates(7, () => 
+							__instance.RunInUpdates(30, () => 
 							{
 								if (!ElementExists(__instance)) return;
 
@@ -730,7 +745,7 @@ namespace ColorMyProtoFlux
 								{
 									IEnumerable<Slot> GetVisuals(ProtoFluxNode node)
 									{
-										return node.Slot.Children.Where(childSlot => childSlot.Name == "<NODE_UI>"
+										return node.Slot.Children.Where(childSlot => childSlot.Name == ProtoFluxNodeVisual.SLOT_NAME
 											&& childSlot.GetComponent<ProtoFluxNodeVisual>() is ProtoFluxNodeVisual visual
 											&& visual.Node.Target == node
 											&& childSlot.ChildrenCount > 0 );
