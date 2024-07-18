@@ -62,7 +62,7 @@ namespace ColorMyProtoFlux
 
 		private static Dictionary<World, IValue<bool>> worldOverrideFieldsIValueMap = new();
 
-		private static HashSet<ProtoFluxNodeGroup> unpackedGroups = new();
+		//private static HashSet<ProtoFluxNodeGroup> unpackedGroups = new();
 
 		//private static Dictionary<ProtoFluxNodeVisual, long> nodeVisualLastStatusUpdateTimes = new();
 
