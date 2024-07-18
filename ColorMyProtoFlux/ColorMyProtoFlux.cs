@@ -679,41 +679,31 @@ namespace ColorMyProtoFlux
 			}
 		}
 
-		[HarmonyPatch(typeof(ProtoFluxVisualHelper))]
-		[HarmonyPatch("UnpackNodes")]
-		class Patch_ProtoFluxTool_OnUnpack
-		{
-			static void Postfix(Slot root)
-			{
-				if (!Config.GetValue(MOD_ENABLED)) return;
-				if (!ElementExists(root)) return;
-				foreach (var node in root.GetComponentsInChildren<ProtoFluxNode>())
-				{
-					var nodeGroup = node.Group;
-					if (nodeGroup != null && !unpackedGroups.Contains(nodeGroup))
-					{
-						Debug($"Adding group to unpacked groups: {nodeGroup.Name}");
-						unpackedGroups.Add(nodeGroup);
-						root.World.RunInUpdates(60, () =>
-						{
-							Debug($"Removing group from unpacked groups: {nodeGroup.Name}");
-							unpackedGroups.Remove(nodeGroup);
-						});
-					}
-				}
-				//var nodeGroup = root.GetComponentInChildren<ProtoFluxNode>()?.Group;
-				//if (nodeGroup != null)
-				//{
-				//	Debug($"Adding group to unpacked groups: {nodeGroup.Name}");
-				//	unpackedGroups.Add(nodeGroup);
-				//	root.World.RunInUpdates(15, () => 
-				//	{
-				//		Debug($"Removing group from unpacked groups: {nodeGroup.Name}");
-				//		unpackedGroups.Remove(nodeGroup);\
-				//	});
-				//}
-			}
-		}
+		// This patch was used for the attempted visual stack bug workaround
+		//[HarmonyPatch(typeof(ProtoFluxVisualHelper))]
+		//[HarmonyPatch("UnpackNodes")]
+		//class Patch_ProtoFluxTool_OnUnpack
+		//{
+		//	static void Postfix(Slot root)
+		//	{
+		//		if (!Config.GetValue(MOD_ENABLED)) return;
+		//		if (!ElementExists(root)) return;
+		//		foreach (var node in root.GetComponentsInChildren<ProtoFluxNode>())
+		//		{
+		//			var nodeGroup = node.Group;
+		//			if (nodeGroup != null && !unpackedGroups.Contains(nodeGroup))
+		//			{
+		//				Debug($"Adding group to unpacked groups: {nodeGroup.Name}");
+		//				unpackedGroups.Add(nodeGroup);
+		//				root.World.RunInUpdates(60, () =>
+		//				{
+		//					Debug($"Removing group from unpacked groups: {nodeGroup.Name}");
+		//					unpackedGroups.Remove(nodeGroup);
+		//				});
+		//			}
+		//		}
+		//	}
+		//}
 
 		[HarmonyPatch(typeof(ProtoFluxNodeVisual))]
 		[HarmonyPatch("BuildUI")]
@@ -735,96 +725,99 @@ namespace ColorMyProtoFlux
 						{
 							if (!ElementExists(__instance)) return;
 
-							__instance.RunInUpdates(30, () => 
-							{
-								if (!ElementExists(__instance)) return;
+							// Attempted workaround for visual stacking bug: https://github.com/Yellow-Dog-Man/Resonite-Issues/issues/375
+							// Didn't work reliably enough :(
 
-								// Check if multiple visuals have accidentally been generated for this node (It's a bug that I've seen happen sometimes)
+							//__instance.RunInUpdates(30, () => 
+							//{
+							//	if (!ElementExists(__instance)) return;
 
-								if (__instance.Slot.Parent.ChildrenCount > 1)
-								{
-									IEnumerable<Slot> GetVisuals(ProtoFluxNode node)
-									{
-										return node.Slot.Children.Where(childSlot => childSlot.Name == ProtoFluxNodeVisual.SLOT_NAME
-											&& childSlot.GetComponent<ProtoFluxNodeVisual>() is ProtoFluxNodeVisual visual
-											&& visual.Node.Target == node
-											&& childSlot.ChildrenCount > 0 );
-									}
-									Debug("More than one slot under the node root");
-									if (node.Group == null) return;
-									bool localUserUnpackedGroup = false;
-									if (unpackedGroups.Contains(node.Group))
-									{
-										localUserUnpackedGroup = true;
-									}
-									bool visualStackBugHappened = false;
+							//	// Check if multiple visuals have accidentally been generated for this node (It's a bug that I've seen happen sometimes)
 
-									// If local user unpacked the group, destroy all other visuals
-									// Otherwise destroy local user visuals only
+							//	if (__instance.Slot.Parent.ChildrenCount > 1)
+							//	{
+							//		IEnumerable<Slot> GetVisuals(ProtoFluxNode node)
+							//		{
+							//			return node.Slot.Children.Where(childSlot => childSlot.Name == ProtoFluxNodeVisual.SLOT_NAME
+							//				&& childSlot.GetComponent<ProtoFluxNodeVisual>() is ProtoFluxNodeVisual visual
+							//				&& visual.Node.Target == node
+							//				&& childSlot.ChildrenCount > 0 );
+							//		}
+							//		Debug("More than one slot under the node root");
+							//		if (node.Group == null) return;
+							//		bool localUserUnpackedGroup = false;
+							//		if (unpackedGroups.Contains(node.Group))
+							//		{
+							//			localUserUnpackedGroup = true;
+							//		}
+							//		bool visualStackBugHappened = false;
 
-									foreach (var node in node.Group.Nodes)
-									{
-										var visuals = GetVisuals(node);
-										// Isn't always correct
-										//if (visualsOwner == null && visuals.Count() == 1 && node.NodeInstance is IExecutionNode)
-										//{
-										//	visualsOwner = node.World.GetUserByAllocationID(visuals.First().ReferenceID.User);
-										//}
-										if (visuals.Count() > 1)
-										{
-											visualStackBugHappened = true;
-											break;
-										}
-									}
-									if (visualStackBugHappened)
-									{
-										Debug("Visual stack bug happened");
-										if (localUserUnpackedGroup)
-										{
-											Debug("Local user unpacked this group.");
-										}
-										else
-										{
-											Debug("Local user did not unpack this group.");
-										}
-										foreach (var node in node.Group.Nodes)
-										{
-											var visuals = GetVisuals(node);
-											if (visuals.Count() > 1)
-											{
-												foreach (var visual in visuals.ToArray())
-												{
-													var allocatingUser = visual.World.GetUserByAllocationID(visual.ReferenceID.User);
-													if (allocatingUser != null)
-													{
-														if (localUserUnpackedGroup && allocatingUser != visual.LocalUser)
-														{
-															Debug($"Destroying visual belonging to user: {allocatingUser.UserName}");
-															visual.Destroy();
-														}
-														else if (!localUserUnpackedGroup && allocatingUser == visual.LocalUser)
-														{
-															Debug($"Destroying visual belonging to local user: {visual.LocalUser.UserName}");
-															visual.Destroy();
-														}
-													}
-												}
-											}
-										}
-									}
+							//		// If local user unpacked the group, destroy all other visuals
+							//		// Otherwise destroy local user visuals only
 
-									//foreach (Slot childSlot in __instance.Slot.Parent.Children.ToArray())
-									//{
-									//	if (childSlot == __instance.Slot) continue;
-									//	if (childSlot.Name == __instance.Slot.Name && childSlot.GetComponent<ProtoFluxNodeVisual>() != null)
-									//	{
-									//		Debug($"Destroying node visual {__instance.ReferenceID} Tag: {__instance.Slot.Tag}");
-									//		__instance.Slot.Destroy();
-									//		return;
-									//	}
-									//}
-								}
-							});
+							//		foreach (var node in node.Group.Nodes)
+							//		{
+							//			var visuals = GetVisuals(node);
+							//			// Isn't always correct
+							//			//if (visualsOwner == null && visuals.Count() == 1 && node.NodeInstance is IExecutionNode)
+							//			//{
+							//			//	visualsOwner = node.World.GetUserByAllocationID(visuals.First().ReferenceID.User);
+							//			//}
+							//			if (visuals.Count() > 1)
+							//			{
+							//				visualStackBugHappened = true;
+							//				break;
+							//			}
+							//		}
+							//		if (visualStackBugHappened)
+							//		{
+							//			Debug("Visual stack bug happened");
+							//			if (localUserUnpackedGroup)
+							//			{
+							//				Debug("Local user unpacked this group.");
+							//			}
+							//			else
+							//			{
+							//				Debug("Local user did not unpack this group.");
+							//			}
+							//			foreach (var node in node.Group.Nodes)
+							//			{
+							//				var visuals = GetVisuals(node);
+							//				if (visuals.Count() > 1)
+							//				{
+							//					foreach (var visual in visuals.ToArray())
+							//					{
+							//						var allocatingUser = visual.World.GetUserByAllocationID(visual.ReferenceID.User);
+							//						if (allocatingUser != null)
+							//						{
+							//							if (localUserUnpackedGroup && allocatingUser != visual.LocalUser)
+							//							{
+							//								Debug($"Destroying visual belonging to user: {allocatingUser.UserName}");
+							//								visual.Destroy();
+							//							}
+							//							else if (!localUserUnpackedGroup && allocatingUser == visual.LocalUser)
+							//							{
+							//								Debug($"Destroying visual belonging to local user: {visual.LocalUser.UserName}");
+							//								visual.Destroy();
+							//							}
+							//						}
+							//					}
+							//				}
+							//			}
+							//		}
+
+							//		//foreach (Slot childSlot in __instance.Slot.Parent.Children.ToArray())
+							//		//{
+							//		//	if (childSlot == __instance.Slot) continue;
+							//		//	if (childSlot.Name == __instance.Slot.Name && childSlot.GetComponent<ProtoFluxNodeVisual>() != null)
+							//		//	{
+							//		//		Debug($"Destroying node visual {__instance.ReferenceID} Tag: {__instance.Slot.Tag}");
+							//		//		__instance.Slot.Destroy();
+							//		//		return;
+							//		//	}
+							//		//}
+							//	}
+							//});
 
 							Debug("New node: " + node.NodeName ?? "NULL");
 							ExtraDebug("Worker category path: " + GetWorkerCategoryPath(node) ?? "NULL");
