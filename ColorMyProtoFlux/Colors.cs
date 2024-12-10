@@ -357,14 +357,23 @@ namespace ColorMyProtoFlux
 
 				// force it to 1 to avoid dividing by 0
 				ulong divisor = (refidModDivisor > 1) ? (ulong)refidModDivisor : 1;
-
-				if (Config.GetValue(USE_SYSTEM_TIME_RNG))
+				ulong val;
+				if (Config.GetValue(HUE_SHIFT_OVER_TIME))
 				{
-					colorToSet = GetColorFromUlong(node.Slot.ReferenceID.Position, divisor, rngTimeSeeded);
+					val = (ulong)DateTime.Now.Ticks + node.Slot.ReferenceID.Position;
 				}
 				else
 				{
-					colorToSet = GetColorFromUlong(node.Slot.ReferenceID.Position, divisor, rng);
+					val = node.Slot.ReferenceID.Position;
+				}
+
+				if (Config.GetValue(USE_SYSTEM_TIME_RNG))
+				{
+					colorToSet = GetColorFromUlong(val, divisor, rngTimeSeeded);
+				}
+				else
+				{
+					colorToSet = GetColorFromUlong(val, divisor, rng);
 				}
 
 				// set rng to null so that the color doesn't get messed with

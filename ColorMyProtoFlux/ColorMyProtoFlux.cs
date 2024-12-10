@@ -237,6 +237,41 @@ namespace ColorMyProtoFlux
 					runFinalNodeUpdate = false;
 					Debug("runFinalNodeUpdate set to false");
 				}
+
+				void Funny()
+				{
+					ValidateAllNodeInfos();
+
+					foreach (NodeInfo nodeInfo in nodeInfoSet.ToList())
+					{
+						// don't change colors of nodes that are in other worlds
+						// node shouldn't be null here because validation happened before the loop
+						// skip this check if runFinalNodeUpdate?
+						if (nodeInfo.node.World != Engine.Current.WorldManager.FocusedWorld)
+						{
+							continue;
+						}
+
+						//Msg("Refreshing node color in config changed.");
+
+						// need to wait for the drives on the node visual to update from the override stream value
+						NodeInfoRunInUpdates(nodeInfo, 1, () =>
+						{
+							RefreshNodeColor(nodeInfo);
+							GetNodeVisual(nodeInfo.node).UpdateNodeStatus();
+						});
+					}
+
+					if (Config.GetValue(HUE_SHIFT_OVER_TIME) && Config.GetValue(USE_HUE_SHIFT_MODE))
+					{
+						Engine.Current.WorldManager.FocusedWorld.RunInUpdates(1, Funny);
+					}
+				}
+
+				if ((configChangedEvent.Key == HUE_SHIFT_OVER_TIME || configChangedEvent.Key == USE_HUE_SHIFT_MODE) && Config.GetValue(HUE_SHIFT_OVER_TIME) && Config.GetValue(USE_HUE_SHIFT_MODE))
+				{
+					Engine.Current.WorldManager.FocusedWorld.RunInUpdates(1, Funny);
+				}
 			}
 		}
 
@@ -689,7 +724,7 @@ namespace ColorMyProtoFlux
 		[HarmonyPatch("BuildUI")]
 		class Patch_ProtoFluxNodeVisual_BuildUI
 		{
-			[HarmonyAfter("com.Dexy.ProtoWireScroll")]
+			[HarmonyAfter("com.Dexy.ProtoFluxVisualsOverhaul")]
 			static void Postfix(ProtoFluxNodeVisual __instance, ProtoFluxNode node, SyncRef<Image> ____bgImage, FieldDrive<colorX> ____overviewBg, SyncRef<Slot> ____inputsRoot, SyncRef<Slot> ____outputsRoot)
 			{
 				//Debug("Entered BuildUI Postfix");

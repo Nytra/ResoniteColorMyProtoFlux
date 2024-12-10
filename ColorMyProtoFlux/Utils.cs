@@ -250,9 +250,9 @@ namespace ColorMyProtoFlux
 
 		private static bool ProtoFluxVisualsOverhaulActive()
 		{
-			if (Harmony.HasAnyPatches("com.Dexy.ProtoWireScroll"))
+			if (Harmony.HasAnyPatches("com.Dexy.ProtoFluxVisualsOverhaul"))
 			{
-				var mod = ModLoader.Mods().FirstOrDefault(mod => mod.Name == "ProtoWireScroll");
+				var mod = ModLoader.Mods().FirstOrDefault(mod => mod.Name == "ProtoFluxVisualsOverhaul");
 				if (mod != null)
 				{
 					var conf = mod.GetConfiguration();
