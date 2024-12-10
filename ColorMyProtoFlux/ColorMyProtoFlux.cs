@@ -13,7 +13,7 @@ using System.Linq;
 
 #if HOT_RELOAD
 using ResoniteHotReloadLib;
-#endif //HOT_RELOAD
+#endif // HOT_RELOAD
 
 namespace ColorMyProtoFlux
 {
@@ -66,14 +66,10 @@ namespace ColorMyProtoFlux
 
 		//private static Dictionary<ProtoFluxNodeVisual, long> nodeVisualLastStatusUpdateTimes = new();
 
-		//private static HashSet<RefDriverNodeInfo> refDriverNodeInfoSet = new();
-
 		private static Random rng = null;
 		private static Random rngTimeSeeded = new();
 
 		private const string COLOR_SET_TAG = "ColorMyProtoFlux.ColorSet";
-
-		//private static Dictionary<ISyncRef, IWorldElement> syncRefTargetMap = new();
 
 		// stuff for making sure the colors don't change too fast
 		private const int REALTIME_CONFIG_COLOR_CHANGE_INTERVAL_MILLISECONDS = 100;
@@ -159,20 +155,8 @@ namespace ColorMyProtoFlux
 			bool modEnabled = Config.GetValue(MOD_ENABLED);
 			bool modEnabled_KeyChanged = configChangedEvent.Key == MOD_ENABLED;
 
-			//bool autoUpdateRefDriverNodes = Config.GetValue(AUTO_UPDATE_REF_AND_DRIVER_NODES);
-			//bool autoUpdateRefDriverNodes_KeyChanged = configChangedEvent.Key == AUTO_UPDATE_REF_AND_DRIVER_NODES;
-
 			bool updateNodesOnConfigChanged = Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGE);
 			bool updateNodesOnConfigChanged_KeyChanged = configChangedEvent.Key == UPDATE_NODES_ON_CONFIG_CHANGE;
-
-			bool makeConnectPointsFullAlpha = Config.GetValue(MAKE_CONNECT_POINTS_FULL_ALPHA);
-			bool makeConnectPointsFullAlpha_KeyChanged = configChangedEvent.Key == MAKE_CONNECT_POINTS_FULL_ALPHA;
-
-			bool restoreOriginalTypeColors = Config.GetValue(RESTORE_ORIGINAL_TYPE_COLORS);
-			bool restoreOriginalTypeColors_KeyChanged = configChangedEvent.Key == RESTORE_ORIGINAL_TYPE_COLORS;
-
-			bool enhanceTypeColors = Config.GetValue(BOOST_TYPE_COLOR_VISIBILITY);
-			bool enhanceTypeColors_KeyChanged = configChangedEvent.Key == BOOST_TYPE_COLOR_VISIBILITY;
 
 			bool runFinalUpdateOnModDisable = Config.GetValue(RUN_FINAL_UPDATE_ON_MOD_DISABLE);
 
@@ -322,9 +306,6 @@ namespace ColorMyProtoFlux
 		{
 			Harmony harmony = new Harmony("owo.Nytra.ColorMyProtoFlux");
 			harmony.PatchAll();
-
-			//Thread thread1 = new(new ThreadStart(RefDriverNodeThread));
-			//thread1.Start();
 
 			Config.OnThisConfigurationChanged += OnConfigChanged;
 
@@ -658,7 +639,6 @@ namespace ColorMyProtoFlux
 					{
 						Debug($"Node changed group. Node: {__instance.Name ?? "NULL"} {__instance.ReferenceID.ToString() ?? "NULL"} New group: {value?.Name ?? "NULL"}");
 
-						//ScheduleNodeRefresh(0, __instance);
 						__instance.RunInUpdates(0, () => 
 						{
 							NodeInfo info = GetNodeInfoForNode(__instance);
@@ -709,6 +689,7 @@ namespace ColorMyProtoFlux
 		[HarmonyPatch("BuildUI")]
 		class Patch_ProtoFluxNodeVisual_BuildUI
 		{
+			[HarmonyAfter("com.Dexy.ProtoWireScroll")]
 			static void Postfix(ProtoFluxNodeVisual __instance, ProtoFluxNode node, SyncRef<Image> ____bgImage, FieldDrive<colorX> ____overviewBg, SyncRef<Slot> ____inputsRoot, SyncRef<Slot> ____outputsRoot)
 			{
 				//Debug("Entered BuildUI Postfix");
@@ -903,6 +884,7 @@ namespace ColorMyProtoFlux
 									if (ElementExists(categoryText))
 									{
 										//ExtraDebug($"Category text: {categoryText} Slot name: {categoryText.Slot.Name} RefID: {categoryText.ReferenceID}");
+
 										UpdateCategoryTextColor(node, categoryText, colorToSet);
 
 										if (Config.GetValue(UPDATE_NODES_ON_CONFIG_CHANGE))

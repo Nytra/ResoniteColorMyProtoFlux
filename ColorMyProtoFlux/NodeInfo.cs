@@ -124,24 +124,6 @@ namespace ColorMyProtoFlux
 			//return nodeInfoSet.Any(nodeInfo => nodeInfo.node == node);
 		}
 
-		//private static bool RefDriverNodeInfoSetContainsSyncRef(ISyncRef syncRef)
-		//{
-		//	foreach (RefDriverNodeInfo refDriverNodeInfo in refDriverNodeInfoSet)
-		//	{
-		//		if (refDriverNodeInfo.syncRef == syncRef) return true;
-		//	}
-		//	return false;
-		//}
-
-		//private static bool RefDriverNodeInfoSetContainsNode(ProtoFluxNode node)
-		//{
-		//	foreach (RefDriverNodeInfo refDriverNodeInfo in refDriverNodeInfoSet)
-		//	{
-		//		if (refDriverNodeInfo.node == node) return true;
-		//	}
-		//	return false;
-		//}
-
 		private static NodeInfo GetNodeInfoForNode(ProtoFluxNode node)
 		{
 			if (node == null) return null;
@@ -219,18 +201,6 @@ namespace ColorMyProtoFlux
 			return false;
 			//return nodeInfoSet.Any(nodeInfo => nodeInfo.visual == visual);
 		}
-
-		//private static void TryTrimExcessRefDriverNodeInfo()
-		//{
-		//	try
-		//	{
-		//		refDriverNodeInfoSet.TrimExcess();
-		//	}
-		//	catch (Exception e)
-		//	{
-		//		Error("Error while trying to trim excess RefDriverNodeInfo's. " + e.ToString());
-		//	}
-		//}
 
 		// Need to be careful with this because small anonymous delegates can get optimized by JIT and break hot-reloading
 		private static void NodeInfoRunInUpdates(NodeInfo info, int updates, Action act)
@@ -344,18 +314,6 @@ namespace ColorMyProtoFlux
 			}
 		}
 
-		//private static void RefDriverNodeInfoSetClear()
-		//{
-		//	foreach (RefDriverNodeInfo refDriverNodeInfo in refDriverNodeInfoSet)
-		//	{
-		//		refDriverNodeInfo.syncRef.Changed -= refDriverNodeInfo.UpdateColor;
-		//		refDriverNodeInfo.node = null;
-		//		refDriverNodeInfo.syncRef = null;
-		//	}
-		//	refDriverNodeInfoSet.Clear();
-		//	TryTrimExcessRefDriverNodeInfo();
-		//}
-
 		private static bool IsNodeInvalid(NodeInfo nodeInfo)
 		{
 			if (nodeInfo == null)
@@ -385,7 +343,7 @@ namespace ColorMyProtoFlux
 			return anyInvalid;
 		}
 
-		// maybe do UpdateNodeStatus in here as well:
+		// maybe do UpdateNodeStatus in here as well?
 		private static void RefreshNodeColor(NodeInfo nodeInfo)
 		{
 			nodeInfo.modComputedCustomColor = ComputeColorForProtoFluxNode(nodeInfo.node);

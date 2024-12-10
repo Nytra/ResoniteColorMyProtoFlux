@@ -1,7 +1,9 @@
-﻿using Elements.Core;
+﻿using Elements.Assets;
+using Elements.Core;
 using FrooxEngine;
 using FrooxEngine.ProtoFlux;
 using FrooxEngine.UIX;
+using HarmonyLib;
 using ResoniteModLoader;
 using System;
 using System.Collections.Generic;
@@ -194,9 +196,19 @@ namespace ColorMyProtoFlux
 
 			ProtoFluxNodeVisual nodeVisual = GetNodeVisual(node);
 
-			if (ElementExists(nodeVisual) && nodeVisual.Slot.ChildrenCount > 1)
+			if (Harmony.HasAnyPatches("com.Dexy.ProtoWireScroll"))
 			{
-				return nodeVisual.Slot[1].GetComponent<Image>();
+				if (ElementExists(nodeVisual) && nodeVisual.Slot.FindChild("TitleParent") is Slot titleParent)
+				{
+					return titleParent.GetComponentInChildren<Image>();
+				}
+			}
+			else
+			{
+				if (ElementExists(nodeVisual) && nodeVisual.Slot.ChildrenCount > 1)
+				{
+					return nodeVisual.Slot[1].GetComponent<Image>();
+				}
 			}
 
 			return null;
@@ -229,6 +241,15 @@ namespace ColorMyProtoFlux
 		private static List<Text> GetNodeNameTextListForNode(ProtoFluxNode node)
 		{
 			List<Text> textList = GetNodeVisual(node)?.Slot.GetComponentsInChildren((Text t) => t.Content == node.NodeName && t.Slot.Name == "Text" && !t.Content.IsDriven && t.Slot.Parent?.Name != "Button");
+			if (Harmony.HasAnyPatches("com.Dexy.ProtoWireScroll"))
+			{
+				var text = GetHeaderImageForNode(node)?.Slot.GetComponentInChildren<Text>();
+				if (text != null)
+				{
+					text.Content.Value = new StringRenderTree(text.Content).GetRawString();
+					textList.Add(text);
+				}
+			}
 			return textList;
 		}
 

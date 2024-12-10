@@ -50,8 +50,6 @@ namespace ColorMyProtoFlux
 
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> _SPACER_0 = new ModConfigurationKey<dummy>(SpacerText(), SpacerText(), () => new dummy());
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<dummy> DUMMY_SEP_0_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_0_1", $"<color={HEADER_TEXT_COLOR}>[COLOR MODEL]</color>", () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<ColorModelEnum> COLOR_MODEL = new ModConfigurationKey<ColorModelEnum>("Selected Color Model", "Selected Color Model:", () => ColorModelEnum.HSV);
 		[AutoRegisterConfigKey]
@@ -214,12 +212,6 @@ namespace ColorMyProtoFlux
 
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> _SPACER_14 = new ModConfigurationKey<dummy>(SpacerText(), SpacerText(), () => new dummy(), internalAccessOnly: true);
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<bool> COLOR_NULL_REFERENCE_NODES = new ModConfigurationKey<bool>("COLOR_NULL_REFERENCE_NODES", "Should Null Reference Nodes use Node Error Color:", () => true, internalAccessOnly: true);
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<bool> COLOR_NULL_DRIVER_NODES = new ModConfigurationKey<bool>("COLOR_NULL_DRIVER_NODES", "Should Null Driver Nodes use Node Error Color:", () => true, internalAccessOnly: true);
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<dummy> DUMMY_SEP_7_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_7_1", SEP_STRING, () => new dummy(), internalAccessOnly: true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<int> REFID_MOD_DIVISOR = new ModConfigurationKey<int>("REFID_MOD_DIVISOR", "RefID divisor for Channel Shift (Smaller value = faster shifting, minimum 1):", () => 100000, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
