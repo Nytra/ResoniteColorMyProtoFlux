@@ -75,6 +75,8 @@ namespace ColorMyProtoFlux
 		private static ModConfigurationKey<bool> MAKE_CONNECT_POINTS_FULL_ALPHA = new ModConfigurationKey<bool>("MAKE_CONNECT_POINTS_FULL_ALPHA", "[Enhance type colors] Make type-colored images on nodes have full alpha:", () => true, internalAccessOnly: true);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> RESTORE_ORIGINAL_TYPE_COLORS = new ModConfigurationKey<bool>("RESTORE_ORIGINAL_TYPE_COLORS", "[Enhance type colors] Restore original type colors:", () => true, internalAccessOnly: true);
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<float3> HEADER_COLOR_MULTIPLIERS = new ModConfigurationKey<float3>("Header Color Multipliers", "Multipliers for the header color (Multiplies channels of the Selected Color Model):", () => new float3(1f, 1f, 1f));
 
 		// ===== STATIC =====
 

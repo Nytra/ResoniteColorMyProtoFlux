@@ -141,13 +141,23 @@ namespace ColorMyProtoFlux
 				}
 				Debug("Connection or button image null!");
 			}
+
 			var visual = t.Slot.GetComponentInParents<ProtoFluxNodeVisual>();
+
+			// check header image
+			if (ElementExists(visual.Node.Target) && t.Slot.Parent.GetComponent<Image>() is Image headerImage2)
+			{
+				if (headerImage2 == GetHeaderImageForNode(visual.Node.Target)) return headerImage2.Tint.Value;
+			}
+
+			// default to the node background color
 			if (ElementExists(visual) && ElementExists(visual.Node.Target))
 			{
 				colorX c = GetIntendedBackgroundColorForNode(visual.Node.Target, modComputedCustomColor); ;
 				//ExtraDebug("Text background color: " + c.ToString());
 				return c;
 			}
+
 			Debug("GetBackgroundColorOfText Failed. Visual null. Returning white.");
 			return colorX.White;
 		}
@@ -196,7 +206,7 @@ namespace ColorMyProtoFlux
 
 			ProtoFluxNodeVisual nodeVisual = GetNodeVisual(node);
 
-			if (Harmony.HasAnyPatches("com.Dexy.ProtoWireScroll"))
+			if (ProtoFluxVisualsOverhaulActive())
 			{
 				if (ElementExists(nodeVisual) && nodeVisual.Slot.FindChild("TitleParent") is Slot titleParent)
 				{
@@ -238,10 +248,28 @@ namespace ColorMyProtoFlux
 			return visual?.Slot.GetComponentInChildren((Text text) => text.Content == category && text.Slot?.Parent == visual?.Slot);
 		}
 
+		private static bool ProtoFluxVisualsOverhaulActive()
+		{
+			if (Harmony.HasAnyPatches("com.Dexy.ProtoWireScroll"))
+			{
+				var mod = ModLoader.Mods().FirstOrDefault(mod => mod.Name == "ProtoWireScroll");
+				if (mod != null)
+				{
+					var conf = mod.GetConfiguration();
+					var enabledKey = conf.ConfigurationItemDefinitions.FirstOrDefault(key => key.Name == "Enabled");
+					if (enabledKey != null)
+					{
+						return (bool)conf.GetValue(enabledKey);
+					}
+				}
+			}
+			return false;
+		}
+
 		private static List<Text> GetNodeNameTextListForNode(ProtoFluxNode node)
 		{
 			List<Text> textList = GetNodeVisual(node)?.Slot.GetComponentsInChildren((Text t) => t.Content == node.NodeName && t.Slot.Name == "Text" && !t.Content.IsDriven && t.Slot.Parent?.Name != "Button");
-			if (Harmony.HasAnyPatches("com.Dexy.ProtoWireScroll"))
+			if (ProtoFluxVisualsOverhaulActive())
 			{
 				var text = GetHeaderImageForNode(node)?.Slot.GetComponentInChildren<Text>();
 				if (text != null)

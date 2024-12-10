@@ -825,7 +825,7 @@ namespace ColorMyProtoFlux
 								{
 									nodeInfo.headerImageTintField = headerImage.Tint;
 								}
-								TrySetImageTint(headerImage, colorToSet);
+								UpdateHeaderImageColor(headerImage, colorToSet);
 								ExtraDebug("Set header image color");
 							}
 

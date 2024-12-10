@@ -9,6 +9,40 @@ namespace ColorMyProtoFlux
 {
 	public partial class ColorMyProtoFlux : ResoniteMod
 	{
+		private static void UpdateHeaderImageColor(Image img, colorX modComputedCustomColor)
+		{
+			colorX colorToSet = Config.GetValue(MOD_ENABLED) ? modComputedCustomColor : RadiantUI_Constants.HEADER;
+			var colorMult = Config.GetValue(HEADER_COLOR_MULTIPLIERS);
+			switch (Config.GetValue(COLOR_MODEL))
+			{
+				case ColorModelEnum.HSV:
+					var colorHsv = new ColorHSV(colorToSet);
+					colorHsv.h *= colorMult[0];
+					colorHsv.s *= colorMult[1];
+					colorHsv.v *= colorMult[2];
+					colorToSet = colorHsv.ToRGB(ColorProfile.sRGB);
+					break;
+				case ColorModelEnum.HSL:
+					var colorHsl = new ColorHSL(colorToSet);
+					colorHsl.h *= colorMult[0];
+					colorHsl.s *= colorMult[1];
+					colorHsl.l *= colorMult[2];
+					colorToSet = colorHsl.ToRGB(ColorProfile.sRGB);
+					break;
+				case ColorModelEnum.RGB:
+					colorToSet = colorToSet.MulR(colorMult[0]);
+					colorToSet = colorToSet.MulG(colorMult[1]);
+					colorToSet = colorToSet.MulB(colorMult[2]);
+					break;
+				default:
+					break;
+			}
+			if (!Config.GetValue(ALLOW_NEGATIVE_AND_EMISSIVE_COLORS))
+			{
+				ClampColor(ref colorToSet);
+			}
+			TrySetImageTint(img, colorToSet);
+		}
 		private static void UpdateConnectPointImageColor(Image img)
 		{
 			colorX defaultColor = GetWireColorOfConnectionPointImage(img);
@@ -100,7 +134,7 @@ namespace ColorMyProtoFlux
 				}
 				else
 				{
-					var color = GetTextColor(modComputedCustomColor);
+					var color = GetTextColor(GetBackgroundColorOfText(text, modComputedCustomColor));
 					//if (color == NODE_TEXT_DARK_COLOR)
 					//{
 					//	color = color.MulRGB(0.9f);
