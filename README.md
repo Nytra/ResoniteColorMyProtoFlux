@@ -30,7 +30,7 @@ There are a lot of options to give you control over the colors that get generate
 
 The nice thing is that when you change these options, any nodes you have already spawned out will update their color and style automatically (Unless you have turned this off).
 
-The style section includes options to color the full node (instead of just the header), an option to color nodes without a header, and an option to boost type color visibility (this helps if you are coloring the full node).
+The style section includes options to color the full node (instead of just the header), an option to color nodes without a header, and an option to boost type color visibility (this helps if you are coloring the full node). It also has an option to change the node header look by multiplying channels of the selected color model.
 
 The static node color can be used if you just want a single color to be used for all nodes. There is also an option here to use a random range around this color to allow for some variation.
 
