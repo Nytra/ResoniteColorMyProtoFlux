@@ -10,7 +10,7 @@ using System.Linq;
 namespace ColorMyProtoFlux
 {
 	// NodeInfo class stores info about the node, primarily cached color fields for the visual
-	public class NodeInfo
+	public class NodeInfo : IDisposable
 	{
 		public ProtoFluxNode node;
 		public IField<colorX> headerImageTintField;
@@ -21,8 +21,39 @@ namespace ColorMyProtoFlux
 		public colorX modComputedCustomColor;
 		public HashSet<IField<colorX>> connectionPointImageTintFields;
 		public bool isRemoved;
-		//public HashSet<Button> nodeButtons;
-		// dont need to store node background image because the UpdateNodeStatus patch handles coloring of that part
+		public bool isDisposed;
+
+		public void Dispose()
+		{
+			Dispose(disposing: true);
+			GC.SuppressFinalize(this);
+		}
+
+		public void Dispose(bool disposing)
+		{
+			if (!isDisposed)
+			{
+				if (disposing)
+				{
+					node = null;
+					headerImageTintField = null;
+					otherTextColorFields?.Clear();
+					otherTextColorFields = null;
+					visual = null;
+					categoryTextColorField = null;
+					nodeNameTextColorFields?.Clear();
+					nodeNameTextColorFields = null;
+					connectionPointImageTintFields?.Clear();
+					connectionPointImageTintFields = null;
+				}
+				isDisposed = true;
+			}
+		}
+
+		~NodeInfo()
+		{
+			Dispose(disposing: false);
+		}
 	}
 	public partial class ColorMyProtoFlux : ResoniteMod
 	{
@@ -168,6 +199,8 @@ namespace ColorMyProtoFlux
 			}
 
 			nodeInfo.isRemoved = true;
+
+			nodeInfo.Dispose();
 
 			TryTrimExcessNodeInfo();
 		}

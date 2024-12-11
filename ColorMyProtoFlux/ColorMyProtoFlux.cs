@@ -1,7 +1,4 @@
-﻿// Hot reload doesn't work for this mod anymore for some reason :(
-//#define HOT_RELOAD
-
-using Elements.Core;
+﻿using Elements.Core;
 using FrooxEngine;
 using FrooxEngine.ProtoFlux;
 using FrooxEngine.UIX;
@@ -10,10 +7,6 @@ using ResoniteModLoader;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-
-#if HOT_RELOAD
-using ResoniteHotReloadLib;
-#endif // HOT_RELOAD
 
 namespace ColorMyProtoFlux
 {
@@ -62,10 +55,6 @@ namespace ColorMyProtoFlux
 
 		private static Dictionary<World, IValue<bool>> worldOverrideFieldsIValueMap = new();
 
-		//private static HashSet<ProtoFluxNodeGroup> unpackedGroups = new();
-
-		//private static Dictionary<ProtoFluxNodeVisual, long> nodeVisualLastStatusUpdateTimes = new();
-
 		private static Random rng = null;
 		private static Random rngTimeSeeded = new();
 
@@ -73,15 +62,14 @@ namespace ColorMyProtoFlux
 
 		// stuff for making sure the colors don't change too fast
 		private const int REALTIME_CONFIG_COLOR_CHANGE_INTERVAL_MILLISECONDS = 100;
-		//private const int REALTIME_NODE_VISUAL_COLOR_CHANGE_INTERVAL_MILLISECONDS = 100;
-		private const bool ALWAYS_THROTTLE_REALTIME_COLOR_CHANGE = false;
+		private const bool ALWAYS_THROTTLE_REALTIME_COLOR_CHANGE = true;
 		private static long lastConfigColorChangeTime = DateTime.UtcNow.Ticks;
 
 		private const string overrideFieldsIValueName = "ColorMyProtoFlux.OverrideFields";
 
 		private static bool runFinalNodeUpdate = false;
 
-		//private static bool delayedConfigChangeUpdateScheduled = false;
+		private static bool delayedConfigChangeUpdateScheduled = false;
 
 		static bool CheckRealtimeConfigColorChangeAllowed()
 		{
@@ -90,25 +78,23 @@ namespace ColorMyProtoFlux
 				// color can change exactly N times per second when this config is used. it strobes very quickly without this check.
 				if (DateTime.UtcNow.Ticks - lastConfigColorChangeTime < 10000 * REALTIME_CONFIG_COLOR_CHANGE_INTERVAL_MILLISECONDS)
 				{
-					//if (!delayedConfigChangeUpdateScheduled)
-					//{
-					//	// schedule here
+					if (!delayedConfigChangeUpdateScheduled)
+					{
+						// schedule here
 
-					//	Engine.Current.WorldManager.FocusedWorld.RunInSeconds(10000 * REALTIME_CONFIG_COLOR_CHANGE_INTERVAL_MILLISECONDS, () =>
-					//	{
-					//		foreach (NodeInfo info in nodeInfoSet.ToList().Where(nodeInfo => nodeInfo?.node?.World == Engine.Current.WorldManager.FocusedWorld))
-					//		{
-					//			if (ValidateNodeInfo(info))
-					//			{
-					//				RefreshNodeColor(info);
-					//				info.visual.UpdateNodeStatus();
-					//			}
-					//		}
-					//		delayedConfigChangeUpdateScheduled = false;
-					//	});
+						Engine.Current.WorldManager.FocusedWorld.RunInSeconds(1, () =>
+						{
+							ValidateAllNodeInfos();
+							foreach (NodeInfo info in nodeInfoSet.ToList().Where(nodeInfo => nodeInfo.node.World == Engine.Current.WorldManager.FocusedWorld))
+							{
+								RefreshNodeColor(info);
+								info.visual.UpdateNodeStatus();
+							}
+							delayedConfigChangeUpdateScheduled = false;
+						});
 
-					//	delayedConfigChangeUpdateScheduled = true;
-					//}
+						delayedConfigChangeUpdateScheduled = true;
+					}
 					return false;
 				}
 				else
@@ -122,31 +108,6 @@ namespace ColorMyProtoFlux
 			}
 			return true;
 		}
-
-		//static bool CheckRealtimeNodeVisualColorChangeAllowed(ProtoFluxNodeVisual visual)
-		//{
-		//	if (!nodeVisualLastStatusUpdateTimes.ContainsKey(visual))
-		//	{
-		//		nodeVisualLastStatusUpdateTimes.Add(visual, DateTime.MinValue.Ticks);
-		//	}
-		//	if (ALWAYS_THROTTLE_REALTIME_COLOR_CHANGE || (Config.GetValue(USE_STATIC_COLOR) && Config.GetValue(USE_STATIC_RANGES) && Config.GetValue(STATIC_RANGE_MODE) == StaticRangeModeEnum.SystemTime))
-		//	{
-		//		// color can change exactly N times per second when this config is used. it strobes very quickly without this check.
-		//		if (DateTime.UtcNow.Ticks - nodeVisualLastStatusUpdateTimes[visual] < 10000 * REALTIME_NODE_VISUAL_COLOR_CHANGE_INTERVAL_MILLISECONDS)
-		//		{
-		//			return false;
-		//		}
-		//		else
-		//		{
-		//			nodeVisualLastStatusUpdateTimes[visual] = DateTime.UtcNow.Ticks;
-		//		}
-		//	}
-		//	else
-		//	{
-		//		nodeVisualLastStatusUpdateTimes[visual] = 10000 * REALTIME_NODE_VISUAL_COLOR_CHANGE_INTERVAL_MILLISECONDS;
-		//	}
-		//	return true;
-		//}
 
 		static void OnConfigChanged(ConfigurationChangedEvent configChangedEvent)
 		{
@@ -237,111 +198,22 @@ namespace ColorMyProtoFlux
 					runFinalNodeUpdate = false;
 					Debug("runFinalNodeUpdate set to false");
 				}
-
-				//void Funny()
-				//{
-				//	ValidateAllNodeInfos();
-
-				//	foreach (NodeInfo nodeInfo in nodeInfoSet.ToList())
-				//	{
-				//		if (nodeInfo.node.World != Engine.Current.WorldManager.FocusedWorld)
-				//		{
-				//			continue;
-				//		}
-
-				//		NodeInfoRunInUpdates(nodeInfo, 1, () =>
-				//		{
-				//			RefreshNodeColor(nodeInfo);
-				//			GetNodeVisual(nodeInfo.node).UpdateNodeStatus();
-				//		});
-				//	}
-
-				//	if (Config.GetValue(HUE_SHIFT_OVER_TIME) && Config.GetValue(USE_HUE_SHIFT_MODE))
-				//	{
-				//		Engine.Current.WorldManager.FocusedWorld.RunInUpdates(10, Funny);
-				//	}
-				//}
-
-				//if ((configChangedEvent.Key == HUE_SHIFT_OVER_TIME || configChangedEvent.Key == USE_HUE_SHIFT_MODE) && Config.GetValue(HUE_SHIFT_OVER_TIME) && Config.GetValue(USE_HUE_SHIFT_MODE))
-				//{
-				//	Engine.Current.WorldManager.FocusedWorld.RunInUpdates(10, Funny);
-				//}
 			}
 		}
 
 		public override void OnEngineInit()
 		{
-#if HOT_RELOAD
-			Msg("Hot reload active!");
-			HotReloader.RegisterForHotReload(this);
-#endif // HOT_RELOAD
 			Config = GetConfiguration();
 
 			SetupMod();
 		}
-
-#if HOT_RELOAD
-		static void BeforeHotReload()
-		{
-			Config.OnThisConfigurationChanged -= OnConfigChanged;
-			NodeInfoClear();
-			Harmony harmony = new Harmony("owo.Nytra.ColorMyProtoFlux");
-			harmony.UnpatchAll("owo.Nytra.ColorMyProtoFlux");
-
-			foreach (World world in Engine.Current.WorldManager.Worlds)
-			{
-				IValue<bool> overrideFieldsIValue = GetOrAddOverrideFieldsIValue(world, dontAdd: true);
-				if (ElementExists(overrideFieldsIValue))
-				{
-					world.RunSynchronously(() =>
-					{
-						Slot slotToDestroy = null;
-						IDestroyable destroyable = null;
-						if (overrideFieldsIValue is ValueStream<bool> stream)
-						{
-							destroyable = stream;
-						}
-						else if (overrideFieldsIValue is Sync<bool> && overrideFieldsIValue.Parent is ValueStream<bool> stream2)
-						{
-							destroyable = stream2;
-						}
-						else if (overrideFieldsIValue is Sync<bool> && overrideFieldsIValue.Parent is ValueField<bool> field)
-						{
-							destroyable = field;
-							slotToDestroy = field.Slot;
-						}
-						if (ElementExists(destroyable))
-						{
-							destroyable.Destroy();
-						}
-						if (ElementExists(slotToDestroy) && slotToDestroy.ComponentCount == 0)
-						{
-							slotToDestroy.Destroy();
-						}
-					});
-				}
-			}
-		}
-
-		static void OnHotReload(ResoniteMod modInstance)
-		{
-			Config = modInstance.GetConfiguration();
-
-			SetupMod();
-		}
-#endif // HOT_RELOAD
 
 		static void SetupMod()
 		{
 			Harmony harmony = new Harmony("owo.Nytra.ColorMyProtoFlux");
 			harmony.PatchAll();
 
-			//Config.Set(HUE_SHIFT_OVER_TIME, false);
-
 			Config.OnThisConfigurationChanged += OnConfigChanged;
-
-			//nodeInfoSet = new();
-			//rngTimeSeeded = new Random();
 		}
 
 		// This ideally runs when another user other than LocalUser changes the field
@@ -406,9 +278,6 @@ namespace ColorMyProtoFlux
 
 				bool shouldUseCustomColor = ShouldColorNodeBody(__instance.Node.Target);
 
-				// just in case? although then node highlight and selection wouldn't visually work in other worlds for this user's nodes
-				//if (__instance.World != Engine.Current.WorldManager.FocusedWorld) return true; 
-
 				// If the field is not null, don't run this patch (this assumes that overviewBg will be the same)
 				if (____bgImage.Target != null) return;
 
@@ -427,12 +296,6 @@ namespace ColorMyProtoFlux
 				if (!ElementExists(bgImage) && (!ElementExists(overviewSlot) || !ElementExists(overviewBg))) return;
 
 				colorX a;
-
-				//if (!CheckRealtimeNodeVisualColorChangeAllowed(__instance))
-				//{
-				//	__instance.RunInUpdates(0, __instance == null ? delegate { } : __instance.UpdateNodeStatus);
-				//	return;
-				//}
 
 				if (shouldUseCustomColor)
 				{
@@ -531,42 +394,6 @@ namespace ColorMyProtoFlux
 			}
 		}
 
-		//private static List<Button> GetNodeButtons(ProtoFluxNode node)
-		//{
-		//	return GetNodeVisual(node)?.Slot.GetComponentsInChildren<Button>();
-		//}
-
-		//private static void HandleButtons(ProtoFluxNode node, colorX computedNodeColor)
-		//{
-		//	foreach (Button b in GetNodeButtons(node))
-		//	{
-		//		colorX newColor = GetTextColor(computedNodeColor);
-		//		b.SetColors(newColor);
-		//		foreach (Text text in b.Slot.GetComponentsInChildren<Text>((Text t) => t.Slot != b.Slot))
-		//		{
-		//			if (text.Color.IsDriven)
-		//			{
-		//				text.Color.ReleaseLink(text.Color.ActiveLink);
-		//			}
-		//			text.Color.Value = newColor == NODE_TEXT_LIGHT_COLOR ? NODE_TEXT_DARK_COLOR : NODE_TEXT_LIGHT_COLOR;
-		//		}
-		//		TextEditor editor = b.Slot.GetComponent<TextEditor>();
-		//		if (editor != null)
-		//		{
-		//			foreach (InteractionElement.ColorDriver driver in b.ColorDrivers)
-		//			{
-		//				//driver.TintColorMode.Value = InteractionElement.ColorMode.Direct;
-		//			}
-		//		}
-		//	}
-		//}
-
-		//private static void PrintStackTrace()
-		//{
-		//	var s = new System.Diagnostics.StackTrace();
-		//	Debug(s.ToString());
-		//}
-
 		[HarmonyPatch(typeof(ProtoFluxDynamicElementManager))]
 		[HarmonyPatch("OnChanges")]
 		class Patch_ProtoFluxDynamicElementManager_OnChanges
@@ -578,7 +405,7 @@ namespace ColorMyProtoFlux
 			{
 				if (!Config.GetValue(MOD_ENABLED)) return;
 
-				if (__instance.Visual.Target == null) return;
+				if (!ElementExists(__instance.Visual.Target)) return;
 
 				if (!WorkerBelongsToLocalUser(__instance.Visual.Target)) return;
 
@@ -612,38 +439,14 @@ namespace ColorMyProtoFlux
 
 		private static bool WorkerBelongsToLocalUser(Worker worker, bool logging = false)
 		{
+			if (!ElementExists(worker)) return false;
 			var allocatingUser = worker.World.GetUserByAllocationID(worker.ReferenceID.User);
-			MaybeLog($"allocatingUser: {allocatingUser}");
 			if (allocatingUser == null) return false;
-			MaybeLog($"allocatingUser UserID: {allocatingUser.UserID}");
-			MaybeLog($"LocalUser UserID: {worker.LocalUser.UserID}");
-			MaybeLog($"allocatingUser UserName: {allocatingUser.UserName}");
-			MaybeLog($"LocalUser UserName: {worker.LocalUser.UserName}");
-			if (allocatingUser.UserID == null && worker.LocalUser.UserID == null)
+			if (worker.ReferenceID.Position < allocatingUser.AllocationIDStart)
 			{
-				if (allocatingUser.UserName == worker.LocalUser.UserName)
-				{
-					MaybeLog("True for usernames");
-					return true;
-				}
-				MaybeLog("False for usernames");
 				return false;
 			}
-			else if (allocatingUser.UserID == worker.LocalUser.UserID)
-			{
-				MaybeLog("True for userIds");
-				return true;
-			}
-			MaybeLog("False for userIds");
-			return false;
-
-			void MaybeLog(string str)
-			{
-				if (logging)
-				{
-					Debug(str);
-				}
-			}
+			return allocatingUser == worker.LocalUser;
 		}
 
 		[HarmonyPatch(typeof(ProtoFluxNode))]
@@ -690,32 +493,6 @@ namespace ColorMyProtoFlux
 			}
 		}
 
-		// This patch was used for the attempted visual stack bug workaround
-		//[HarmonyPatch(typeof(ProtoFluxVisualHelper))]
-		//[HarmonyPatch("UnpackNodes")]
-		//class Patch_ProtoFluxTool_OnUnpack
-		//{
-		//	static void Postfix(Slot root)
-		//	{
-		//		if (!Config.GetValue(MOD_ENABLED)) return;
-		//		if (!ElementExists(root)) return;
-		//		foreach (var node in root.GetComponentsInChildren<ProtoFluxNode>())
-		//		{
-		//			var nodeGroup = node.Group;
-		//			if (nodeGroup != null && !unpackedGroups.Contains(nodeGroup))
-		//			{
-		//				Debug($"Adding group to unpacked groups: {nodeGroup.Name}");
-		//				unpackedGroups.Add(nodeGroup);
-		//				root.World.RunInUpdates(60, () =>
-		//				{
-		//					Debug($"Removing group from unpacked groups: {nodeGroup.Name}");
-		//					unpackedGroups.Remove(nodeGroup);
-		//				});
-		//			}
-		//		}
-		//	}
-		//}
-
 		[HarmonyPatch(typeof(ProtoFluxNodeVisual))]
 		[HarmonyPatch("BuildUI")]
 		class Patch_ProtoFluxNodeVisual_BuildUI
@@ -736,100 +513,6 @@ namespace ColorMyProtoFlux
 						__instance.RunInUpdates(3, () =>
 						{
 							if (!ElementExists(__instance)) return;
-
-							// Attempted workaround for visual stacking bug: https://github.com/Yellow-Dog-Man/Resonite-Issues/issues/375
-							// Didn't work reliably enough :(
-
-							//__instance.RunInUpdates(30, () => 
-							//{
-							//	if (!ElementExists(__instance)) return;
-
-							//	// Check if multiple visuals have accidentally been generated for this node (It's a bug that I've seen happen sometimes)
-
-							//	if (__instance.Slot.Parent.ChildrenCount > 1)
-							//	{
-							//		IEnumerable<Slot> GetVisuals(ProtoFluxNode node)
-							//		{
-							//			return node.Slot.Children.Where(childSlot => childSlot.Name == ProtoFluxNodeVisual.SLOT_NAME
-							//				&& childSlot.GetComponent<ProtoFluxNodeVisual>() is ProtoFluxNodeVisual visual
-							//				&& visual.Node.Target == node
-							//				&& childSlot.ChildrenCount > 0 );
-							//		}
-							//		Debug("More than one slot under the node root");
-							//		if (node.Group == null) return;
-							//		bool localUserUnpackedGroup = false;
-							//		if (unpackedGroups.Contains(node.Group))
-							//		{
-							//			localUserUnpackedGroup = true;
-							//		}
-							//		bool visualStackBugHappened = false;
-
-							//		// If local user unpacked the group, destroy all other visuals
-							//		// Otherwise destroy local user visuals only
-
-							//		foreach (var node in node.Group.Nodes)
-							//		{
-							//			var visuals = GetVisuals(node);
-							//			// Isn't always correct
-							//			//if (visualsOwner == null && visuals.Count() == 1 && node.NodeInstance is IExecutionNode)
-							//			//{
-							//			//	visualsOwner = node.World.GetUserByAllocationID(visuals.First().ReferenceID.User);
-							//			//}
-							//			if (visuals.Count() > 1)
-							//			{
-							//				visualStackBugHappened = true;
-							//				break;
-							//			}
-							//		}
-							//		if (visualStackBugHappened)
-							//		{
-							//			Debug("Visual stack bug happened");
-							//			if (localUserUnpackedGroup)
-							//			{
-							//				Debug("Local user unpacked this group.");
-							//			}
-							//			else
-							//			{
-							//				Debug("Local user did not unpack this group.");
-							//			}
-							//			foreach (var node in node.Group.Nodes)
-							//			{
-							//				var visuals = GetVisuals(node);
-							//				if (visuals.Count() > 1)
-							//				{
-							//					foreach (var visual in visuals.ToArray())
-							//					{
-							//						var allocatingUser = visual.World.GetUserByAllocationID(visual.ReferenceID.User);
-							//						if (allocatingUser != null)
-							//						{
-							//							if (localUserUnpackedGroup && allocatingUser != visual.LocalUser)
-							//							{
-							//								Debug($"Destroying visual belonging to user: {allocatingUser.UserName}");
-							//								visual.Destroy();
-							//							}
-							//							else if (!localUserUnpackedGroup && allocatingUser == visual.LocalUser)
-							//							{
-							//								Debug($"Destroying visual belonging to local user: {visual.LocalUser.UserName}");
-							//								visual.Destroy();
-							//							}
-							//						}
-							//					}
-							//				}
-							//			}
-							//		}
-
-							//		//foreach (Slot childSlot in __instance.Slot.Parent.Children.ToArray())
-							//		//{
-							//		//	if (childSlot == __instance.Slot) continue;
-							//		//	if (childSlot.Name == __instance.Slot.Name && childSlot.GetComponent<ProtoFluxNodeVisual>() != null)
-							//		//	{
-							//		//		Debug($"Destroying node visual {__instance.ReferenceID} Tag: {__instance.Slot.Tag}");
-							//		//		__instance.Slot.Destroy();
-							//		//		return;
-							//		//	}
-							//		//}
-							//	}
-							//});
 
 							Debug("New node: " + node.NodeName ?? "NULL");
 							ExtraDebug("Worker category path: " + GetWorkerCategoryPath(node) ?? "NULL");

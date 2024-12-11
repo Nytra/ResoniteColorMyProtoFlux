@@ -156,47 +156,6 @@ namespace ColorMyProtoFlux
 				hue = strength;
 			}
 
-			//switch (Config.GetValue(NON_RANDOM_REFID_WAVEFORM))
-			//{
-			//	case ChannelShiftWaveformEnum.Sawtooth:
-			//		shift = strength;
-			//		break;
-			//	case ChannelShiftWaveformEnum.Sine:
-			//		shift = MathX.Sin(strength * 2f * (float)Math.PI);
-			//		break;
-			//	default:
-			//		break;
-			//}
-
-			//int3 shiftChannels = Config.GetValue(NON_RANDOM_REFID_CHANNELS);
-			//float3 shiftOffsets = Config.GetValue(NON_RANDOM_REFID_OFFSETS);
-
-			//if (shiftChannels[0] != 0)
-			//{
-			//	hue = shift + shiftOffsets[0];
-			//}
-			//else
-			//{
-			//	// maybe it should use RNG from the dynamic section here?
-			//	hue = GetColorChannelValue(0, ref rngTimeSeeded, Config.GetValue(COLOR_MODEL));
-			//}
-			//if (shiftChannels[1] != 0)
-			//{
-			//	sat = shift + shiftOffsets[1];
-			//}
-			//else
-			//{
-			//	sat = GetColorChannelValue(1, ref rngTimeSeeded, Config.GetValue(COLOR_MODEL));
-			//}
-			//if (shiftChannels[2] != 0)
-			//{
-			//	val_lightness = shift + shiftOffsets[2];
-			//}
-			//else
-			//{
-			//	val_lightness = GetColorChannelValue(2, ref rngTimeSeeded, Config.GetValue(COLOR_MODEL));
-			//}
-
 			sat = GetColorChannelValue(1, rand, Config.GetValue(COLOR_MODEL));
 			val_lightness = GetColorChannelValue(2, rand, Config.GetValue(COLOR_MODEL));
 
@@ -358,11 +317,6 @@ namespace ColorMyProtoFlux
 				// force it to 1 to avoid dividing by 0
 				ulong divisor = (refidModDivisor > 1) ? (ulong)refidModDivisor : 1;
 				ulong val = node.Slot.ReferenceID.Position;
-
-				//if (Config.GetValue(HUE_SHIFT_OVER_TIME))
-				//{
-				//	val = (ulong)DateTime.Now.Ticks + (node.Slot.ReferenceID.Position * divisor);
-				//}
 
 				if (Config.GetValue(USE_SYSTEM_TIME_RNG))
 				{

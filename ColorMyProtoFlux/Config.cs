@@ -134,9 +134,9 @@ namespace ColorMyProtoFlux
 		private static ModConfigurationKey<float> NODE_ALPHA = new ModConfigurationKey<float>("Node Alpha", "Node alpha [0 to 1]:", () => 1f, internalAccessOnly: true);
 
 		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<dummy> DUMMY_SEP_2_4_1 = new ModConfigurationKey<dummy>("DUMMY_SEP_2_4_1", SEP_STRING, () => new dummy());
+		//private static ModConfigurationKey<dummy> DUMMY_SEP_2_4_1 = new ModConfigurationKey<dummy>(SpacerText(), SpacerText(), () => new dummy());
 		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<dummy> DUMMY_SEP_2_5 = new ModConfigurationKey<dummy>("DUMMY_SEP_2_5", $"<color={DETAIL_TEXT_COLOR}><i>This section produces colors based on the Selected Node Factor plus the Seed</i></color>", () => new dummy());
+		//private static ModConfigurationKey<dummy> DUMMY_SEP_2_5 = new ModConfigurationKey<dummy>("_DYNAMIC_DESCRIPTION_0", DescriptionText("This section produces colors based on the Selected Node Factor plus the Seed"), () => new dummy());
 
 		// ===== TEXT =====
 
@@ -170,18 +170,6 @@ namespace ColorMyProtoFlux
 		private static ModConfigurationKey<dummy> _UPDATE_NODES_ON_CONFIG_CHANGED_DESCRIPTION_0 = new ModConfigurationKey<dummy>("_UPDATE_NODES_ON_CONFIG_CHANGE_DESCRIPTION_0", DescriptionText("Uses some extra memory for every node"), () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> _UPDATE_NODES_ON_CONFIG_CHANGED_DESCRIPTION_1 = new ModConfigurationKey<dummy>("_UPDATE_NODES_ON_CONFIG_CHANGE_DESCRIPTION_1", DescriptionText("Only applies to nodes created after this option was enabled"), () => new dummy());
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<dummy> _SPACER_10 = new ModConfigurationKey<dummy>("_SPACER_10", SEP_STRING, () => new dummy());
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<bool> AUTO_UPDATE_REF_AND_DRIVER_NODES = new ModConfigurationKey<bool>("AUTO_UPDATE_REF_AND_DRIVER_NODES", "Automatically update the color of reference and driver nodes when their targets change:", () => true);
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<dummy> DUMMY_SEP_5_3 = new ModConfigurationKey<dummy>("DUMMY_SEP_5_3", $"<color={DETAIL_TEXT_COLOR}><i>Uses some extra memory and CPU for every reference and driver node</i></color>", () => new dummy());
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<dummy> DUMMY_SEP_5_7 = new ModConfigurationKey<dummy>("DUMMY_SEP_5_7", SEP_STRING, () => new dummy(), internalAccessOnly: true);
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<dummy> DUMMY_SEP_5_5 = new ModConfigurationKey<dummy>("DUMMY_SEP_5_5", $"<color={DETAIL_TEXT_COLOR}><i>Extra features will only apply to newly created nodes</i></color>", () => new dummy());
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<dummy> DUMMY_SEP_5_4 = new ModConfigurationKey<dummy>("DUMMY_SEP_5_4", $"<color={DETAIL_TEXT_COLOR}><i>Setting an option here to false will clear its memory</i></color>", () => new dummy());
 
 		// ===== MISC =====
 
@@ -197,18 +185,8 @@ namespace ColorMyProtoFlux
 		private static ModConfigurationKey<dummy> _SPACER_12 = new ModConfigurationKey<dummy>(SpacerText(), SpacerText(), () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> USE_HUE_SHIFT_MODE = new ModConfigurationKey<bool>("Use Hue Shift Mode", "Enable Hue-shift Mode (HSV and HSL only):", () => false);
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<bool> HUE_SHIFT_OVER_TIME = new ModConfigurationKey<bool>("Hue Shift Over Time", "Hue-shift over time:", () => false);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> _SPACER_13 = new ModConfigurationKey<dummy>(SpacerText(), SpacerText(), () => new dummy());
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<int3> NON_RANDOM_REFID_CHANNELS = new ModConfigurationKey<int3>("NON_RANDOM_REFID_CHANNELS", "Which channels to shift [1 to enable, 0 to disable]:", () => new int3(1, 0, 0));
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<float3> NON_RANDOM_REFID_OFFSETS = new ModConfigurationKey<float3>("NON_RANDOM_REFID_OFFSETS", "Channel Shift Offsets [-1 to 1]:", () => new float3(0f, 0f, 0f));
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<ChannelShiftWaveformEnum> NON_RANDOM_REFID_WAVEFORM = new ModConfigurationKey<ChannelShiftWaveformEnum>("NON_RANDOM_REFID_WAVEFORM", "Channel Shift Waveform:", () => ChannelShiftWaveformEnum.Sawtooth);
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<dummy> DUMMY_SEP_6_4 = new ModConfigurationKey<dummy>("DUMMY_SEP_6_4", $"<color={DETAIL_TEXT_COLOR}><i>Channel Shift will make the channel values go from zero to one over time as the selected waveform</i></color>", () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<colorX> NODE_ERROR_COLOR = new ModConfigurationKey<colorX>("Node Error Color", "Node Error Color:", () => new colorX(3.0f, 0.5f, 0.5f, 1.0f));
 
