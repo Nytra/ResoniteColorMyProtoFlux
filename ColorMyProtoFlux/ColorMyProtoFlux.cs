@@ -238,40 +238,34 @@ namespace ColorMyProtoFlux
 					Debug("runFinalNodeUpdate set to false");
 				}
 
-				void Funny()
-				{
-					ValidateAllNodeInfos();
+				//void Funny()
+				//{
+				//	ValidateAllNodeInfos();
 
-					foreach (NodeInfo nodeInfo in nodeInfoSet.ToList())
-					{
-						// don't change colors of nodes that are in other worlds
-						// node shouldn't be null here because validation happened before the loop
-						// skip this check if runFinalNodeUpdate?
-						if (nodeInfo.node.World != Engine.Current.WorldManager.FocusedWorld)
-						{
-							continue;
-						}
+				//	foreach (NodeInfo nodeInfo in nodeInfoSet.ToList())
+				//	{
+				//		if (nodeInfo.node.World != Engine.Current.WorldManager.FocusedWorld)
+				//		{
+				//			continue;
+				//		}
 
-						//Msg("Refreshing node color in config changed.");
+				//		NodeInfoRunInUpdates(nodeInfo, 1, () =>
+				//		{
+				//			RefreshNodeColor(nodeInfo);
+				//			GetNodeVisual(nodeInfo.node).UpdateNodeStatus();
+				//		});
+				//	}
 
-						// need to wait for the drives on the node visual to update from the override stream value
-						NodeInfoRunInUpdates(nodeInfo, 1, () =>
-						{
-							RefreshNodeColor(nodeInfo);
-							GetNodeVisual(nodeInfo.node).UpdateNodeStatus();
-						});
-					}
+				//	if (Config.GetValue(HUE_SHIFT_OVER_TIME) && Config.GetValue(USE_HUE_SHIFT_MODE))
+				//	{
+				//		Engine.Current.WorldManager.FocusedWorld.RunInUpdates(10, Funny);
+				//	}
+				//}
 
-					if (Config.GetValue(HUE_SHIFT_OVER_TIME) && Config.GetValue(USE_HUE_SHIFT_MODE))
-					{
-						Engine.Current.WorldManager.FocusedWorld.RunInUpdates(1, Funny);
-					}
-				}
-
-				if ((configChangedEvent.Key == HUE_SHIFT_OVER_TIME || configChangedEvent.Key == USE_HUE_SHIFT_MODE) && Config.GetValue(HUE_SHIFT_OVER_TIME) && Config.GetValue(USE_HUE_SHIFT_MODE))
-				{
-					Engine.Current.WorldManager.FocusedWorld.RunInUpdates(1, Funny);
-				}
+				//if ((configChangedEvent.Key == HUE_SHIFT_OVER_TIME || configChangedEvent.Key == USE_HUE_SHIFT_MODE) && Config.GetValue(HUE_SHIFT_OVER_TIME) && Config.GetValue(USE_HUE_SHIFT_MODE))
+				//{
+				//	Engine.Current.WorldManager.FocusedWorld.RunInUpdates(10, Funny);
+				//}
 			}
 		}
 
@@ -341,6 +335,8 @@ namespace ColorMyProtoFlux
 		{
 			Harmony harmony = new Harmony("owo.Nytra.ColorMyProtoFlux");
 			harmony.PatchAll();
+
+			//Config.Set(HUE_SHIFT_OVER_TIME, false);
 
 			Config.OnThisConfigurationChanged += OnConfigChanged;
 

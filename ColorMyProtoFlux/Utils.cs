@@ -164,6 +164,8 @@ namespace ColorMyProtoFlux
 
 		private static ProtoFluxNodeVisual GetNodeVisual(ProtoFluxNode node)
 		{
+			if (node == null) return null;
+
 			NodeInfo nodeInfo = GetNodeInfoForNode(node);
 			//ProtoFluxNodeVisual visual = null;
 			if (ValidateNodeInfo(nodeInfo))

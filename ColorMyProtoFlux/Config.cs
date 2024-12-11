@@ -197,8 +197,8 @@ namespace ColorMyProtoFlux
 		private static ModConfigurationKey<dummy> _SPACER_12 = new ModConfigurationKey<dummy>(SpacerText(), SpacerText(), () => new dummy());
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<bool> USE_HUE_SHIFT_MODE = new ModConfigurationKey<bool>("Use Hue Shift Mode", "Enable Hue-shift Mode (HSV and HSL only):", () => false);
-		[AutoRegisterConfigKey]
-		private static ModConfigurationKey<bool> HUE_SHIFT_OVER_TIME = new ModConfigurationKey<bool>("Hue Shift Over Time", "Hue-shift over time:", () => false);
+		//[AutoRegisterConfigKey]
+		//private static ModConfigurationKey<bool> HUE_SHIFT_OVER_TIME = new ModConfigurationKey<bool>("Hue Shift Over Time", "Hue-shift over time:", () => false);
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<dummy> _SPACER_13 = new ModConfigurationKey<dummy>(SpacerText(), SpacerText(), () => new dummy());
 		//[AutoRegisterConfigKey]
