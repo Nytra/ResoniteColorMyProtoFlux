@@ -2,7 +2,7 @@
 
 ![2024-05-09 22 28 23](https://github.com/Nytra/ResoniteColorMyProtoFlux/assets/14206961/39dd6b0a-5aba-42c9-8f03-9df9f2372d7a)
 
-A [ResoniteModLoader](https://github.com/resonite-modding-group/ResoniteModLoader) mod for [Resonite](https://resonite.com/) that allows you to color your ProtoFlux nodes. This makes the ProtoFlux experience *much* more colorful. Features quite a powerful 'color engine'.
+A [ResoniteModLoader](https://github.com/resonite-modding-group/ResoniteModLoader) mod for [Resonite](https://resonite.com/) that allows you to color your ProtoFlux nodes. This makes the ProtoFlux experience *much* more colorful. Features a powerful color engine.
 
 ## Installation
 1. Install [ResoniteModLoader](https://github.com/resonite-modding-group/ResoniteModLoader).
