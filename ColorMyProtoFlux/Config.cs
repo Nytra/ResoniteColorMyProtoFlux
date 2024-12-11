@@ -133,10 +133,8 @@ namespace ColorMyProtoFlux
 		[AutoRegisterConfigKey]
 		private static ModConfigurationKey<float> NODE_ALPHA = new ModConfigurationKey<float>("Node Alpha", "Node alpha [0 to 1]:", () => 1f, internalAccessOnly: true);
 
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<dummy> DUMMY_SEP_2_4_1 = new ModConfigurationKey<dummy>(SpacerText(), SpacerText(), () => new dummy());
-		//[AutoRegisterConfigKey]
-		//private static ModConfigurationKey<dummy> DUMMY_SEP_2_5 = new ModConfigurationKey<dummy>("_DYNAMIC_DESCRIPTION_0", DescriptionText("This section produces colors based on the Selected Node Factor plus the Seed"), () => new dummy());
+		[AutoRegisterConfigKey]
+		private static ModConfigurationKey<dummy> DUMMY_SEP_2_5 = new ModConfigurationKey<dummy>("_DYNAMIC_DESCRIPTION_0", DescriptionText("This section produces deterministic values based on the Selected Node Factor plus the Node Factor Seed"), () => new dummy());
 
 		// ===== TEXT =====
 
