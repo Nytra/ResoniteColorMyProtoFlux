@@ -255,7 +255,6 @@ namespace ColorMyProtoFlux
 		{
 			static void Postfix(ProtoFluxNodeVisual __instance, SyncRef<Image> ____bgImage, FieldDrive<colorX> ____overviewBg, FieldDrive<bool> ____overviewVisual)
 			{
-				// should this be here?
 				if (!Config.GetValue(MOD_ENABLED)) return;
 
 				if (!ElementExists(__instance)) return;
