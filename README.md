@@ -2,7 +2,7 @@
 
 ![2024-05-09 22 28 23](https://github.com/Nytra/ResoniteColorMyProtoFlux/assets/14206961/39dd6b0a-5aba-42c9-8f03-9df9f2372d7a)
 
-A [ResoniteModLoader](https://github.com/resonite-modding-group/ResoniteModLoader) mod for [Resonite](https://resonite.com/) that allows you to color your ProtoFlux nodes. This makes the ProtoFlux experience *much* more colorful.
+A [ResoniteModLoader](https://github.com/resonite-modding-group/ResoniteModLoader) mod for [Resonite](https://resonite.com/) that allows you to color your ProtoFlux nodes. This makes the ProtoFlux experience *much* more colorful. Features quite a powerful 'color engine'.
 
 ## Installation
 1. Install [ResoniteModLoader](https://github.com/resonite-modding-group/ResoniteModLoader).
@@ -24,17 +24,17 @@ Due to the complexity of ProtoFlux the mod will add additional components to eac
 
 You need [ResoniteModSettings](https://github.com/badhaloninja/ResoniteModSettings) to be able to change these options in-game.
 
-The default config is quite basic: only the header of the node will be colored, if the node doesn't have a header it will be colored fully, and the color will be based on the node's category. Type colors on the node will be left alone.
+The default config is like this: the node will be colored fully and the color will be based on the node's category. Type colors on the node will be enhanced to be more visible.
 
-There are a lot of options to give you a lot of control over the colors that get generated. If you want dark mode or grayscale, rainbow, pastel or shades of green/blue, you can make that happen with a bit of configuration.
+There are a lot of options to give you control over the colors that get generated. If you want dark mode or grayscale, rainbow, pastel or shades of green/blue, you can make that happen with a bit of configuration.
 
 The nice thing is that when you change these options, any nodes you have already spawned out will update their color and style automatically (Unless you have turned this off).
 
-The style section includes options to color the full node (instead of just the header), an option to color node's without a header, and an option to boost type color visibility (this helps if you are coloring the full node).
+The style section includes options to color the full node (instead of just the header), an option to color nodes without a header, and an option to boost type color visibility (this helps if you are coloring the full node).
 
 The static node color can be used if you just want a single color to be used for all nodes. There is also an option here to use a random range around this color to allow for some variation.
 
-The Selected Node Factor determines what affects the color output from the dynamic section. By default it will use the node's Category. The other options will introduce more or less variation. Using FullTypeName will cause the color of the node to change when it gets overloaded to another type. Choosing RefID will make every node you create have a different color (essentially random mode). TopmostCategory is like Category, except it ignores nested categories and only cares about the first one. Name uses the name of the node. Group will color the nodes by which ProtoFlux node group they belong to.
+The Selected Node Factor determines what affects the color output from the dynamic section. By default it will use the node's category. The other options will introduce more or less variation. Using FullTypeName will cause the color of the node to change when it gets overloaded to another type. Choosing RefID will make every node you create have a different color (essentially random mode). TopmostCategory is like Category, except it ignores nested categories and only cares about the first one. Name uses the name of the node. Group will color the nodes by which ProtoFlux node group they belong to.
 
 The Seed option in the dynamic section can be used to get a completely different set of colors being generated. It works in addition to the Selected Node Factor. It can be any positive or negative integer.
 
@@ -42,7 +42,7 @@ The Channel Maximums and Channel Minimums options will set the bounds for channe
 
 For text, the option for automatic text coloring will make the text color either dark or light depending on which would be more readable. You can also use a static text color that doesn't change if you want.
 
-You can use the output RGB multiplier to suppress or amplify the color channels of red, green or blue. If you don't want any red in your nodes, set the multiplier for red to zero. Or amplify it, if you like.
+You can use the output RGB multiplier to suppress or amplify the color channels of red, green or blue. If you don't want any red in your nodes, set the multiplier for red to zero- or amplify it if you like.
 
 Hue-shift mode will take the RefID of the node and convert it directly into a value for Hue. So as the RefID values increase in the world you will get Hue values that constantly shift alongside it.
 
