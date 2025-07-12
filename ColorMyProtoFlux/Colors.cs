@@ -2,6 +2,7 @@
 using FrooxEngine.ProtoFlux;
 using ResoniteModLoader;
 using System;
+using Renderite.Shared;
 
 namespace ColorMyProtoFlux
 {

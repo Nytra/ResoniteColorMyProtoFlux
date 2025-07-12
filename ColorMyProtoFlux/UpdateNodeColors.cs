@@ -4,6 +4,7 @@ using FrooxEngine.ProtoFlux;
 using FrooxEngine.UIX;
 using ResoniteModLoader;
 using System;
+using Renderite.Shared;
 
 namespace ColorMyProtoFlux
 {
