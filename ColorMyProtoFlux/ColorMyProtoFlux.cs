@@ -14,7 +14,7 @@ namespace ColorMyProtoFlux
 	{
 		public override string Name => "ColorMyProtoFlux";
 		public override string Author => "Nytra";
-		public override string Version => "1.2.0";
+		public override string Version => "1.2.1";
 		public override string Link => "https://github.com/Nytra/ResoniteColorMyProtoFlux";
 
 		// Used for dynamic text contrast
