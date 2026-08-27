@@ -208,7 +208,7 @@ namespace ColorMyProtoFlux
 
 			ProtoFluxNodeVisual nodeVisual = GetNodeVisual(node);
 
-			if (ProtoFluxVisualsOverhaulActive())
+			if (ProtoFluxOverhaulActive())
 			{
 				if (ElementExists(nodeVisual) && nodeVisual.Slot.FindChild("TitleParent") is Slot titleParent)
 				{
@@ -250,20 +250,21 @@ namespace ColorMyProtoFlux
 			return visual?.Slot.GetComponentInChildren((Text text) => text.Content == category && text.Slot?.Parent == visual?.Slot);
 		}
 
-		private static bool ProtoFluxVisualsOverhaulActive()
+		private static bool ProtoFluxOverhaulActive()
 		{
-			if (Harmony.HasAnyPatches("com.Dexy.ProtoFluxVisualsOverhaul"))
+			if (!protofluxOverhaulCheckDone)
 			{
-				var mod = ModLoader.Mods().FirstOrDefault(mod => mod.Name == "ProtoFluxVisualsOverhaul");
-				if (mod != null)
+				if (Harmony.HasAnyPatches("com.Dexy.ProtoFluxOverhaul"))
 				{
-					var conf = mod.GetConfiguration();
-					var enabledKey = conf.ConfigurationItemDefinitions.FirstOrDefault(key => key.Name == "Enabled");
-					if (enabledKey != null)
-					{
-						return (bool)conf.GetValue(enabledKey);
-					}
+					protofluxOverhaulMod = ModLoader.Mods().FirstOrDefault(mod => mod.Name == "ProtoFluxOverhaul");
 				}
+				protofluxOverhaulCheckDone = true;
+			}
+			if (protofluxOverhaulMod != null)
+			{
+				var conf = protofluxOverhaulMod.GetConfiguration();
+				var key = conf.ConfigurationItemDefinitions.FirstOrDefault(key => key.Name == "Enabled");
+				return (bool)conf.GetValue(key);
 			}
 			return false;
 		}
@@ -271,7 +272,7 @@ namespace ColorMyProtoFlux
 		private static List<Text> GetNodeNameTextListForNode(ProtoFluxNode node)
 		{
 			List<Text> textList = GetNodeVisual(node)?.Slot.GetComponentsInChildren((Text t) => t.Content == node.NodeName && t.Slot.Name == "Text" && !t.Content.IsDriven && t.Slot.Parent?.Name != "Button");
-			if (ProtoFluxVisualsOverhaulActive())
+			if (ProtoFluxOverhaulActive())
 			{
 				var text = GetHeaderImageForNode(node)?.Slot.GetComponentInChildren<Text>();
 				if (text != null)

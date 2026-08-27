@@ -71,6 +71,10 @@ namespace ColorMyProtoFlux
 
 		private static bool delayedConfigChangeUpdateScheduled = false;
 
+		private static bool protofluxOverhaulCheckDone = false;
+
+		private static ResoniteModBase protofluxOverhaulMod = null;
+
 		static bool CheckRealtimeConfigColorChangeAllowed()
 		{
 			if (ALWAYS_THROTTLE_REALTIME_COLOR_CHANGE || (Config.GetValue(USE_STATIC_NODE_COLOR) && Config.GetValue(USE_STATIC_RANGES) && Config.GetValue(STATIC_RANGE_MODE) == StaticRangeModeEnum.SystemTime))
@@ -496,7 +500,7 @@ namespace ColorMyProtoFlux
 		[HarmonyPatch("BuildUI")]
 		class Patch_ProtoFluxNodeVisual_BuildUI
 		{
-			[HarmonyAfter("com.Dexy.ProtoFluxVisualsOverhaul")]
+			[HarmonyAfter("com.Dexy.ProtoFluxOverhaul")]
 			static void Postfix(ProtoFluxNodeVisual __instance, ProtoFluxNode node, SyncRef<Image> ____bgImage, FieldDrive<colorX> ____overviewBg, SyncRef<Slot> ____inputsRoot, SyncRef<Slot> ____outputsRoot)
 			{
 				//Debug("Entered BuildUI Postfix");
