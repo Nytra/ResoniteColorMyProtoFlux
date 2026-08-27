@@ -14,7 +14,7 @@ namespace ColorMyProtoFlux
 	{
 		public override string Name => "ColorMyProtoFlux";
 		public override string Author => "Nytra";
-		public override string Version => "1.2.1";
+		public override string Version => "1.2.2";
 		public override string Link => "https://github.com/Nytra/ResoniteColorMyProtoFlux";
 
 		// Used for dynamic text contrast
@@ -70,6 +70,10 @@ namespace ColorMyProtoFlux
 		private static bool runFinalNodeUpdate = false;
 
 		private static bool delayedConfigChangeUpdateScheduled = false;
+
+		private static bool protofluxOverhaulCheckDone = false;
+
+		private static ResoniteModBase protofluxOverhaulMod = null;
 
 		static bool CheckRealtimeConfigColorChangeAllowed()
 		{
@@ -496,7 +500,7 @@ namespace ColorMyProtoFlux
 		[HarmonyPatch("BuildUI")]
 		class Patch_ProtoFluxNodeVisual_BuildUI
 		{
-			[HarmonyAfter("com.Dexy.ProtoFluxVisualsOverhaul")]
+			[HarmonyAfter("com.Dexy.ProtoFluxOverhaul")]
 			static void Postfix(ProtoFluxNodeVisual __instance, ProtoFluxNode node, SyncRef<Image> ____bgImage, FieldDrive<colorX> ____overviewBg, SyncRef<Slot> ____inputsRoot, SyncRef<Slot> ____outputsRoot)
 			{
 				//Debug("Entered BuildUI Postfix");
